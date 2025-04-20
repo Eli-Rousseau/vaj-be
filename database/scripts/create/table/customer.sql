@@ -9,10 +9,10 @@ DROP TABLE IF EXISTS shop.customer;
 CREATE TABLE IF NOT EXISTS shop.customer (
     reference SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    birthday DATE,
+    birthday DATE DEFAULT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
-    password TEXT,
-    phone_number VARCHAR(20),
+    password TEXT DEFAULT NULL,
+    phone_number VARCHAR(20) DEFAULT NULL,
     authentication shop.auth_type NOT NULL,
     role shop.role_type NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
