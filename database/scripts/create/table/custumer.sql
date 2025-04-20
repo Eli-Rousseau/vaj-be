@@ -15,6 +15,6 @@ CREATE TABLE IF NOT EXISTS shop.customer (
     phone_number VARCHAR(20),
     authentication shop.auth_type NOT NULL,
     role shop.role_type NOT NULL,
-    registered_at TIMESTAMP NOT NULL, 
-    updated_at TIMESTAMP NOT NULL
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 );

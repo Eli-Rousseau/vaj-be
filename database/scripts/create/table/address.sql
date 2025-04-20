@@ -13,8 +13,8 @@ CREATE TABLE shop.address (
     street VARCHAR(255) NOT NULL,
     street_number VARCHAR(255) NOT NULL,
     box VARCHAR(255),
-    registered_at TIMESTAMP NOT NULL, 
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     -- Composite primary key
     PRIMARY KEY (customer, type),
