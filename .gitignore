@@ -2,8 +2,8 @@
 *.js
 
 # Database
-/database/backups/full/history/
-/database/backups/schema-only/history/
+/database/backups/full/history/*
+/database/backups/schema-only/history/*
 
 # Node packages
 /node_modules/

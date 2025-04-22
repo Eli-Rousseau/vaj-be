@@ -32,7 +32,7 @@ async function main() {
     database || "vintage_archive_jungle"
   } -h ${host || "localhost"} -p ${port || "5432"} -U ${
     user || "administrator"
-  } -F tar -f ${output}`;
+  } -F tar -f ${output} ${schemaOnly ? "-s" : ""}`;
 
   // Start the backup subprocess
   exec(command, (error, stdout, stderr) => {
