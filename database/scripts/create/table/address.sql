@@ -5,7 +5,8 @@ CREATE TYPE shop.address_type AS ENUM ('SHIPPING', 'BILLING', 'BOTH');
 DROP TABLE IF EXISTS shop.address;
 
 CREATE TABLE shop.address (
-    customer INT NOT NULL,
+    reference SERIAL PRIMARY KEY,
+    user INT NOT NULL,
     type shop.address_type NOT NULL,
     country VARCHAR(255) NOT NULL,
     city VARCHAR(255) NOT NULL,
@@ -15,12 +16,7 @@ CREATE TABLE shop.address (
     box VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    -- Composite primary key
-    PRIMARY KEY (customer, type),
-
-    -- Foreign key constraint
-    CONSTRAINT address_customer_fk
-        FOREIGN KEY (customer) REFERENCES shop.customer(reference)
+    CONSTRAINT address_user_fk
+        FOREIGN KEY (user) REFERENCES shop.user(reference)
         ON DELETE CASCADE
 );

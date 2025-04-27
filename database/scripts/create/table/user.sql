@@ -4,15 +4,16 @@ DROP TYPE IF EXISTS shop.role_type;
 CREATE TYPE shop.auth_type AS ENUM ('INTERN', 'GOOGLE', 'APPLE');
 CREATE TYPE shop.role_type AS ENUM ('SYSTEM DEVELOPER', 'ADMINISTRATOR', 'SUPERUSER', 'USER');
 
-DROP TABLE IF EXISTS shop.customer;
+DROP TABLE IF EXISTS shop.user;
 
-CREATE TABLE IF NOT EXISTS shop.customer (
+CREATE TABLE IF NOT EXISTS shop.user (
     reference SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     birthday DATE DEFAULT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
-    password TEXT DEFAULT NULL,
     phone_number VARCHAR(20) DEFAULT NULL,
+    password TEXT DEFAULT NULL,
+    salt TEXT DEFAULT NULL,
     authentication shop.auth_type NOT NULL,
     role shop.role_type NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 

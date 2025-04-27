@@ -1,5 +1,5 @@
-# Typescript files
-*.js
+# Dist folder
+/dist/
 
 # Database
 /database/backups/full/history/*
@@ -7,3 +7,6 @@
 
 # Node packages
 /node_modules/
+
+# .env files
+/.env*

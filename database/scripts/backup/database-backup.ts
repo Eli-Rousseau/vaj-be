@@ -1,25 +1,31 @@
 import { exec } from "child_process";
 import { copyFile } from "fs";
+import { loadStage } from "../../../scripts/utils/stage"
 
 import { rl, askQuestion } from "../../../scripts/utils/prompt";
 
 async function main() {
+  // Start by loading the stage variable
+  loadStage();
+
+  // Import the environment variables
+  const DATABASE: string = process.env.DATABASE_NAME || "vintage_archive_jungle";
+  const HOST: string = process.env.DATABSE_HOST || "localhost";
+  const PORT: string = process.env.DATABASE_PORT || "5432";
+  const USER: string = process.env.DATABSE_USER || "administrator";
+
   // Readin user input
-  const database: string = await askQuestion(
-    "Database name (default: vintage_archive_jungle): "
-  );
-  const host: string = await askQuestion("Host name (default: localhost): ");
-  const port: string = await askQuestion("Port (default: 5432): ");
-  const user: string = await askQuestion("User (default: administrator): ");
-  const schema: string = await askQuestion(
-    "Schema-only backup (default: no): "
-  );
+  const database: string =
+    (await askQuestion(`Database name (default: ${DATABASE}): `)) || DATABASE;
+  const host: string =
+    (await askQuestion(`Host name (default: ${HOST}): `)) || HOST;
+  const port: string = (await askQuestion(`Port (default: ${PORT}): `)) || PORT;
+  const user: string = (await askQuestion(`User (default: ${USER}): `)) || USER;
+  const schemaOnly: boolean =
+    /y/i.test(await askQuestion("Schema-only backup (default: no): ")) || false;
 
   // Close the input stream
   rl.close();
-
-  // Determine whether backup requires to be schema-only
-  const schemaOnly = /y/i.test(schema) || false;
 
   // Define the output file
   const timestamp: Date = new Date();
@@ -28,11 +34,9 @@ async function main() {
   }/database_backup.tar`;
 
   // Format the backup command string
-  const command: string = `pg_dump -d ${
-    database || "vintage_archive_jungle"
-  } -h ${host || "localhost"} -p ${port || "5432"} -U ${
-    user || "administrator"
-  } -F tar -f ${output} ${schemaOnly ? "-s" : ""}`;
+  const command: string = `pg_dump -d ${database} -h ${host} -p ${port} -U ${user} -F tar -f ${output} ${
+    schemaOnly ? "-s" : ""
+  }`;
 
   // Start the backup subprocess
   exec(command, (error, stdout, stderr) => {
@@ -72,5 +76,7 @@ async function main() {
     });
   });
 }
+
+export default main;
 
 main();

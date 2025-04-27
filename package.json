@@ -4,14 +4,16 @@
   "description": "vintage archive jungle - backend project",
   "main": "index.js",
   "scripts": {
-    "database-backup": "tsc ./database/scripts/backup/database-backup.ts && node ./database/scripts/backup/database-backup.js"
+    "database-backup": "tsc && node ./dist/database/scripts/backup/database-backup.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "typescript": "^5.8.3"
+    "tsconfig-paths": "^4.2.0"
   },
   "devDependencies": {
-    "@types/node": "^22.14.1"
+    "@types/node": "^22.14.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   }
 }
