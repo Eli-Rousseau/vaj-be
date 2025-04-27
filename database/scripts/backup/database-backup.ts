@@ -6,7 +6,7 @@ import { rl, askQuestion } from "../../../scripts/utils/prompt";
 
 async function main() {
   // Start by loading the stage variable
-  loadStage();
+  await loadStage();
 
   // Import the environment variables
   const DATABASE: string = process.env.DATABASE_NAME || "vintage_archive_jungle";
