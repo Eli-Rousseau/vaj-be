@@ -1,45 +1,56 @@
 import * as fs from "fs";
 import * as path from "path";
 
+import Logger from "./logger";
+
 enum Stage {
   dev = "dev",
   prod = "prod",
 }
 
-// Now loadStage returns a Promise
+// Async helper function for loading the environmental variables
 function loadStage(): Promise<void> {
   return new Promise((resolve, reject) => {
+    // Determine the stage from the command arguments
     const stage: Stage = process.argv.includes("prod") ? Stage.prod : Stage.dev;
+
+    // Saving the stage to process.env
+    process.env["STAGE"] = stage;
+    Logger.debug(`Loading the ${stage} environmental variables.`);
+
+    // Determine the root of the project
     const root: string = process.cwd();
 
+    // Read the content of the root
     fs.readdir(root, (error, files) => {
       if (error) {
-        console.error(
-          `\x1b[31m[ERROR]\x1b[0m Unable to read files from project root: ${error}`
-        );
+        Logger.error(`Unable to read files from project root: ${error}`);
         return reject(error);
       }
 
+      // Filter the relevant .env files
       const envFiles: string[] = files.filter((file) => {
         return file.includes(`${stage}`) && file.includes(".env");
       });
 
+      // Initialize a variable map
       const variables: Map<string, string> = new Map();
+
+      // Number of env files
       let filesLeft = envFiles.length;
 
       if (filesLeft === 0) {
-        console.warn(`\x1b[33m[WARNING]\x1b[0m No environment files found for stage '${stage}'.`);
+        Logger.warning(`No environment files found for stage '${stage}'.`);
         return resolve();
       }
 
       envFiles.forEach((fileName) => {
         const filePath: string = path.join(root, fileName);
 
+        // Reading the variables from the file content
         fs.readFile(filePath, "utf-8", (error, data) => {
           if (error) {
-            console.error(
-              `\x1b[31m[ERROR]\x1b[0m Could not read file ${fileName}: ${error}`
-            );
+            Logger.error(`Could not read file ${fileName}: ${error}`);
           } else {
             const lines: string[] = data.split(/\n/);
             lines.forEach((line) => {
@@ -54,11 +65,12 @@ function loadStage(): Promise<void> {
 
           filesLeft--;
 
+          // Save the variables in the process.env
           if (filesLeft === 0) {
             variables.forEach((value, key) => {
               process.env[key] = value;
             });
-            console.log(`\x1b[32m[INFO]\x1b[0m Loaded ${variables.size} environment variables.`);
+            Logger.info(`Loaded ${variables.size} environment variables.`);
             resolve();
           }
         });

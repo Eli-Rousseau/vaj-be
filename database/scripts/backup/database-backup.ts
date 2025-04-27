@@ -1,15 +1,17 @@
 import { exec } from "child_process";
 import { copyFile } from "fs";
-import { loadStage } from "../../../scripts/utils/stage"
+import { loadStage } from "../../../scripts/utils/stage";
 
 import { rl, askQuestion } from "../../../scripts/utils/prompt";
+import Logger from "../../../scripts/utils/logger";
 
 async function main() {
   // Start by loading the stage variable
   await loadStage();
 
   // Import the environment variables
-  const DATABASE: string = process.env.DATABASE_NAME || "vintage_archive_jungle";
+  const DATABASE: string =
+    process.env.DATABASE_NAME || "vintage_archive_jungle";
   const HOST: string = process.env.DATABSE_HOST || "localhost";
   const PORT: string = process.env.DATABASE_PORT || "5432";
   const USER: string = process.env.DATABSE_USER || "administrator";
@@ -22,7 +24,9 @@ async function main() {
   const port: string = (await askQuestion(`Port (default: ${PORT}): `)) || PORT;
   const user: string = (await askQuestion(`User (default: ${USER}): `)) || USER;
   const schemaOnly: boolean =
-    /y/i.test(await askQuestion("Schema-only backup (default: no): ")) || false;
+    /y/i.test(
+      await askQuestion("Schema-only backup [yes/no] (default: no): ")
+    ) || false;
 
   // Close the input stream
   rl.close();
@@ -41,21 +45,19 @@ async function main() {
   // Start the backup subprocess
   exec(command, (error, stdout, stderr) => {
     if (error) {
-      console.error(
-        `\x1b[31m[ERROR]\x1b[0m The backup process failed: ${error}`
-      );
+      Logger.error(`The database backup process failed: ${error}`);
       return;
     }
 
     if (stderr) {
-      console.error(
-        `\x1b[31m[DEBUG]\x1b[0m The backup process generated an error stream: ${stderr}`
+      Logger.error(
+        `The database backup process generated an error stream: ${stderr}`
       );
       return;
     }
 
-    console.log(
-      `\x1b[31m[DEBUG]\x1b[0m The backup process terminated with an output stream: ${stdout}`
+    Logger.debug(
+      `The database backup process terminated with an output stream: ${stdout}`
     );
 
     // Copy the output file to the history directory
@@ -64,15 +66,11 @@ async function main() {
     }/history/${timestamp.toISOString()}.tar`;
     copyFile(output, copy, (error) => {
       if (error) {
-        console.error(
-          `\x1b[31m[ERROR]\x1b[0m The backup file could not be copied: ${error}`
-        );
+        Logger.error(`The database backup file could not be copied: ${error}`);
         return;
       }
 
-      console.log(
-        `\x1b[31m[INFO]\x1b[0m The backup file was copied to the history directory.`
-      );
+      Logger.debug(`The backup file was copied to the history directory.`);
     });
   });
 }
