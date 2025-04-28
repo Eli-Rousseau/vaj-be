@@ -43,4 +43,4 @@ sudo service postgresql stop
 create administrator user
 
 pg_dump -d vintage_archive_jungle -h localhost -p 5432 -U administrator -F tar -f ./database/backups/full/my-backup.tar
-npm run database-backup
+npm run database-backup dev

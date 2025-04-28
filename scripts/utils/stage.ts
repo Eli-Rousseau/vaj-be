@@ -16,7 +16,7 @@ function loadStage(): Promise<void> {
 
     // Saving the stage to process.env
     process.env["STAGE"] = stage;
-    Logger.debug(`Loading the ${stage} environmental variables.`);
+    Logger.info(`Loading the "${stage}" environmental variables.`);
 
     // Determine the root of the project
     const root: string = process.cwd();
@@ -70,7 +70,7 @@ function loadStage(): Promise<void> {
             variables.forEach((value, key) => {
               process.env[key] = value;
             });
-            Logger.info(`Loaded ${variables.size} environment variables.`);
+            Logger.debug(`Loaded ${variables.size} environment variables.`);
             resolve();
           }
         });

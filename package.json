@@ -4,7 +4,8 @@
   "description": "vintage archive jungle - backend project",
   "main": "index.js",
   "scripts": {
-    "database-backup": "tsc && node ./dist/database/scripts/backup/database-backup.js"
+    "database-backup": "tsc && node ./dist/database/scripts/backup/database-backup.js",
+    "database-restore": "tsc && node ./dist/database/scripts/backup/database-restore.js"
   },
   "author": "",
   "license": "ISC",

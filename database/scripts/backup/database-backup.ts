@@ -6,7 +6,7 @@ import { rl, askQuestion } from "../../../scripts/utils/prompt";
 import Logger from "../../../scripts/utils/logger";
 
 async function main() {
-  // Start by loading the stage variable
+  // Loading the stage variable
   await loadStage();
 
   // Import the environment variables
