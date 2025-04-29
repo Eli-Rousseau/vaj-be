@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "database-backup": "tsc && node ./dist/database/scripts/backup/database-backup.js",
-    "database-restore": "tsc && node ./dist/database/scripts/backup/database-restore.js"
+    "database-restore": "tsc && node ./dist/database/scripts/backup/database-restore.js",
+    "database-setup": "tsc && node ./dist/database/scripts/setup/database-setup.js"
   },
   "author": "",
   "license": "ISC",
