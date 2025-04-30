@@ -1,3 +1,5 @@
+\o /dev/null;
+
 DROP DATABASE IF EXISTS vintage_archive_jungle;
 
 CREATE DATABASE vintage_archive_jungle;
@@ -15,13 +17,14 @@ BEGIN
         REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA shop FROM administrator;
         REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA shop FROM administrator;
 
+        REASSIGN OWNED BY administrator TO CURRENT_USER;
         DROP OWNED BY administrator;
 
         DROP USER administrator;
     END IF;
 END $$;
 
-CREATE USER administrator WITH PASSWORD 'my_password';
+CREATE USER administrator WITH PASSWORD :password;
 
 GRANT CONNECT ON DATABASE vintage_archive_jungle TO administrator;
 GRANT USAGE ON SCHEMA shop TO administrator;
