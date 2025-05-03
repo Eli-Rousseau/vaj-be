@@ -1,7 +1,7 @@
 # Dist folder
 /dist/
 
-# Database
+# Database backups
 /database/backups/full/history/*
 /database/backups/schema-only/history/*
 

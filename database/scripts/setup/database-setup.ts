@@ -64,9 +64,9 @@ async function main() {
   const userCommand = `psql -h ${host} -p ${port} -U ${defaultUser} -d ${database} -v password="'${password}'" -f "${userScript}"`;
 
   // Running the setup scripts
-  await runSqlScript(dbCommand, "Database Creation");
-  await runSqlScript(schemaCommand, "Schema Creation");
-  await runSqlScript(userCommand, "Administrator User Creation");
+  await runSqlScript(dbCommand, "Database creation");
+  await runSqlScript(schemaCommand, "Schema creation");
+  await runSqlScript(userCommand, "Administrator user creation");
 }
 
 main();

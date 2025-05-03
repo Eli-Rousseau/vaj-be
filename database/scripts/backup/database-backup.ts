@@ -1,9 +1,9 @@
-import { exec } from "child_process";
 import { copyFile } from "fs";
 import { loadStage } from "../../../scripts/utils/stage";
 
-import { rl, askQuestion } from "../../../scripts/utils/prompt";
 import Logger from "../../../scripts/utils/logger";
+import { rl, askQuestion } from "../../../scripts/utils/prompt";
+import { runSqlScript } from "../../../scripts/utils/sql";
 
 async function main() {
   // Loading the stage variable
@@ -42,39 +42,21 @@ async function main() {
     schemaOnly ? "-s" : ""
   }`;
 
-  // Start the backup subprocess
-  exec(command, (error, stdout, stderr) => {
+  // Start the backup process
+  await runSqlScript(command, "Database backup");
+
+  // Copy the output file to the history directory
+  const copy: string = `./database/backups/${
+    schemaOnly ? "schema-only" : "full"
+  }/history/${timestamp.toISOString()}.tar`;
+  copyFile(output, copy, (error) => {
     if (error) {
-      Logger.error(`The database backup process failed: ${error}`);
-      return;
+      Logger.error(`The database backup file could not be copied: ${error}`);
+      process.exit(1);
     }
 
-    if (stderr) {
-      Logger.error(
-        `The database backup process generated an error stream: ${stderr}`
-      );
-      return;
-    }
-
-    Logger.debug(
-      `The database backup process terminated with an output stream: ${stdout}`
-    );
-
-    // Copy the output file to the history directory
-    const copy: string = `./database/backups/${
-      schemaOnly ? "schema-only" : "full"
-    }/history/${timestamp.toISOString()}.tar`;
-    copyFile(output, copy, (error) => {
-      if (error) {
-        Logger.error(`The database backup file could not be copied: ${error}`);
-        return;
-      }
-
-      Logger.debug(`The backup file was copied to the history directory.`);
-    });
+    Logger.info(`The backup file was copied to the history directory.`);
   });
 }
-
-export default main;
 
 main();
