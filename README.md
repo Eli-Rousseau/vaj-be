@@ -39,9 +39,3 @@ sudo service postgresql stop
 ```
 
 [Here](https://tableplus.com/blog/2018/10/how-to-start-stop-restart-postgresql-server.html) is some usefull link for starting up a PostgreSQL server.
-
-create administrator user
-
-pg_dump -d vintage_archive_jungle -h localhost -p 5432 -U administrator -F tar -f ./database/backups/full/my-backup.tar
-psql -h localhost -p 5432 -U postgres -d vintage_archive_jungle -f "database/scripts/create/user/administrator.sql"
-npm run database-backup dev
