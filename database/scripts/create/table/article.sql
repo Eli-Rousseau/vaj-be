@@ -8,12 +8,33 @@ CREATE TYPE shop.condition AS ENUM ('NEW', 'GREAT', 'MODERATE', 'POOR');
 
 DROP TYPE IF EXISTS shop.brand;
 CREATE TYPE shop.brand AS ENUM (
-	'Unknown', 
+    'Unbranded',
 	'Roberto Cavali', 
 	'Just Cavali', 
 	'Dolce & Gabbana', 
 	'Dior', 
-	'Guiliano Galiano'
+	'John Galliano',
+    'Versace',
+    'Blumarine',
+    'Moschino',
+    'Alexander McQueen',
+    'Chloé',
+    'Jean Paul Gaultier',
+    'Betsey Johnson',
+    'Channel',
+    'Gucci',
+    'Prada',
+    'Cop Copine',
+    'Emilio Pucci',
+    'Escada',
+    'Fendi',
+    'Muxart',
+    'Gaetano Navarra',
+    'Gianfranco Ferre',
+    'Giuseppe Zanotti',
+    'Fayazi',
+    'Maison Margiela',
+    'Lexus'
 );
 
 DROP TYPE IF EXISTS shop.category;
