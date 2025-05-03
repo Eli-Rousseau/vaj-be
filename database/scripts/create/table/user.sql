@@ -6,7 +6,7 @@ CREATE TYPE shop.role_type AS ENUM ('SYSTEM DEVELOPER', 'ADMINISTRATOR', 'SUPERU
 
 DROP TABLE IF EXISTS shop.user;
 
-CREATE TABLE IF NOT EXISTS shop.user (
+CREATE TABLE shop.user (
     reference SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     birthday DATE DEFAULT NULL,
@@ -17,5 +17,5 @@ CREATE TABLE IF NOT EXISTS shop.user (
     authentication shop.auth_type NOT NULL,
     role shop.role_type NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

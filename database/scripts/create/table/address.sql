@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS shop.address;
 
 CREATE TABLE shop.address (
     reference SERIAL PRIMARY KEY,
-    user INT NOT NULL,
+    "user" INT NOT NULL,
     type shop.address_type NOT NULL,
     country VARCHAR(255) NOT NULL,
     city VARCHAR(255) NOT NULL,
@@ -15,8 +15,8 @@ CREATE TABLE shop.address (
     street_number VARCHAR(255) NOT NULL,
     box VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT address_user_fk
-        FOREIGN KEY (user) REFERENCES shop.user(reference)
+        FOREIGN KEY ("user") REFERENCES shop.user(reference)
         ON DELETE CASCADE
 );
