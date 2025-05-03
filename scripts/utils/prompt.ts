@@ -11,7 +11,7 @@ function askQuestion(query: string): Promise<string> {
 }
 
 // Helper function to ask a question and hides the user input
-function askQuestionHiddenInput(query: string): Promise<string> {
+function askQuestionWithHiddenInput(query: string): Promise<string> {
   return new Promise((resolve) => {
     const stdin = process.stdin;
     const onData = (char: Buffer) => {
@@ -30,4 +30,4 @@ function askQuestionHiddenInput(query: string): Promise<string> {
   });
 }
 
-export { rl, askQuestion, askQuestionHiddenInput };
+export { rl, askQuestion, askQuestionWithHiddenInput };

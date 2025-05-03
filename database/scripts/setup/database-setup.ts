@@ -1,15 +1,37 @@
 import { exec } from "child_process";
 import { cwd } from "process";
+import { promisify } from "util";
 
-import { askQuestionHiddenInput, rl } from "../../../scripts/utils/prompt";
+import { askQuestionWithHiddenInput, rl } from "../../../scripts/utils/prompt";
 import { loadStage } from "../../../scripts/utils/stage";
 import Logger from "../../../scripts/utils/logger";
+
+const execAsync = promisify(exec);
+
+async function runSqlScript(command: string, stepName: string) {
+  try {
+    const { stdout, stderr } = await execAsync(command);
+    if (stderr) {
+      Logger.debug(`${stepName} generated an error stream: ${stderr}`);
+      process.exit(1);
+    }
+    Logger.info(`${stepName} finished successfully.`);
+    if (stdout) {
+      Logger.debug(`${stepName} generated an output stream: ${stdout}`);
+    }
+  } catch (error) {
+    Logger.error(`${stepName} failed: ${error}`);
+    process.exit(1);
+  }
+}
 
 async function main() {
   // Loading the stage environment
   await loadStage();
 
   // Import the environmental variables
+  const database: string = process.env.DATABASE_NAME || "vintage_archive_jungle";
+  const user: string = process.env.DATABASE_USER || "administrator";
   const host: string = process.env.DATABSE_HOST || "localhost";
   const port: string = process.env.DATABASE_PORT || "5432";
 
@@ -21,7 +43,7 @@ async function main() {
   let password: string = "";
   while (!password) {
     password =
-      (await askQuestionHiddenInput(
+      (await askQuestionWithHiddenInput(
         `Enter a password to setup the administrator user: `
       )) || "";
   }
@@ -29,31 +51,22 @@ async function main() {
   // Close the input stream
   rl.close();
 
-  // Define path to file
-  const path: string = cwd() + "/database/scripts/setup/setup.sql";
+  // Define the database creation script and command
+  const dbScript = `${cwd()}/database/scripts/create/database/vintage_archive_jungle.sql`;
+  const dbCommand = `psql -h ${host} -p ${port} -U ${defaultUser} -d ${defaultDatabase} -f "${dbScript}"`;
 
-  // Format the setup command string
-  const command: string = `psql -h ${host} -p ${port} -U ${defaultUser} -d ${defaultDatabase} -v password="'${password}'" -f "${path}"`;
+  // Define the schema creation script and command
+  const schemaScript = `${cwd()}/database/scripts/create/schema/shop.sql`;
+  const schemaCommand = `psql -h ${host} -p ${port} -U ${defaultUser} -d ${defaultDatabase} -f "${schemaScript}"`;
 
-  // Start the databse setup process
-  exec(command, (error, stdout, stderr) => {
-    if (error || stderr) {
-      Logger.error(`The database setup process failed: ${error}`);
-      if (stderr) {
-        Logger.debug(
-          `The database setup process generated an error stream: ${stderr}`
-        );
-      }
-      return;
-    }
+  // Define the admininistrator user creation script and command
+  const userScript = `${cwd()}/database/scripts/create/user/administrator.sql`;
+  const userCommand = `psql -h ${host} -p ${port} -U ${defaultUser} -d ${database} -v password="'${password}'" -f "${userScript}"`;
 
-    Logger.info("The database setup process finished successfully.");
-    if (stdout) {
-      Logger.debug(
-        `The database setup process terminated with an output stream: ${stdout}`
-      );
-    }
-  });
+  // Running the setup scripts
+  await runSqlScript(dbCommand, "Database Creation");
+  await runSqlScript(schemaCommand, "Schema Creation");
+  await runSqlScript(userCommand, "Administrator User Creation");
 }
 
 main();
