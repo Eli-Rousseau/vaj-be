@@ -1,12 +1,65 @@
 # Vintage Archive Jungle
 
-This document serves as a guide with concise guidelines to help you setting up all the requirements of this development project. Note that this guides assumes one is working in a bash shell.
+## Table of Contents
 
-## Node
+1. [Node.js](#1-nodejs)
+2. [Environmental Variables](#2-environmental-variables)
+3. [Database](#3-database)
+   1. [Setting Up a PostgreSQL Server and Create a Client Connection With pgAdmin](#31-setting-up-a-postgresql-server-and-create-a-client-connection-with-pgadmin)
+   2. [Setting Up the Database](#32-setting-up-the-database)
+   3. [Restoring the Database](#33-restoring-the-database)
+   4. [Backup of the Database](#34-backup-of-the-database)
 
-## 1. Database
+## Introduction
 
-### 1.1 Setting Up a PostgreSQL Server and Create a Client Connection With pgAdmin
+This document provides a step-by-step guide to setting up the **Vintage Archive Jungle** development environment. It includes instructions for installing Node.js, configuring environment variables, and managing a PostgreSQL database.
+
+> *Note: These instructions assume you are working in a Bash shell environment.*
+
+## 1. Node.js
+
+Most of the development in this project is made in Node.js. To get started with development in this project you will have to visit the [official Node.js website](https://nodejs.org/en), download and excute the installer for your operating system. You can control wether Node.js was correctly installed by starting a terminal and run the command:
+
+```shell
+node --version
+```
+
+Node.js comes with the node version manager (nvm), which can be used to install and switch to Node.js v22.15.0 using the following command:
+
+```shell
+nvm install 22.15.0
+nvm use 22.15.0
+```
+
+It is not a madatory requirement, but you can as well use the same version (v.10.9.2) of the node package manager (npm) by running the command in your terminal:
+
+```shell
+npm install -g npm@10.9.2
+```
+
+Finally to install all the third-paty Node.js modules you will have to run the command:
+
+```shell
+npm install
+```
+
+## 2. Environmental Variables
+
+To leverage all the functionalities of this developmental project you will have to also include one or more environmental files with the developmental variables requires in this project. All the environmental file names should comply with these two citerias: (1) start with the prefix `.env`, and (2) have either `dev` or `prod` anywhere else in the name.
+
+To correctly setup an envronmental file it must include the following variables (e.g. `.env-dev`):
+
+```
+# Database variables
+DATABASE_NAME=vintage_archive_jungle
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=administrator
+```
+
+## 3. Database
+
+### 3.1. Setting Up a PostgreSQL Server and Create a Client Connection With pgAdmin
 
 Follow these simple instructions for setting up a PostgreSQL server and connecting to it with pgAdmin:
 
@@ -42,7 +95,7 @@ Follow these simple instructions for setting up a PostgreSQL server and connecti
 
 [Here](https://tableplus.com/blog/2018/10/how-to-start-stop-restart-postgresql-server.html) is some usefull link for starting up a PostgreSQL server.
 
-### 1.2 Setting Up the Database
+### 3.2 Setting Up the Database
 
 Whenever seting up this project for the first time on your machine it is recommended to run the database setup script. It is an `npm` script that you can run using the following command:
 
@@ -52,11 +105,11 @@ npm run database-setup dev
 
 This script helps setting up the `vintage_archive_jungle` database, the `shop` schema, and create a new user on the database named `administrator` with certain privileges.
 
-> All npm scripts in this project requires to provide `dev` or `prod` as latest argument, to enable reading the variables from your corresponding `.env` files.
+> *All npm scripts in this project requires to provide `dev` or `prod` as latest argument, to enable reading the variables from your corresponding `.env` files.*
 
-### 1.3 Restoring the Database
+### 3.3 Restoring the Database
 
-The project includes two backups of the database: (1) *a full archive* of the database with all its data, and (2) *a schema-only archive* of the database. These files can be used to load a copy of the database for this project. To load such a backup you can use the database restore script. It is another `npm` script that relies on the `pg_restore` utility and which you can execute using the command:
+The project includes two backups of the database: (1) _a full archive_ of the database with all its data, and (2) _a schema-only archive_ of the database. These files can be used to load a copy of the database for this project. To load such a backup you can use the database restore script. It is another `npm` script that relies on the `pg_restore` utility and which you can execute using the command:
 
 ```shell
 npm run database-restore dev
@@ -64,7 +117,7 @@ npm run database-restore dev
 
 The script will prompt you to choose which type of backup you would like to run, either the entire database or only the schema.
 
-### 1.4 Backup of the Database
+### 3.4 Backup of the Database
 
 The project also provides an npm script that enables to create a backup of the database with the `pg_dump` utility and can be executed using the command:
 
