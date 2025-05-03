@@ -1,4 +1,3 @@
-import { exec } from "child_process";
 import { fileExistsSync } from "tsconfig-paths/lib/filesystem";
 
 import Logger from "../../../scripts/utils/logger";
@@ -16,6 +15,7 @@ async function main() {
   const USER: string = process.env.DATABASE_USER || "administrator";
   const HOST: string = process.env.DATABASE_HOST || "host";
   const PORT: string = process.env.DATABASE_PORT || "5432";
+  const STAGE: string = process.env.STAGE || "dev";
 
   // Define the default database and user
   const defaultDatabase: string = "template1";
@@ -23,9 +23,15 @@ async function main() {
 
   // Path to database backups
   const fullDbBackup: string =
-    process.cwd() + "/database/backups/full/database_backup.tar";
+    process.cwd() +
+    `/database/backups/full/database_backup_${
+      STAGE === "dev" ? "dev" : "prod"
+    }.tar`;
   const schemaOnlyDbBackup: string =
-    process.cwd() + "/database/backups/schema-only/database_backup.tar";
+    process.cwd() +
+    `/database/backups/schema-only/database_backup_${
+      STAGE === "dev" ? "dev" : "prod"
+    }.tar`;
 
   // Readin user input
   const database: string =
@@ -34,7 +40,6 @@ async function main() {
     (await askQuestion(`Host name (default: ${HOST}): `)) || HOST;
   const port: string = (await askQuestion(`Port (default: ${PORT}): `)) || PORT;
   const user: string = (await askQuestion(`User (default: ${USER}): `)) || USER;
-  
 
   // Determine whether to restore the entire or schema database
   let schemaOnly: boolean;

@@ -15,6 +15,7 @@ async function main() {
   const HOST: string = process.env.DATABSE_HOST || "localhost";
   const PORT: string = process.env.DATABASE_PORT || "5432";
   const USER: string = process.env.DATABSE_USER || "administrator";
+  const STAGE: string = process.env.STAGE || "dev";
 
   // Readin user input
   const database: string =
@@ -35,7 +36,7 @@ async function main() {
   const timestamp: Date = new Date();
   const output: string = `./database/backups/${
     schemaOnly ? "schema-only" : "full"
-  }/database_backup.tar`;
+  }/database_backup_${STAGE === "dev" ? "dev" : "prod"}.tar`;
 
   // Format the backup command string
   const backupCommand: string = `pg_dump -d ${database} -h ${host} -p ${port} -U ${user} -F tar -f ${output} ${
@@ -48,7 +49,7 @@ async function main() {
   // Copy the output file to the history directory
   const copy: string = `./database/backups/${
     schemaOnly ? "schema-only" : "full"
-  }/history/${timestamp.toISOString()}.tar`;
+  }/history/${STAGE === "dev" ? "dev" : "prod"}/${timestamp.toISOString()}.tar`;
   copyFile(output, copy, (error) => {
     if (error) {
       Logger.error(`The database backup file could not be copied: ${error}`);
