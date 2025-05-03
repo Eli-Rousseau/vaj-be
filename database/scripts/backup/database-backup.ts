@@ -38,12 +38,12 @@ async function main() {
   }/database_backup.tar`;
 
   // Format the backup command string
-  const command: string = `pg_dump -d ${database} -h ${host} -p ${port} -U ${user} -F tar -f ${output} ${
+  const backupCommand: string = `pg_dump -d ${database} -h ${host} -p ${port} -U ${user} -F tar -f ${output} ${
     schemaOnly ? "-s" : ""
   }`;
 
   // Start the backup process
-  await runSqlScript(command, "Database backup");
+  await runSqlScript(backupCommand, "Database backup");
 
   // Copy the output file to the history directory
   const copy: string = `./database/backups/${
