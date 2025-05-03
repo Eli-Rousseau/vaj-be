@@ -1,29 +1,8 @@
-import { exec } from "child_process";
 import { cwd } from "process";
-import { promisify } from "util";
 
 import { askQuestionWithHiddenInput, rl } from "../../../scripts/utils/prompt";
 import { loadStage } from "../../../scripts/utils/stage";
-import Logger from "../../../scripts/utils/logger";
-
-const execAsync = promisify(exec);
-
-async function runSqlScript(command: string, stepName: string) {
-  try {
-    const { stdout, stderr } = await execAsync(command);
-    if (stderr) {
-      Logger.debug(`${stepName} generated an error stream: ${stderr}`);
-      process.exit(1);
-    }
-    Logger.info(`${stepName} finished successfully.`);
-    if (stdout) {
-      Logger.debug(`${stepName} generated an output stream: ${stdout}`);
-    }
-  } catch (error) {
-    Logger.error(`${stepName} failed: ${error}`);
-    process.exit(1);
-  }
-}
+import { runSqlScript } from "../../../scripts/utils/sql";
 
 async function main() {
   // Loading the stage environment
