@@ -1,0 +1,59 @@
+DROP TYPE IF EXISTS shop.category;
+CREATE TYPE shop.category AS ENUM (
+  -- Tops
+  'TOPS - T-SHIRT',
+  'TOPS - SHIRT',
+  'TOPS - BLOUSE',
+  'TOPS - TANK TOP',
+  'TOPS - SWEATER',
+  'TOPS - HOODIE',
+
+  -- Bottoms
+  'BOTTOMS - JEANS',
+  'BOTTOMS - TROUSERS',
+  'BOTTOMS - SHORTS',
+  'BOTTOMS - SKIRT',
+  'BOTTOMS - LEGGINGS',
+
+  -- Outerwear
+  'OUTERWEAR - JACKET',
+  'OUTERWEAR - COAT',
+  'OUTERWEAR - BLAZER',
+  'OUTERWEAR - PARKA',
+  'OUTERWEAR - RAINCOAT',
+
+  -- Dresses & Jumpsuits
+  'DRESSES - CASUAL',
+  'DRESSES - EVENING',
+  'DRESSES - GOWN',
+  'DRESSES - JUMPSUIT',
+  'DRESSES - ROMPER',
+
+  -- Bags
+  'BAGS - BACKPACK',
+  'BAGS - HANDBAG',
+  'BAGS - CROSSBODY',
+  'BAGS - TOTE',
+  'BAGS - CLUTCH',
+
+  -- Shoes
+  'SHOES - SNEAKERS',
+  'SHOES - BOOTS',
+  'SHOES - HEELS',
+  'SHOES - FLATS',
+  'SHOES - SANDALS',
+
+  -- Accessories
+  'ACCESSORIES - BELT',
+  'ACCESSORIES - SCARF',
+  'ACCESSORIES - HAT',
+  'ACCESSORIES - GLOVES',
+  'ACCESSORIES - SUNGLASSES',
+  'ACCESSORIES - JEWELRY',
+
+  -- Undergarments (optional category)
+  'UNDERGARMENTS - BRA',
+  'UNDERGARMENTS - UNDERWEAR',
+  'UNDERGARMENTS - SOCKS',
+  'UNDERGARMENTS - THERMALS'
+);

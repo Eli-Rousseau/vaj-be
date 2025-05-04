@@ -1,11 +1,4 @@
 DROP TABLE IF EXISTS shop.user;
-
-DROP TYPE IF EXISTS shop.auth_type;
-CREATE TYPE shop.auth_type AS ENUM ('INTERN', 'GOOGLE', 'APPLE');
-
-DROP TYPE IF EXISTS shop.role_type;
-CREATE TYPE shop.role_type AS ENUM ('SYSTEM DEVELOPER', 'ADMINISTRATOR', 'SUPERUSER', 'USER');
-
 CREATE TABLE shop.user (
     reference SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,

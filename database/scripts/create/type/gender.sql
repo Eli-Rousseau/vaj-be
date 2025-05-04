@@ -1,0 +1,2 @@
+DROP TYPE IF EXISTS shop.gender;
+CREATE TYPE shop.gender AS ENUM ('MENSWEAR', 'WOMENSWEAR', 'UNISEX');
