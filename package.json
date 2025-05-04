@@ -6,15 +6,21 @@
   "scripts": {
     "database-backup": "tsc && node ./dist/database/scripts/backup/database-backup.js",
     "database-restore": "tsc && node ./dist/database/scripts/backup/database-restore.js",
-    "database-setup": "tsc && node ./dist/database/scripts/setup/database-setup.js"
+    "database-setup": "tsc && node ./dist/database/scripts/setup/database-setup.js",
+    "api": "tsc && nodemon ./dist/api/server.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "express": "^5.1.0",
+    "pg": "^8.15.6",
     "tsconfig-paths": "^4.2.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.1",
     "@types/node": "^22.14.1",
+    "@types/pg": "^8.11.14",
+    "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }

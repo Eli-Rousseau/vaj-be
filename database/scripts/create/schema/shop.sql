@@ -1,3 +1,2 @@
 DROP SCHEMA IF EXISTS shop;
-
 CREATE SCHEMA shop;

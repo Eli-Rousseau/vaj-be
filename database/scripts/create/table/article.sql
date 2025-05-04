@@ -1,8 +1,12 @@
-DROP TABLE IF EXISTS shop.article;
 CREATE TABLE shop.article(
 	reference SERIAL PRIMARY KEY,
 	title VARCHAR(255) NOT NULL,
 	brand shop.brand NOT NULL,
+	CONSTRAINT article_brand_fk 
+		FOREIGN KEY (brand) 
+		REFERENCES shop.brand(reference)
+		ON DELETE NO ACTION
+		ON UPDATE CASCADE,
 	quantity INT DEFAULT 1 CHECK (quantity > 0),
 	category shop.category NOT NULL,
 	size shop.size NOT NULL,
