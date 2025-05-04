@@ -5,6 +5,7 @@ DROP TRIGGER IF EXISTS trigger_set_updated_at ON shop.article;
 DROP TRIGGER IF EXISTS trigger_set_updated_at ON shop.order;
 DROP TRIGGER IF EXISTS trigger_set_updated_at ON shop.order_article;
 DROP TRIGGER IF EXISTS trigger_set_updated_at ON shop.shipment_category;
+DROP TRIGGER IF EXISTS trigger_set_updated_at ON shop.role_permission;
 
 -- Now drop the function
 DROP FUNCTION IF EXISTS shop.set_updated_at();
@@ -46,5 +47,10 @@ EXECUTE FUNCTION shop.set_updated_at();
 
 CREATE TRIGGER trigger_set_updated_at
 BEFORE UPDATE ON shop.shipment_category
+FOR EACH ROW
+EXECUTE FUNCTION shop.set_updated_at();
+
+CREATE TRIGGER trigger_set_updated_at
+BEFORE UPDATE ON shop.role_permission
 FOR EACH ROW
 EXECUTE FUNCTION shop.set_updated_at();
