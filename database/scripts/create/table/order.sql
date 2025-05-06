@@ -1,20 +1,24 @@
-DROP TABLE IF EXISTS shop.order;
 CREATE TABLE shop.order (
     reference SERIAL PRIMARY KEY,
     "user" INT NOT NULL,
+    CONSTRAINT order_user_fk 
+        FOREIGN KEY ("user") 
+        REFERENCES shop.user(reference)
+        ON UPDATE CASCADE
+        ON DELETE NO ACTION,
     total_price FLOAT NOT NULL,
     currency shop.currency NOT NULL,
     payment_method shop.payment_method NOT NULL,
     status shop.order_status NOT NULL,
-	shipment_category INT NOT NULL,
+    order_type shop.order_type NOT NULL,
+    rental_start_date TIMESTAMP DEFAULT NULL,
+    rental_end_date TIMESTAMP DEFAULT NULL,
+    discount_coupon INT DEFAULT NULL,
+    CONSTRAINT order_discount_fk 
+        FOREIGN KEY (discount_coupon_reference) 
+        REFERENCES shop.discount_coupon(reference) 
+        ON DELETE NO ACTION 
+        ON UPDATE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT order_user_fk 
-		FOREIGN KEY ("user") REFERENCES shop.user(reference) 
-		ON DELETE NO ACTION
-		ON UPDATE CASCADE,
-	CONSTRAINT order_shipment_category_fk
-		FOREIGN KEY (shipment_category) REFERENCES shop.shipment_category(reference)
-		ON DELETE NO ACTION
-		ON UPDATE CASCADE
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

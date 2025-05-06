@@ -1,8 +1,6 @@
 /**
- * 1. Rewrite all the table creation scripts.
- * 2. Delete the address table and include the address on the customer and order tables.
- * 3. Leave the types as they are, don't convert them into tables.
- * 4. Write a script that can extract the table definitions.
+ * 1. Adapting the scripts for default user and database as well as the passwords
+ * 2. Write a script that can extract the table definitions.
  * 
  SELECT
   c.column_name,

@@ -1,0 +1,1 @@
+CREATE TYPE shop.discount_type AS ENUM ('PERCENTAGE', 'FIXED');

@@ -1,4 +1,3 @@
-DROP TYPE IF EXISTS shop.shipment_country;
 CREATE TYPE shop.shipment_country AS ENUM (
   'Afghanistan',
   'Albania',

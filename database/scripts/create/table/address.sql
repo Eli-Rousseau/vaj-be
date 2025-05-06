@@ -4,8 +4,8 @@ CREATE TABLE shop.address (
     CONSTRAINT address_user_fk 
         FOREIGN KEY ("user") 
         REFERENCES shop.user(reference)
-        ON DELETE NO ACTION
         ON UPDATE CASCADE,
+        ON DELETE NO ACTION,
     country VARCHAR(255) NOT NULL,
     city VARCHAR(255) NOT NULL,
     zip_code VARCHAR(255) NOT NULL,

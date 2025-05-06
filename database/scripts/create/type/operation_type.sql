@@ -1,2 +1,1 @@
-DROP TYPE IF EXISTS shop.operation_type;
-CREATE TYPE shop.operation_type AS ENUM ('view', 'create', 'update', 'delete');
+CREATE TYPE shop.operation_type AS ENUM ('VIEW', 'CREATE', 'UPDATE', 'DELETE');

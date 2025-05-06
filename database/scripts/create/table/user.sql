@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS shop.user;
 CREATE TABLE shop.user (
     reference SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,

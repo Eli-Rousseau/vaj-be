@@ -1,2 +1,13 @@
-DROP TYPE IF EXISTS shop.availability;
-CREATE TYPE shop.availability AS ENUM ('AVAILABLE', 'UNAVAILABLE');
+CREATE TYPE shop.availability AS ENUM (
+  'AVAILABLE',
+  'DAMAGED',
+  'FOR_RENT',
+  'FOR_SALE',
+  'INACTIVE',
+  'IN_TRANSIT',
+  'OUT_OF_STOCK',
+  'RENTED',
+  'RESERVED',
+  'RETURNED',
+  'SOLD'
+);

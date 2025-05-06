@@ -1,4 +1,3 @@
-DROP TABLE IF EXISTS shop.role_permission;
 CREATE TABLE shop.role_permission (
 	reference SERIAL PRIMARY KEY,
 	"role" shop.role_type NOT NULL,
@@ -6,5 +5,6 @@ CREATE TABLE shop.role_permission (
 	"table" shop.table NOT NULL,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	CONSTRAINT unique_role_operation_table UNIQUE ("role", operation_type, "table")
+	CONSTRAINT unique_role_operation_table 
+		UNIQUE ("role", operation_type, "table")
 );

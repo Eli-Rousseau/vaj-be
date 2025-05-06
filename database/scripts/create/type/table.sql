@@ -1,10 +1,12 @@
-DROP TYPE IF EXISTS shop.table;
 CREATE TYPE shop.table AS ENUM (
-	'address', 
-	'article', 
-	'order', 
-	'order_article', 
-	'shipment_category', 
-	'role_permission', 
-	'user'
+	'ADDRESS', 
+	'ARTICLE',
+	'CATEGORY',
+	'DISCOUNT_CODE',
+	'FAVORITE',
+	'ORDER', 
+	'ORDER_ARTICLE', 
+	'ROLE_PERMISSION',
+	'SHIPMENT_CATEGORY',
+	'USER'
 );

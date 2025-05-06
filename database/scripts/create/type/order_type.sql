@@ -1,0 +1,1 @@
+CREATE TYPE shop.order_type AS ENUM ('SALE', 'RENTAL');
