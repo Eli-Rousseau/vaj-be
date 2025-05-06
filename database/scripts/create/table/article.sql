@@ -38,12 +38,3 @@ CREATE TABLE shop.article(
 	width FLOAT NOT NULL,
 	depth FLOAT NOT NULL
 );
-	
-	
-	
-	
-	
-	
-	
-	
-);
