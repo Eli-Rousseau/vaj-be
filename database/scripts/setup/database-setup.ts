@@ -9,21 +9,26 @@ async function main() {
   await loadStage();
 
   // Import the environmental variables
-  const database: string = process.env.DATABASE_NAME || "vintage_archive_jungle";
-  const user: string = process.env.DATABASE_USER || "administrator";
-  const host: string = process.env.DATABSE_HOST || "localhost";
-  const port: string = process.env.DATABASE_PORT || "5432";
+  const databasePort: string = process.env.DATABASE_PORT || "";
+  const databaseHost: string = process.env.DATABASE_HOST || "";
 
-  // Define the default database and user
-  const defaultDatabase: string = "template1";
-  const defaultUser: string = "postgres";
+  const databaseVAJ: string = process.env.DATABASE_VAJ || "";
+  const databaseAdminUserName: string =
+    process.env.DATABASE_ADMINISTRATOR_USER_NAME || "";
+  const databaseAdminUserPassword: string =
+    process.env.DATABASE_ADMINISTRATOR_USER_PASSWORD || "";
 
-  // Readin the administrator user password
+  const databaseDefault: string = process.env.DATABASE_DEFAULT || "";
+  const databaseDefaultUserName: string =
+    process.env.DATABASE_DEFAULT_USER_NAME || "";
+  const databaseDefaultUserPassword: string =
+    process.env.DATABASE_DEFAULT_USER_PASSWORD || "";
+
   let password: string = "";
   while (!password) {
     password =
       (await askQuestionWithHiddenInput(
-        `Enter a password to setup the administrator user: `
+        "Enter a password to setup the administrator user"
       )) || "";
   }
 
@@ -32,15 +37,15 @@ async function main() {
 
   // Define the database creation script and command
   const dbScript = `${cwd()}/database/scripts/create/database/vintage_archive_jungle.sql`;
-  const dbCommand = `psql -h ${host} -p ${port} -U ${defaultUser} -d ${defaultDatabase} -f "${dbScript}"`;
+  const dbCommand = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseDefault} -f "${dbScript}"; unset PGPASSWORD`;
 
   // Define the schema creation script and command
   const schemaScript = `${cwd()}/database/scripts/create/schema/shop.sql`;
-  const schemaCommand = `psql -h ${host} -p ${port} -U ${defaultUser} -d ${defaultDatabase} -f "${schemaScript}"`;
+  const schemaCommand = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseDefault} -f "${schemaScript}"; unset PGPASSWORD`;
 
   // Define the admininistrator user creation script and command
   const userScript = `${cwd()}/database/scripts/create/user/administrator.sql`;
-  const userCommand = `psql -h ${host} -p ${port} -U ${defaultUser} -d ${database} -v password="'${password}'" -f "${userScript}"`;
+  const userCommand = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseVAJ} -v password="'${password}'" -f "${userScript}"; unset PGPASSWORD`;
 
   // Running the setup scripts
   await runSqlScript(dbCommand, "Database creation");

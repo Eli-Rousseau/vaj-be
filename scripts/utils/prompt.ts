@@ -6,27 +6,42 @@ const rl = readline.createInterface({
 });
 
 // Helper function to ask a question and wait for user input
-function askQuestion(query: string): Promise<string> {
-  return new Promise((resolve) => rl.question(query, resolve));
+function askQuestion(question: string, defaultValue?: string): Promise<string> {
+  return new Promise((resolve) => {
+    if (defaultValue) {
+      question += ` (default: ${defaultValue})`;
+    }
+
+    question += ": ";
+    rl.question(question, resolve);
+  });
 }
 
 // Helper function to ask a question and hides the user input
-function askQuestionWithHiddenInput(query: string): Promise<string> {
+function askQuestionWithHiddenInput(
+  question: string,
+  defaultValue?: string
+): Promise<string> {
   return new Promise((resolve) => {
-    const stdin = process.stdin;
+    const stdin: NodeJS.ReadStream = process.stdin;
     const onData = (char: Buffer) => {
-      const key = char.toString();
+      const key: string = char.toString();
       if (key === "\n" || key === "\r" || key === "\u0004") {
-        stdin.pause();
+        stdin.off("data", onData);
       } else {
         process.stdout.clearLine(0);
         process.stdout.cursorTo(0);
-        process.stdout.write(query + "*".repeat(rl.line.length));
+        process.stdout.write(question + "*".repeat(rl.line.length));
       }
     };
-
     stdin.on("data", onData);
-    rl.question(query, resolve);
+
+    if (defaultValue) {
+      question += ` (default: ${defaultValue})`;
+    }
+
+    question += ": ";
+    rl.question(question, resolve);
   });
 }
 

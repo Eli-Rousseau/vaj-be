@@ -10,24 +10,26 @@ async function main() {
   await loadStage();
 
   // Import the environment variables
-  const DATABASE: string =
-    process.env.DATABASE_NAME || "vintage_archive_jungle";
-  const HOST: string = process.env.DATABSE_HOST || "localhost";
-  const PORT: string = process.env.DATABASE_PORT || "5432";
-  const USER: string = process.env.DATABSE_USER || "administrator";
-  const STAGE: string = process.env.STAGE || "dev";
+  const databasePort: string = process.env.DATABASE_PORT || "";
+  const databaseHost: string = process.env.DATABASE_HOST || "";
+
+  const databaseVAJ: string = process.env.DATABASE_VAJ || "";
+  const databaseAdminUserName: string =
+    process.env.DATABASE_ADMINISTRATOR_USER_NAME || "";
+  const databaseAdminUserPassword: string =
+    process.env.DATABASE_ADMINISTRATOR_USER_PASSWORD || "";
+
+  const databaseDefault: string = process.env.DATABASE_DEFAULT || "";
+  const databaseDefaultUserName: string =
+    process.env.DATABASE_DEFAULT_USER_NAME || "";
+  const databaseDefaultUserPassword: string =
+    process.env.DATABASE_DEFAULT_USER_PASSWORD || "";
+
+  const stage: string = process.env.STAGE!;
 
   // Readin user input
-  const database: string =
-    (await askQuestion(`Database name (default: ${DATABASE}): `)) || DATABASE;
-  const host: string =
-    (await askQuestion(`Host name (default: ${HOST}): `)) || HOST;
-  const port: string = (await askQuestion(`Port (default: ${PORT}): `)) || PORT;
-  const user: string = (await askQuestion(`User (default: ${USER}): `)) || USER;
   const schemaOnly: boolean =
-    /y/i.test(
-      await askQuestion("Schema-only backup [yes/no] (default: no): ")
-    ) || false;
+    /y/i.test(await askQuestion("Schema-only backup [yes/no]", "no")) || false;
 
   // Close the input stream
   rl.close();
@@ -36,12 +38,12 @@ async function main() {
   const timestamp: Date = new Date();
   const output: string = `./database/backups/${
     schemaOnly ? "schema-only" : "full"
-  }/database_backup_${STAGE === "dev" ? "dev" : "prod"}.tar`;
+  }/database_backup_${stage === "dev" ? "dev" : "prod"}.tar`;
 
   // Format the backup command string
-  const backupCommand: string = `pg_dump -d ${database} -h ${host} -p ${port} -U ${user} -F tar -f ${output} ${
+  const backupCommand: string = `export PGPASSWORD='${databaseDefaultUserPassword}'; pg_dump -d ${databaseVAJ} -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -F tar -f ${output} ${
     schemaOnly ? "-s" : ""
-  }`;
+  }; unset PGPASSWORD`;
 
   // Start the backup process
   await runSqlScript(backupCommand, "Database backup");
@@ -49,7 +51,7 @@ async function main() {
   // Copy the output file to the history directory
   const copy: string = `./database/backups/${
     schemaOnly ? "schema-only" : "full"
-  }/history/${STAGE === "dev" ? "dev" : "prod"}/${timestamp.toISOString()}.tar`;
+  }/history/${stage === "dev" ? "dev" : "prod"}/${timestamp.toISOString()}.tar`;
   copyFile(output, copy, (error) => {
     if (error) {
       Logger.error(`The database backup file could not be copied: ${error}`);

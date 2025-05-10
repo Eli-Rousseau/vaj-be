@@ -10,78 +10,67 @@ async function main() {
   await loadStage();
 
   // Import environmental variables
-  const DATABASE: string =
-    process.env.DATABASE_NAME || "vintage_archive_jungle";
-  const USER: string = process.env.DATABASE_USER || "administrator";
-  const HOST: string = process.env.DATABASE_HOST || "host";
-  const PORT: string = process.env.DATABASE_PORT || "5432";
-  const STAGE: string = process.env.STAGE || "dev";
+  const databasePort: string = process.env.DATABASE_PORT || "";
+  const databaseHost: string = process.env.DATABASE_HOST || "";
 
-  // Define the default database and user
-  const defaultDatabase: string = "template1";
-  const defaultUser: string = "postgres";
+  const databaseVAJ: string = process.env.DATABASE_VAJ || "";
+  const databaseAdminUserName: string =
+    process.env.DATABASE_ADMINISTRATOR_USER_NAME || "";
+  const databaseAdminUserPassword: string =
+    process.env.DATABASE_ADMINISTRATOR_USER_PASSWORD || "";
+
+  const databaseDefault: string = process.env.DATABASE_DEFAULT || "";
+  const databaseDefaultUserName: string =
+    process.env.DATABASE_DEFAULT_USER_NAME || "";
+  const databaseDefaultUserPassword: string =
+    process.env.DATABASE_DEFAULT_USER_PASSWORD || "";
+
+  const stage: string = process.env.STAGE!;
 
   // Path to database backups
-  const fullDbBackup: string =
-    process.cwd() +
-    `/database/backups/full/database_backup_${
-      STAGE === "dev" ? "dev" : "prod"
-    }.tar`;
-  const schemaOnlyDbBackup: string =
-    process.cwd() +
-    `/database/backups/schema-only/database_backup_${
-      STAGE === "dev" ? "dev" : "prod"
-    }.tar`;
-
-  // Readin user input
-  const database: string =
-    (await askQuestion(`Database name (default: ${DATABASE}): `)) || DATABASE;
-  const host: string =
-    (await askQuestion(`Host name (default: ${HOST}): `)) || HOST;
-  const port: string = (await askQuestion(`Port (default: ${PORT}): `)) || PORT;
-  const user: string = (await askQuestion(`User (default: ${USER}): `)) || USER;
+  const fullDbBackup: string = `${process.cwd()}/database/backups/full/database_backup_${
+    stage === "dev" ? "dev" : "prod"
+  }.tar`;
+  const schemaOnlyDbBackup: string = `${process.cwd()}/database/backups/schema-only/database_backup_${
+    stage === "dev" ? "dev" : "prod"
+  }.tar`;
 
   // Determine whether to restore the entire or schema database
   let schemaOnly: boolean;
   if (fileExistsSync(fullDbBackup) && fileExistsSync(schemaOnlyDbBackup)) {
     schemaOnly =
-      /y/i.test(
-        await askQuestion("Schema-only backup [yes/no] (default: no): ")
-      ) || false;
+      /y/i.test(await askQuestion("Schema-only backup [yes/no]", "no")) ||
+      false;
   } else if (
     !fileExistsSync(fullDbBackup) &&
     fileExistsSync(schemaOnlyDbBackup)
   ) {
     schemaOnly = true;
+    Logger.debug(
+      "No full database backup file could be retrieved. Defaulting to the schema only database backup."
+    );
   } else if (
     fileExistsSync(fullDbBackup) &&
     !fileExistsSync(schemaOnlyDbBackup)
   ) {
     schemaOnly = false;
+    Logger.debug(
+      "No schema-only database backup file could be retrieved. Defaulting to the full database backup."
+    );
   } else {
-    Logger.error("No database backup file could be retrieved.");
-    return;
-  }
-
-  // Determine the backup file to restore the database from
-  let path: string;
-  if (!schemaOnly) {
-    path =
-      (await askQuestion(
-        `Enter path to database backup (default: ${fullDbBackup}): `
-      )) || fullDbBackup;
-  } else {
-    path =
-      (await askQuestion(
-        `Enter path to database backup (default: ${schemaOnlyDbBackup}): `
-      )) || schemaOnlyDbBackup;
+    Logger.error(
+      "No database backup file could be retrieved. Please, run the following command first:\nnpm run database-backup dev"
+    );
+    process.exit(1);
   }
 
   // Close the input stream
   rl.close();
 
   // Format the database restore command
-  const restoreCommand: string = `pg_restore -h ${host} -p ${port} -U ${defaultUser} -C -c --if-exists -d ${defaultDatabase} ${path}`;
+  const restoreCommand: string = `export PGPASSWORD='${databaseDefaultUserPassword}'; pg_restore -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -C -c --if-exists -d ${databaseDefault} ${
+    schemaOnly ? schemaOnlyDbBackup : fullDbBackup
+  }; unset PGPASSWORD`;
 
   // Start the database restore process
   await runSqlScript(restoreCommand, "Database restore");

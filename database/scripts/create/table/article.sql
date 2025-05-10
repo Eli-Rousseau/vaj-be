@@ -27,6 +27,7 @@ CREATE TABLE shop.article(
 	currency shop.currency DEFAULT 'EUR',
 	discount FLOAT DEFAULT 0 CHECK (discount >= 0 AND discount <= 100),
 	status shop.availability NOT NULL,
+	for_sale BOOLEAN NOT NULL,
 	for_rent BOOLEAN NOT NULL,
 	rental_price FLOAT DEFAULT NULL,
 	thumbnail JSONB DEFAULT NULL,

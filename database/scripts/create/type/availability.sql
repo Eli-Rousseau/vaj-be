@@ -1,5 +1,6 @@
 CREATE TYPE shop.availability AS ENUM (
   'AVAILABLE',
+  'UNAVAILABLE',
   'DAMAGED',
   'FOR_RENT',
   'FOR_SALE',

@@ -1,6 +1,5 @@
 /**
- * 1. Adapting the scripts for default user and database as well as the passwords
- * 2. Write a script that can extract the table definitions.
+ * 1. Write a script that can extract the table definitions.
  * 
  SELECT
   c.column_name,
