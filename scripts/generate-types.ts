@@ -7,6 +7,51 @@ import Logger from "./utils/logger";
 
 const INDENT: string = " ".repeat(2);
 
+type PostgresType =
+  | "bigint"
+  | "boolean"
+  | "bytea"
+  | "character"
+  | "character varying"
+  | "date"
+  | "double precision"
+  | "integer"
+  | "json"
+  | "jsonb"
+  | "numeric"
+  | "real"
+  | "smallint"
+  | "text"
+  | "time"
+  | "timestamp"
+  | "timestamp without time zone"
+  | "timestamp with time zone"
+  | "USER-DEFINED"
+  | "uuid";
+
+const TYPEMAPPER: Record<PostgresType, string> = {
+  bigint: "number",
+  boolean: "boolean",
+  bytea: "Buffer",
+  character: "string",
+  "character varying": "string",
+  date: "Date",
+  "double precision": "number",
+  integer: "number",
+  json: "any",
+  jsonb: "any",
+  numeric: "number",
+  real: "number",
+  smallint: "number",
+  text: "string",
+  time: "string",
+  timestamp: "Date",
+  "timestamp without time zone": "Date",
+  "timestamp with time zone": "Date",
+  "USER-DEFINED": "string",
+  uuid: "string",
+};
+
 type DefinitionRecord = {
   columnName: string;
   dataType: string;
