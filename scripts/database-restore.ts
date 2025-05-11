@@ -1,9 +1,9 @@
 import { fileExistsSync } from "tsconfig-paths/lib/filesystem";
 
-import Logger from "../../../scripts/utils/logger";
-import { askQuestion, rl } from "../../../scripts/utils/prompt";
-import { loadStage } from "../../../scripts/utils/stage";
-import { runSqlScript } from "../../../scripts/utils/sql";
+import Logger from "./utils/logger";
+import { askQuestion, rl } from "./utils/prompt";
+import { loadStage } from "./utils/stage";
+import { runSqlScript } from "./utils/sql";
 
 async function main() {
   // Loading the stage variable

@@ -1,0 +1,14 @@
+column_name,data_type,is_nullable
+updated_at,timestamp without time zone,YES
+billing_address,integer,YES
+authentication,USER-DEFINED,NO
+role,USER-DEFINED,NO
+created_at,timestamp without time zone,YES
+reference,integer,NO
+birthday,date,YES
+shipping_address,integer,YES
+name,character varying,NO
+salt,text,YES
+email,character varying,NO
+phone_number,character varying,YES
+password,text,YES

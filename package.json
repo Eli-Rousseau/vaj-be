@@ -4,9 +4,10 @@
   "description": "vintage archive jungle - backend project",
   "main": "index.js",
   "scripts": {
-    "database-backup": "tsc && node ./dist/database/scripts/backup/database-backup.js",
-    "database-restore": "tsc && node ./dist/database/scripts/backup/database-restore.js",
-    "database-setup": "tsc && node ./dist/database/scripts/setup/database-setup.js",
+    "database-backup": "tsc && node ./dist/scripts/database-backup.js",
+    "database-restore": "tsc && node ./dist/scripts/database-restore.js",
+    "database-setup": "tsc && node ./dist/scripts/database-setup.js",
+    "generate-types": "tsc && node ./dist/scripts/generate-types.js",
     "api": "tsc && nodemon ./dist/api/server.js"
   },
   "author": "",
