@@ -1,4 +1,4 @@
-import { readFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 import * as path from "path";
 
 import { loadStage } from "./utils/stage";
@@ -62,43 +62,68 @@ function parseTableDefinition(tablePath: string): Promise<string> {
   return new Promise(async (resolve, reject) => {
     // Parse the table type from the file name
     const fileName: string = path.basename(tablePath);
-    const tableName = fileName.match(/[A-Za-z_]+/);
+    const tableName = fileName.match(/^definition_([A-Za-z_]+)\.csv$/)![1];
     const typeName: string = tableName
-      ? tableName[0]
-          .split("_")
-          .map(
-            (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-          )
-          .join("")
-      : "";
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join("");
 
     // Initialize the result variable
-    const result: string = `type ${typeName} = {\n`;
+    let result: string = `type ${typeName} = {\n`;
 
     // Reading the table definition file
     let fileContent: string = "";
     try {
       fileContent = await readFile(tablePath, { encoding: "utf-8" });
+      Logger.info(`Reading the ${fileName} file successfully.`);
     } catch (error) {
       Logger.error(`Reading the ${fileName} file failed: ${error}`);
       process.exit(1);
     }
 
     // Parsing the columns from the definition table
-    let definitionTable: string[] = fileContent.split("\n");
-    definitionTable = definitionTable.slice(1, definitionTable.length - 1);
+    let definitionTable: string[] = fileContent.trim().split("\n");
+    definitionTable = definitionTable.slice(1, definitionTable.length);
+
+    // Transforming the records into definition record instances
     const definitionRecords: DefinitionRecord[] = definitionTable.map(
       (record) => {
         const splitRecord: string[] = record.split(",");
-        return {
-          columnName: splitRecord[0],
-          dataType: splitRecord[1],
-          nullable: splitRecord[2].match(/YES/) ? true : false,
-        };
+
+        try {
+          const pgType = splitRecord[1].trim() as PostgresType;
+
+          if (!(pgType in TYPEMAPPER)) {
+            Logger.error(`Unknown Postgres type: '${pgType}'`);
+            process.exit(1);
+          }
+
+          return {
+            columnName: splitRecord[0].trim(),
+            dataType: TYPEMAPPER[pgType],
+            nullable: splitRecord[2]?.match(/YES/i) ? true : false,
+          };
+        } catch (error) {
+          Logger.error(
+            `An error was thrown when parsing the DefinitionRecord instances:\n${error}`
+          );
+          process.exit(1);
+        }
       }
     );
 
-    //
+    // Transforming the definition record into a line type
+    for (let i = 0; i < definitionRecords.length; i++) {
+      const definitionRecord: DefinitionRecord = definitionRecords[i];
+      result += `${INDENT}${definitionRecord.columnName}${
+        definitionRecord.nullable ? "?" : ""
+      }: ${definitionRecord.dataType};\n`;
+    }
+
+    // Adding the final newlines
+    result += `}${"\n".repeat(2)}`;
+
+    resolve(result);
   });
 }
 
@@ -138,14 +163,15 @@ async function main() {
     tableNamesFileContent = await readFile(outputTableNames, {
       encoding: "utf-8",
     });
+    Logger.info(`Reading the table_names.csv file successfully.`);
   } catch (error) {
-    Logger.error(`Reading the table_names.txt file failed: ${error}`);
+    Logger.error(`Reading the table_names.csv file failed: ${error}`);
     process.exit(1);
   }
 
   // Parsing the table names
   let tableNames: string[] = tableNamesFileContent.split("\n");
-  tableNames = tableNames.slice(1, tableNames.length - 1);
+  tableNames = tableNames.slice(1, tableNames.length - 1).sort();
 
   // Itterate over the tables
   let tableTypes: string = "";
@@ -167,6 +193,19 @@ async function main() {
 
     // Parsing the defintion of the tables
     tableTypes += await parseTableDefinition(outputTableDefinition);
+  }
+
+  // Adding the export statment
+  tableTypes += `export {\n${INDENT + tableNames.join(", \n" + INDENT)}\n};`;
+
+  // Writing all the newly created types to the types definition file
+  const outputTypesFile: string = `${process.cwd()}/api/types/types.ts`;
+  try {
+    await writeFile(outputTypesFile, tableTypes, { encoding: "utf-8" });
+    Logger.info(`Writing the types.ts file finished successfully.`);
+  } catch (error) {
+    Logger.error(`Writing the types.ts file failed:\n${error}`);
+    process.exit(1);
   }
 }
 

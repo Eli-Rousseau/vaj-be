@@ -1,8 +1,8 @@
 import express from "express";
 import { Router } from "express";
 
-import { pgClient } from "../server";
-import { User, Address } from "../types/types";
+// import { pgClient } from "../server";
+// import { User, Address } from "../types/types";
 
 const usersRouter: Router = express.Router();
 
