@@ -58,15 +58,21 @@ type DefinitionRecord = {
   nullable: boolean;
 };
 
+function getTypeNameFromeTableName(tableName: string): string {
+  return tableName
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join("");
+}
+
 function parseTableDefinition(tablePath: string): Promise<string> {
   return new Promise(async (resolve, reject) => {
     // Parse the table type from the file name
     const fileName: string = path.basename(tablePath);
-    const tableName = fileName.match(/^definition_([A-Za-z_]+)\.csv$/)![1];
-    const typeName: string = tableName
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join("");
+    const tableName: string = fileName.match(
+      /^definition_([A-Za-z_]+)\.csv$/
+    )![1];
+    const typeName: string = getTypeNameFromeTableName(tableName);
 
     // Initialize the result variable
     let result: string = `type ${typeName} = {\n`;
@@ -196,7 +202,10 @@ async function main() {
   }
 
   // Adding the export statment
-  tableTypes += `export {\n${INDENT + tableNames.join(", \n" + INDENT)}\n};`;
+  const typeNames: string[] = tableNames.map((tableName) =>
+    getTypeNameFromeTableName(tableName)
+  );
+  tableTypes += `export {\n${INDENT + typeNames.join(", \n" + INDENT)}\n};`;
 
   // Writing all the newly created types to the types definition file
   const outputTypesFile: string = `${process.cwd()}/api/types/types.ts`;

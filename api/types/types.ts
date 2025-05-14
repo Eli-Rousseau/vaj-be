@@ -28,6 +28,6 @@ type User = {
 }
 
 export {
-  address, 
-  user
+  Address, 
+  User
 };
