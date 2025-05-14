@@ -3,7 +3,7 @@ import { Express } from "express";
 import { Client } from "pg";
 
 import { loadStage } from "../scripts/utils/stage";
-import usersRouter from "./routes/users";
+import userRouter from "./routes/user";
 
 // Loading the stage variable
 loadStage();
@@ -31,7 +31,7 @@ const app: Express = express();
 const PORT: number = 1111;
 
 // Adding the routers
-app.use("/users", usersRouter);
+app.use("/user", userRouter);
 
 // Start the listen process
 app.listen(PORT);

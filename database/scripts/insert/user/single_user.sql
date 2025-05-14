@@ -1,0 +1,2 @@
+INSERT INTO shop.user(name, birthday, email, phone_number, shipping_address, billing_address, password, salt, authentication, role)
+VALUES ('Eli', '2000-07-15', 'roussau.eli@mail.com', '0032470707070', NULL, NULL, 'AJAZBDIBAYEVDA62738', '1234', 'INTERN', 'SYSTEM DEVELOPER');
