@@ -55,7 +55,8 @@ const TYPEMAPPER: Record<PostgresType, string> = {
 type DefinitionRecord = {
   columnName: string;
   dataType: string;
-  nullable: boolean;
+  isNullable: boolean;
+  isPrimaryKey: boolean;
 };
 
 function getTypeNameFromeTableName(tableName: string): string {
@@ -75,7 +76,7 @@ function parseTableDefinition(tablePath: string): Promise<string> {
     const typeName: string = getTypeNameFromeTableName(tableName);
 
     // Initialize the result variable
-    let result: string = `type ${typeName} = {\n`;
+    let result: string = `class ${typeName} {\n`;
 
     // Reading the table definition file
     let fileContent: string = "";
@@ -107,7 +108,8 @@ function parseTableDefinition(tablePath: string): Promise<string> {
           return {
             columnName: splitRecord[0].trim(),
             dataType: TYPEMAPPER[pgType],
-            nullable: splitRecord[2]?.match(/YES/i) ? true : false,
+            isNullable: splitRecord[2].match(/YES/i) ? true : false,
+            isPrimaryKey: splitRecord[3].match(/t/i) ? true : false,
           };
         } catch (error) {
           Logger.error(
@@ -118,16 +120,63 @@ function parseTableDefinition(tablePath: string): Promise<string> {
       }
     );
 
-    // Transforming the definition record into a line type
-    for (let i = 0; i < definitionRecords.length; i++) {
-      const definitionRecord: DefinitionRecord = definitionRecords[i];
-      result += `${INDENT}${definitionRecord.columnName}${
-        definitionRecord.nullable ? "?" : ""
-      }: ${definitionRecord.dataType};\n`;
-    }
+    // Sorting the definition records alphabetically
+    definitionRecords.sort((r1, r2) => {
+      if (r1.isPrimaryKey) return -1;
+      if (r2.isPrimaryKey) return 1;
+      if (r1.isNullable && !r2.isNullable) return 1;
+      else if (!r1.isNullable && r2.isNullable) return -1;
+      else {
+        const lastFields: string[] = ["created_at", "updated_at"];
+        if (
+          lastFields.includes(r1.columnName) &&
+          !lastFields.includes(r2.columnName)
+        )
+          return 1;
+        else if (
+          !lastFields.includes(r1.columnName) &&
+          lastFields.includes(r2.columnName)
+        )
+          return -1;
+        else return r1.columnName.localeCompare(r2.columnName);
+      }
+    });
 
-    // Adding the final newlines
-    result += `}${"\n".repeat(2)}`;
+    // Transforming the definition records into a properties
+    for (let i: number = 0; i < definitionRecords.length; i++) {
+      const definitionRecord: DefinitionRecord = definitionRecords[i];
+      result += `${INDENT}${definitionRecord.columnName}: ${
+        definitionRecord.dataType
+      }${
+        definitionRecord.isPrimaryKey
+          ? " | undefined"
+          : definitionRecord.isNullable
+          ? " | null"
+          : ""
+      };\n`;
+    }
+    result += `${INDENT}\n`;
+
+    // Adding the constructor method
+    result += `${INDENT}constructor(${definitionRecords
+      .map(
+        (definitionRecord) =>
+          `${definitionRecord.columnName}: ${definitionRecord.dataType}${
+            definitionRecord.isPrimaryKey
+              ? " | undefined"
+              : definitionRecord.isNullable
+              ? " | null"
+              : ""
+          }`
+      )
+      .join(", ")}) {\n`;
+    for (let i: number = 0; i < definitionRecords.length; i++) {
+      const definitioRecord: DefinitionRecord = definitionRecords[i];
+      result += `${INDENT.repeat(2)}this.${definitioRecord.columnName} = ${
+        definitioRecord.columnName
+      };\n`;
+    }
+    result += `${INDENT}}\n}${"\n".repeat(2)}`;
 
     resolve(result);
   });
@@ -181,7 +230,7 @@ async function main() {
 
   // Itterate over the tables
   let tableTypes: string = "";
-  for (let i = 0; i < tableNames.length; i++) {
+  for (let i: number = 0; i < tableNames.length; i++) {
     const table: string = tableNames[i];
 
     // Define the table definition selection script and command
@@ -197,7 +246,7 @@ async function main() {
       } table definition process`
     );
 
-    // Parsing the defintion of the tables
+    // Parsing the defintion of the tables into classes
     tableTypes += await parseTableDefinition(outputTableDefinition);
   }
 
@@ -207,8 +256,8 @@ async function main() {
   );
   tableTypes += `export {\n${INDENT + typeNames.join(", \n" + INDENT)}\n};`;
 
-  // Writing all the newly created types to the types definition file
-  const outputTypesFile: string = `${process.cwd()}/api/types/types.ts`;
+  // Writing all the newly created classes to the class types file
+  const outputTypesFile: string = `${process.cwd()}/api/types/classes.ts`;
   try {
     await writeFile(outputTypesFile, tableTypes, { encoding: "utf-8" });
     Logger.info(`Writing the types.ts file finished successfully.`);

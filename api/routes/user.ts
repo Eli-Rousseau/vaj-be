@@ -3,7 +3,7 @@ import { Router } from "express";
 
 import { pgClient } from "../server";
 
-import { User, Address } from "../types/types";
+import { User, Address } from "../types/classes";
 
 const userRouter: Router = express.Router();
 

@@ -1,11 +1,11 @@
-column_name,data_type,is_nullable
-reference,integer,NO
-user,integer,NO
-created_at,timestamp without time zone,YES
-updated_at,timestamp without time zone,YES
-zip_code,character varying,NO
-street,character varying,NO
-street_number,character varying,NO
-box,character varying,YES
-country,character varying,NO
-city,character varying,NO
+column_name,data_type,is_nullable,is_primary_key
+reference,integer,NO,t
+user,integer,NO,f
+country,character varying,NO,f
+city,character varying,NO,f
+zip_code,character varying,NO,f
+street,character varying,NO,f
+street_number,character varying,NO,f
+box,character varying,YES,f
+created_at,timestamp without time zone,YES,f
+updated_at,timestamp without time zone,YES,f
