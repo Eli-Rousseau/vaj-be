@@ -2,7 +2,7 @@ import express from "express";
 import { Express } from "express";
 import { Client } from "pg";
 
-import { loadStage } from "../scripts/utils/stage";
+import { loadStage } from "../utils/stage";
 import userRouter from "./routes/user";
 
 // Loading the stage variable

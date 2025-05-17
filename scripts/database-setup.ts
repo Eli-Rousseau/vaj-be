@@ -1,8 +1,8 @@
 import { cwd } from "process";
 
-import { askQuestionWithHiddenInput, rl } from "./utils/prompt";
-import { loadStage } from "./utils/stage";
-import { runSqlScript } from "./utils/sql";
+import { askQuestionWithHiddenInput, rl } from "../utils/prompt";
+import { loadStage } from "../utils/stage";
+import { runSqlScript } from "../utils/sql";
 
 async function main() {
   // Loading the stage environment
