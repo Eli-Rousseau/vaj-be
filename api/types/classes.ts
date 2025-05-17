@@ -32,14 +32,14 @@ class User {
   role: string;
   billing_address: number | null;
   birthday: Date | null;
-  created_at: Date | null;
   password: string | null;
   phone_number: string | null;
   salt: string | null;
   shipping_address: number | null;
+  created_at: Date | null;
   updated_at: Date | null;
   
-  constructor(reference: number | undefined, authentication: string, email: string, name: string, role: string, billing_address: number | null, birthday: Date | null, created_at: Date | null, password: string | null, phone_number: string | null, salt: string | null, shipping_address: number | null, updated_at: Date | null) {
+  constructor(reference: number | undefined, authentication: string, email: string, name: string, role: string, billing_address: number | null, birthday: Date | null, password: string | null, phone_number: string | null, salt: string | null, shipping_address: number | null, created_at: Date | null, updated_at: Date | null) {
     this.reference = reference;
     this.authentication = authentication;
     this.email = email;
@@ -47,11 +47,11 @@ class User {
     this.role = role;
     this.billing_address = billing_address;
     this.birthday = birthday;
-    this.created_at = created_at;
     this.password = password;
     this.phone_number = phone_number;
     this.salt = salt;
     this.shipping_address = shipping_address;
+    this.created_at = created_at;
     this.updated_at = updated_at;
   }
 }
