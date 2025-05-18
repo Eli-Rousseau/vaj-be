@@ -10,7 +10,6 @@ const INDENT: string = " ".repeat(2);
 type PostgresType =
   | "bigint"
   | "boolean"
-  | "bytea"
   | "character"
   | "character varying"
   | "date"
@@ -32,7 +31,6 @@ type PostgresType =
 const TYPEMAPPER: Record<PostgresType, string> = {
   bigint: "number",
   boolean: "boolean",
-  bytea: "Buffer",
   character: "string",
   "character varying": "string",
   date: "Date",
