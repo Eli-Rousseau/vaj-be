@@ -33,7 +33,7 @@ const TYPEMAPPER: Record<PostgresType, string> = {
   boolean: "boolean",
   character: "string",
   "character varying": "string",
-  date: "Date",
+  date: "string",
   "double precision": "number",
   integer: "number",
   json: "any",
@@ -43,9 +43,9 @@ const TYPEMAPPER: Record<PostgresType, string> = {
   smallint: "number",
   text: "string",
   time: "string",
-  timestamp: "Date",
-  "timestamp without time zone": "Date",
-  "timestamp with time zone": "Date",
+  timestamp: "string",
+  "timestamp without time zone": "string",
+  "timestamp with time zone": "string",
   "USER-DEFINED": "string",
   uuid: "string",
 };
@@ -74,7 +74,7 @@ function parseTableDefinition(tablePath: string): Promise<string> {
     const typeName: string = getTypeNameFromeTableName(tableName);
 
     // Initialize the result variable
-    let result: string = `class ${typeName} {\n`;
+    let result: string = `type ${typeName} = {\n`;
 
     // Reading the table definition file
     let fileContent: string = "";
@@ -91,7 +91,7 @@ function parseTableDefinition(tablePath: string): Promise<string> {
     definitionTable = definitionTable.slice(1, definitionTable.length);
 
     // Transforming the records into definition record instances
-    const definitionRecords: DefinitionRecord[] = definitionTable.map(
+    let definitionRecords: DefinitionRecord[] = definitionTable.map(
       (record) => {
         const splitRecord: string[] = record.split(",");
 
@@ -119,7 +119,7 @@ function parseTableDefinition(tablePath: string): Promise<string> {
     );
 
     // Sorting the definition records alphabetically
-    definitionRecords.sort((r1, r2) => {
+    definitionRecords = definitionRecords.sort((r1, r2) => {
       if (r1.isPrimaryKey) return -1;
       if (r2.isPrimaryKey) return 1;
       if (r1.isNullable && !r2.isNullable) return 1;
@@ -140,12 +140,12 @@ function parseTableDefinition(tablePath: string): Promise<string> {
       }
     });
 
-    // Transforming the definition records into a properties
-    for (let i: number = 0; i < definitionRecords.length; i++) {
+    // Transforming the definition record into a line type
+    for (let i = 0; i < definitionRecords.length; i++) {
       const definitionRecord: DefinitionRecord = definitionRecords[i];
-      result += `${INDENT}${definitionRecord.columnName}: ${
-        definitionRecord.dataType
-      }${
+      result += `${INDENT}${definitionRecord.columnName}${
+        definitionRecord.isPrimaryKey || definitionRecord.isNullable ? "?" : ""
+      }: ${definitionRecord.dataType}${
         definitionRecord.isPrimaryKey
           ? " | undefined"
           : definitionRecord.isNullable
@@ -153,28 +153,9 @@ function parseTableDefinition(tablePath: string): Promise<string> {
           : ""
       };\n`;
     }
-    result += `${INDENT}\n`;
 
-    // Adding the constructor method
-    result += `${INDENT}constructor(${definitionRecords
-      .map(
-        (definitionRecord) =>
-          `${definitionRecord.columnName}: ${definitionRecord.dataType}${
-            definitionRecord.isPrimaryKey
-              ? " | undefined"
-              : definitionRecord.isNullable
-              ? " | null"
-              : ""
-          }`
-      )
-      .join(", ")}) {\n`;
-    for (let i: number = 0; i < definitionRecords.length; i++) {
-      const definitioRecord: DefinitionRecord = definitionRecords[i];
-      result += `${INDENT.repeat(2)}this.${definitioRecord.columnName} = ${
-        definitioRecord.columnName
-      };\n`;
-    }
-    result += `${INDENT}}\n}${"\n".repeat(2)}`;
+    // Adding the final newlines
+    result += `}${"\n".repeat(2)}`;
 
     resolve(result);
   });
@@ -255,7 +236,7 @@ async function main() {
   tableTypes += `export {\n${INDENT + typeNames.join(", \n" + INDENT)}\n};`;
 
   // Writing all the newly created classes to the class types file
-  const outputTypesFile: string = `${process.cwd()}/api/types/classes.ts`;
+  const outputTypesFile: string = `${process.cwd()}/api/types/types.ts`;
   try {
     await writeFile(outputTypesFile, tableTypes, { encoding: "utf-8" });
     Logger.info(`Writing the types.ts file finished successfully.`);

@@ -3,7 +3,7 @@ import { Router } from "express";
 
 import { pgClient } from "../server";
 
-import { User, Address } from "../types/classes";
+// import { User, Address } from "../types/classes";
 
 const userRouter: Router = express.Router();
 
@@ -15,9 +15,7 @@ userRouter.param("id", (req, res, next, value) => {
 userRouter
   .route("/:id")
   .get((req, res) => {})
-  .post((req, res) => {
-    const user: User = req.body;
-  })
+  .post((req, res) => {})
   .put((req, res) => {})
   .delete((req, res) => {});
 
