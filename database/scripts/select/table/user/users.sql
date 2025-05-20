@@ -1,0 +1,4 @@
+SELECT *
+FROM shop.user
+ORDER BY updated_at DESC
+LIMIT 5 OFFSET 0
