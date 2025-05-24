@@ -31,13 +31,11 @@ function createPgClient(): Client {
 }
 
 // Initialize the database connection and defining the global postgresql client
-async function initializeDatabaseConnection(
-  pgClient: Client
-): Promise<boolean> {
+async function initializeDatabaseConnection(client: Client): Promise<boolean> {
   return new Promise(async (resolve, reject) => {
     try {
-      await pgClient.connect();
-      pgClient = pgClient;
+      await client.connect();
+      pgClient = client;
       const queryResult: QueryResult = await pgClient.query("SELECT 1;"); // Health check on database connection
       Logger.info("Connected to database successfully.");
       resolve(true);
@@ -79,7 +77,7 @@ class SQLClauseFormatter {
     limit: string | undefined,
     offset: string | undefined
   ): string {
-    return limit ? "LIMIT " + limit + (offset ? "OFFSET " + offset : "") : "";
+    return limit ? "LIMIT " + limit + (offset ? " OFFSET " + offset : "") : "";
   }
 }
 

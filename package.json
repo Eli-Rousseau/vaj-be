@@ -8,7 +8,7 @@
     "database-restore": "tsc && node ./dist/scripts/database-restore.js",
     "database-setup": "tsc && node ./dist/scripts/database-setup.js",
     "generate-types": "tsc && node ./dist/scripts/generate-types.js",
-    "api": "tsc && nodemon ./dist/api/server.js"
+    "api": "nodemon --watch api --ext ts,tsx --exec ts-node ./api/server.ts"
   },
   "author": "",
   "license": "ISC",

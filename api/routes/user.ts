@@ -5,6 +5,7 @@ import { getPgClient, SQLClauseFormatter } from "../../utils/database";
 import { ExpectedRequest, ExpectedResponse } from "../server";
 import { User, Address } from "../types/types";
 import { QueryResult } from "pg";
+import Logger from "../../utils/logger";
 
 const userRouter: Router = express.Router();
 
@@ -47,7 +48,7 @@ userRouter
 SELECT *
 FROM shop.user
 ORDER BY updated_at DESC
-${SQLClauseFormatter.generateLimitOffsetClause(req.limit, req.offset)}
+${SQLClauseFormatter.generateLimitOffsetClause(req.limit, req.offset)};
     `;
 
     // Run the query on the database
@@ -66,8 +67,6 @@ ${SQLClauseFormatter.generateLimitOffsetClause(req.limit, req.offset)}
       res.end();
     }
   })
-
-  // TO DO: disconnect from database
 
   .post((req: ExpectedRequest, res: ExpectedResponse) => {})
   .put((req: ExpectedRequest, res: ExpectedResponse) => {})

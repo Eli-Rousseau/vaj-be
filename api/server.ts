@@ -23,8 +23,11 @@ interface ExpectedResponse extends express.Response {}
 // Initialize the global variables
 const PORT: number = 1111;
 
-// Create a function for starting up the server
-async function startServer() {
+// Define the app variable
+let app: Express;
+
+// Setting up the server process
+async function setupServer() {
   // Loading the stage variable
   await loadStage();
 
@@ -41,7 +44,7 @@ async function startServer() {
   }
 
   // Initiate the api server
-  const app: Express = express();
+  app = express();
 
   // Handeling the query parameters
   app.use((req: ExpectedRequest, res: ExpectedResponse, next) => {
@@ -64,15 +67,48 @@ async function startServer() {
 
   // Adding the routers
   app.use("/user", userRouter);
-
-  // Start the listen process
-  app.listen(PORT);
-
-  // Disconnect from the database
-  const disconnected: boolean = await terminateDatabaseConnection();
 }
 
-// Start up the server
-startServer();
+// Starting up the server process
+async function startServer() {
+  // Start the listen process
+  app.listen(PORT, () => {
+    // Load the host and the port
+    const host: string | undefined = process.env.DATABASE_HOST;
+    if (!host) {
+      Logger.error(
+        "Unable to retrieve the database host from the environmental variables."
+      );
+      process.exit(1);
+    }
+    Logger.info(`Server listening at http://${host}:${PORT}`);
+  });
+}
+
+// On terminating the server process
+function terminateServer() {
+  process.on("SIGINT", async () => {
+    Logger.info(
+      "Received SIGINT. Terminating the server process. Cleaning up..."
+    );
+    const disconnected: boolean = await terminateDatabaseConnection();
+    process.exit(disconnected ? 0 : 1);
+  });
+
+  process.on("SIGTERM", async () => {
+    Logger.info(
+      "Received SIGTERM. Terminating the server process. Cleaning up..."
+    );
+    const disconnected: boolean = await terminateDatabaseConnection();
+    process.exit(disconnected ? 0 : 1);
+  });
+}
+
+// Orchestrate the server creation process
+(async () => {
+  await setupServer(); // Wait until setup is done
+  startServer(); // Then start the listener
+  terminateServer(); // Setup graceful shutdown
+})();
 
 export { ExpectedRequest, ExpectedResponse };
