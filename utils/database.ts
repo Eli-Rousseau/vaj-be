@@ -6,6 +6,7 @@ import Logger from "./logger";
 // Define a global postgresql client
 let pgClient: Client | null = null;
 
+// Responsible for creating a postgresql database client
 function createPgClient(): Client {
   // Import the environment variables
   const database: string = process.env.DATABASE_VAJ || "";
@@ -29,6 +30,7 @@ function createPgClient(): Client {
   return pgClient;
 }
 
+// Initialize the database connection and defining the global postgresql client
 async function initializeDatabaseConnection(
   pgClient: Client
 ): Promise<boolean> {
@@ -36,7 +38,7 @@ async function initializeDatabaseConnection(
     try {
       await pgClient.connect();
       pgClient = pgClient;
-      const queryResult: QueryResult = await pgClient.query("SELECT 1;"); // Quick health check on database connection
+      const queryResult: QueryResult = await pgClient.query("SELECT 1;"); // Health check on database connection
       Logger.info("Connected to database successfully.");
       resolve(true);
     } catch (error) {
@@ -46,6 +48,24 @@ async function initializeDatabaseConnection(
   });
 }
 
+// Disconnect from the database
+async function terminateDatabaseConnection(): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    if (!pgClient) {
+      throw reject(new Error("Unable to access a pgClient."));
+    }
+    try {
+      pgClient!.end();
+      Logger.info("Disconnected from the database successfully.");
+      resolve(true);
+    } catch (error) {
+      Logger.error("Unable to terminate the connection to the database.");
+      resolve(false);
+    }
+  });
+}
+
+// Returns the globally defined postgresql client
 function getPgClient(): Client {
   if (!pgClient) {
     throw new Error("Unable to access a pgClient.");
@@ -53,4 +73,20 @@ function getPgClient(): Client {
   return pgClient;
 }
 
-export { createPgClient, initializeDatabaseConnection, getPgClient };
+// Class that provides abstraction method for formatting SQL clauses
+class SQLClauseFormatter {
+  static generateLimitOffsetClause(
+    limit: string | undefined,
+    offset: string | undefined
+  ): string {
+    return limit ? "LIMIT " + limit + (offset ? "OFFSET " + offset : "") : "";
+  }
+}
+
+export {
+  createPgClient,
+  initializeDatabaseConnection,
+  terminateDatabaseConnection,
+  getPgClient,
+  SQLClauseFormatter,
+};

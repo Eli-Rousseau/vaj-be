@@ -6,6 +6,7 @@ import { loadStage } from "../utils/stage";
 import {
   createPgClient,
   initializeDatabaseConnection,
+  terminateDatabaseConnection,
 } from "../utils/database";
 import userRouter from "./routes/user";
 import { Client } from "pg";
@@ -66,6 +67,9 @@ async function startServer() {
 
   // Start the listen process
   app.listen(PORT);
+
+  // Disconnect from the database
+  const disconnected: boolean = await terminateDatabaseConnection();
 }
 
 // Start up the server
