@@ -1,4 +1,3 @@
-import express from "express";
 import { Client, QueryResult } from "pg";
 
 import Logger from "./logger";

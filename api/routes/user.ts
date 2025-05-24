@@ -5,7 +5,6 @@ import { getPgClient, SQLClauseFormatter } from "../../utils/database";
 import { ExpectedRequest, ExpectedResponse } from "../server";
 import { User, Address } from "../types/types";
 import { QueryResult } from "pg";
-import Logger from "../../utils/logger";
 
 const userRouter: Router = express.Router();
 
