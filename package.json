@@ -16,6 +16,7 @@
     "date-fns": "^4.1.0",
     "express": "^5.1.0",
     "pg": "^8.15.6",
+    "reflect-metadata": "^0.2.2",
     "tsconfig-paths": "^4.2.0"
   },
   "devDependencies": {

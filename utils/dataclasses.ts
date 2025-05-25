@@ -210,4 +210,32 @@ class Day extends DayBase {
   }
 }
 
+class DataObjectBase extends DataClassMixin(Object) {}
+
+class DataObject extends DataObjectBase {
+  private constructor(value: any) {
+    super();
+  }
+
+  static fromObject(value: any): DataObject {
+    if (!(value instanceof Object)) {
+      throw new Error(`Expected an Object instance. Received ${value}`);
+    }
+
+    return new DataObject(value);
+  }
+}
+
+// type ClassProperties<C> = {
+//   [Key in keyof C as C[Key] extends Function ? never : Key]: C[Key]
+// }
+
+class User {
+  reference!: Stringy | null;
+  name!: Stringy;
+  age!: Integer;
+  birthday!: Day;
+  created_at?: Datetime;
+}
+
 export { Integer, Float, Stringy, JSONStringy, Datetime, Day, Time };
