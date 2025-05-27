@@ -230,12 +230,100 @@ class DataObject extends DataObjectBase {
 //   [Key in keyof C as C[Key] extends Function ? never : Key]: C[Key]
 // }
 
-class User {
-  reference!: Stringy | null;
-  name!: Stringy;
-  age!: Integer;
-  birthday!: Day;
-  created_at?: Datetime;
+// Type, null/undefined, to_sql
+
+abstract class OptionalBase<T> {
+  protected _value: T | null | undefined;
+
+  constructor(value: T | null | undefined) {
+    this._value = value;
+  }
+
+  isPresent(): boolean {
+    return this._value !== null && this._value !== undefined;
+  }
+
+  getOrElse(defaultValue: T): T {
+    return this.isPresent() ? this._value as T : defaultValue;
+  }
+
+  unwrap(): T {
+    if (!this.isPresent()) {
+      throw new Error("Tried to unwrap a value that is null or undefined.");
+    }
+    return this._value as T;
+  }
 }
+
+class Nullable<T> {
+  private _value: T | null;
+
+  constructor(value: T | null = null) {
+    this._value = value;
+  }
+
+  get value(): T | null {
+    return this._value;
+  }
+
+  set value(val: T | null) {
+    this._value = val;
+  }
+
+  isNull(): boolean {
+    return this._value === null;
+  }
+
+  unwrap(): T {
+    if (this._value === null) {
+      throw new Error("Nullable value is null");
+    }
+    return this._value;
+  }
+}
+
+import "reflect-metadata";
+
+const propertyTypes = new Map<string, any>();
+
+function Sequelable(expectedType: Function) {
+  return function (target: any, propertyKey: string): void {
+    let value: any;
+
+    Object.defineProperty(target, propertyKey, {
+      get: () => value,
+      set: (newValue: any) => {
+        if (!(newValue instanceof expectedType)) {
+          throw new Error(
+            `Invalid assignment to '${propertyKey}'. Expected instance of ${expectedType.name}, received ${typeof newValue}`
+          );
+        }
+        value = newValue;
+      },
+      enumerable: true,
+      configurable: true,
+    });
+  };
+}
+
+
+class User {
+  @Sequelable(String)
+  reference!: String
+
+  @Sequelable(String)
+  name!: String;
+
+  @Sequelable(Number)
+  age!: Number;
+
+  @Sequelable(Date)
+  birthday!: Date;
+  
+  @Sequelable(Date)
+  created_at?: Date;
+}
+
+
 
 export { Integer, Float, Stringy, JSONStringy, Datetime, Day, Time };
