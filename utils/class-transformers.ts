@@ -1,11 +1,3 @@
-// import {
-//   Expose,
-//   plainToInstance,
-//   Transform,
-//   instanceToPlain,
-// } from "class-transformer";
-// import "reflect-metadata";
-
 export const toInteger = function (value: number): number {
   if (typeof value != "number") {
     throw new Error(`Expected a numeric value. Received: ${value}`);
@@ -133,65 +125,3 @@ export const fromDatetime = function (value: Date) {
     milliseconds.length
   )}`;
 };
-
-// class User {
-//   @Expose()
-//   reference?: number;
-
-//   @Expose()
-//   name!: string;
-
-//   @Transform(({ value }) => toInteger(value), { toClassOnly: true })
-//   @Expose()
-//   age!: number;
-
-//   @Transform(({ value }) => toDay(value), { toClassOnly: true })
-//   @Transform(({ value }) => fromDay(value), { toPlainOnly: true })
-//   @Expose()
-//   birthday!: Date;
-
-//   @Expose()
-//   email!: string;
-
-//   @Expose()
-//   phone!: string | null;
-
-//   @Expose()
-//   picture!: Object;
-
-//   @Transform(({ value }) => toDatetime(value), { toClassOnly: true })
-//   @Transform(({ value }) => fromDatetime(value), { toPlainOnly: true })
-//   @Expose()
-//   created_at!: Date;
-
-//   @Transform(({ value }) => toTime(value), { toClassOnly: true })
-//   @Transform(({ value }) => fromTime(value), { toPlainOnly: true })
-//   @Expose()
-//   time!: Date;
-// }
-
-// const plain = {
-//   // reference: 123,
-//   name: "Eli",
-//   age: 24.8,
-//   birthday: "2000-07-15",
-//   email: "eli@mail.com",
-//   phone: null,
-//   picture: {
-//     bucket: "mybucket",
-//     key: "img.png",
-//   },
-//   heightInCm: 180,
-//   created_at: "2025-05-14 21:00:52.802644",
-//   time: "11:19:09.805434",
-// };
-
-// console.log("plain object: ", plain);
-
-// const instance = plainToInstance(User, plain, {
-//   excludeExtraneousValues: true,
-// });
-// console.log("instance object: ", instance);
-
-// const replain = instanceToPlain(instance);
-// console.log("replained object: ", replain);

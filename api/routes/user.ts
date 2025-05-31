@@ -3,7 +3,7 @@ import { Router } from "express";
 
 import { getPgClient, SQLClauseFormatter } from "../../utils/database";
 import { ExpectedRequest, ExpectedResponse } from "../server";
-import { User, Address } from "../types/types";
+import { User, Address } from "../classes/transformer-classes";
 import { QueryResult } from "pg";
 
 const userRouter: Router = express.Router();

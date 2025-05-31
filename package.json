@@ -7,7 +7,7 @@
     "database-backup": "tsc && node ./dist/scripts/database-backup.js",
     "database-restore": "tsc && node ./dist/scripts/database-restore.js",
     "database-setup": "tsc && node ./dist/scripts/database-setup.js",
-    "generate-types": "tsc && node ./dist/scripts/generate-types.js",
+    "generate-transformer-classes": "tsc && node ./dist/scripts/generate-transformer-classes.js",
     "api": "nodemon --watch api --ext ts,tsx --exec ts-node ./api/server.ts"
   },
   "author": "",

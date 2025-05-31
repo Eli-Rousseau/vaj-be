@@ -18,7 +18,6 @@ type PostgresType =
   | "json"
   | "jsonb"
   | "numeric"
-  | "real"
   | "smallint"
   | "text"
   | "time"
@@ -28,7 +27,9 @@ type PostgresType =
   | "USER-DEFINED"
   | "uuid";
 
-const TYPEMAPPER: Record<PostgresType, string> = {
+type TypeScriptType = "number" | "boolean" | "string" | "any";
+
+const TYPE_MAPPER: Record<PostgresType, TypeScriptType> = {
   bigint: "number",
   boolean: "boolean",
   character: "string",
@@ -39,7 +40,6 @@ const TYPEMAPPER: Record<PostgresType, string> = {
   json: "any",
   jsonb: "any",
   numeric: "number",
-  real: "number",
   smallint: "number",
   text: "string",
   time: "string",
@@ -50,14 +50,39 @@ const TYPEMAPPER: Record<PostgresType, string> = {
   uuid: "string",
 };
 
-type DefinitionRecord = {
-  columnName: string;
-  dataType: string;
-  isNullable: boolean;
-  isPrimaryKey: boolean;
+const TRANSFORMER_MAPPER: Record<
+  PostgresType,
+  { to: string; from: string } | null
+> = {
+  bigint: { to: "toInteger", from: "fromInteger" },
+  boolean: null,
+  character: null,
+  "character varying": null,
+  date: { to: "toDay", from: "fromDay" },
+  "double precision": null,
+  integer: { to: "toInteger", from: "fromInteger" },
+  json: null,
+  jsonb: null,
+  numeric: null,
+  smallint: { to: "toInteger", from: "fromInteger" },
+  text: null,
+  time: { to: "toTime", from: "fromTime" },
+  timestamp: { to: "toDatetime", from: "fromDatetime" },
+  "timestamp without time zone": { to: "toDatetime", from: "fromDatetime" },
+  "timestamp with time zone": { to: "toDatetime", from: "fromDatetime" },
+  "USER-DEFINED": null,
+  uuid: null,
 };
 
-function getTypeNameFromeTableName(tableName: string): string {
+type DefinitionRecord = {
+  columnName: string;
+  pgType: PostgresType;
+  tsType: TypeScriptType;
+  isNullable: boolean;
+  isUndefinable: boolean;
+};
+
+function getClassNameFromeTableName(tableName: string): string {
   return tableName
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -66,15 +91,15 @@ function getTypeNameFromeTableName(tableName: string): string {
 
 function parseTableDefinition(tablePath: string): Promise<string> {
   return new Promise(async (resolve, reject) => {
-    // Parse the table type from the file name
+    // Parse the class name from the file name
     const fileName: string = path.basename(tablePath);
     const tableName: string = fileName.match(
       /^definition_([A-Za-z_]+)\.csv$/
     )![1];
-    const typeName: string = getTypeNameFromeTableName(tableName);
+    const className: string = getClassNameFromeTableName(tableName);
 
     // Initialize the result variable
-    let result: string = `type ${typeName} = {\n`;
+    let result: string = `export class ${className} {\n`;
 
     // Reading the table definition file
     let fileContent: string = "";
@@ -98,16 +123,17 @@ function parseTableDefinition(tablePath: string): Promise<string> {
         try {
           const pgType = splitRecord[1].trim() as PostgresType;
 
-          if (!(pgType in TYPEMAPPER)) {
+          if (!(pgType in TYPE_MAPPER)) {
             Logger.error(`Unknown Postgres type: '${pgType}'`);
             process.exit(1);
           }
 
           return {
             columnName: splitRecord[0].trim(),
-            dataType: TYPEMAPPER[pgType],
+            pgType: pgType,
+            tsType: TYPE_MAPPER[pgType] as TypeScriptType,
             isNullable: splitRecord[2].match(/YES/i) ? true : false,
-            isPrimaryKey: splitRecord[3].match(/t/i) ? true : false,
+            isUndefinable: splitRecord[3].match(/YES/i) ? true : false,
           };
         } catch (error) {
           Logger.error(
@@ -120,42 +146,42 @@ function parseTableDefinition(tablePath: string): Promise<string> {
 
     // Sorting the definition records alphabetically
     definitionRecords = definitionRecords.sort((r1, r2) => {
-      if (r1.isPrimaryKey) return -1;
-      if (r2.isPrimaryKey) return 1;
-      if (r1.isNullable && !r2.isNullable) return 1;
-      else if (!r1.isNullable && r2.isNullable) return -1;
-      else {
-        const lastFields: string[] = ["created_at", "updated_at"];
-        if (
-          lastFields.includes(r1.columnName) &&
-          !lastFields.includes(r2.columnName)
-        )
-          return 1;
-        else if (
-          !lastFields.includes(r1.columnName) &&
-          lastFields.includes(r2.columnName)
-        )
-          return -1;
-        else return r1.columnName.localeCompare(r2.columnName);
-      }
+      return r1.columnName.localeCompare(r2.columnName);
     });
 
-    // Transforming the definition record into a line type
-    for (let i = 0; i < definitionRecords.length; i++) {
-      const definitionRecord: DefinitionRecord = definitionRecords[i];
-      result += `${INDENT}${definitionRecord.columnName}${
-        definitionRecord.isPrimaryKey || definitionRecord.isNullable ? "?" : ""
-      }: ${definitionRecord.dataType}${
-        definitionRecord.isPrimaryKey
-          ? " | undefined"
-          : definitionRecord.isNullable
-          ? " | null"
-          : ""
-      };\n`;
-    }
+    // Transforming the definition record into a attribute line
+    const attributeLines: string[] = definitionRecords.map(
+      (definitionRecord) => {
+        let attributeLine: string = "";
+
+        // Adding the transformers to the attribute
+        const transformers: { to: string; from: string } | null =
+          TRANSFORMER_MAPPER[definitionRecord.pgType];
+        if (transformers) {
+          const toTransformerLine: string = `${INDENT}@Transform(({ value }) => ${transformers.to}(value), { toClassOnly: true })\n`;
+          const fromTransformerLine: string = `${INDENT}@Transform(({ value }) => ${transformers.from}(value), { toPlainOnly: true })\n`;
+          attributeLine += toTransformerLine + fromTransformerLine;
+        }
+
+        // Adding the expose to the attribute
+        attributeLine += `${INDENT}@Expose()\n`;
+
+        // Adding the attribute and their types
+        attributeLine += `${INDENT}${definitionRecord.columnName}${
+          definitionRecord.isUndefinable ? "?" : "!"
+        }: ${definitionRecord.tsType}${
+          definitionRecord.isNullable ? " | null" : ""
+        };`;
+
+        return attributeLine;
+      }
+    );
+
+    // Joining the attribute lines
+    result += attributeLines.join("\n".repeat(2));
 
     // Adding the final newlines
-    result += `}${"\n".repeat(2)}`;
+    result += `\n}${"\n".repeat(2)}`;
 
     resolve(result);
   });
@@ -184,7 +210,7 @@ async function main() {
   const stage: string = process.env.STAGE!;
 
   // Define the table names selection script and command
-  const outputTableNames: string = `${process.cwd()}/api/types/table_names.csv`;
+  const outputTableNames: string = `${process.cwd()}/api/classes/table_names.csv`;
   const tableNamesScript: string = `${process.cwd()}/database/scripts/select/schema/tables.sql`;
   const tableNamesCommand: string = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseVAJ} -v file="'${outputTableNames}'" -f "${tableNamesScript}"; unset PGPASSWORD`;
 
@@ -207,13 +233,17 @@ async function main() {
   let tableNames: string[] = tableNamesFileContent.split("\n");
   tableNames = tableNames.slice(1, tableNames.length - 1).sort();
 
+  // Define the tables classes and adding the import statements
+  let tableClasses: string = `import { Transform, Expose } from "class-transformer";\n`;
+  tableClasses += `import "reflect-metadata"\n\n`;
+  tableClasses += `import { toInteger, fromInteger, toDay, fromDay, toTime, fromTime, toDatetime, fromDatetime } from "../../utils/class-transformers";\n\n`;
+
   // Itterate over the tables
-  let tableTypes: string = "";
   for (let i: number = 0; i < tableNames.length; i++) {
     const table: string = tableNames[i];
 
     // Define the table definition selection script and command
-    const outputTableDefinition: string = `${process.cwd()}/api/types/definition_${table}.csv`;
+    const outputTableDefinition: string = `${process.cwd()}/api/classes/definition_${table}.csv`;
     const tableDefinitionScript: string = `${process.cwd()}/database/scripts/select/schema/information_schema.sql`;
     const tableDefinitionCommand: string = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseVAJ} -v table="'${table}'" -v file="'${outputTableDefinition}'" -f "${tableDefinitionScript}"; unset PGPASSWORD`;
 
@@ -226,19 +256,13 @@ async function main() {
     );
 
     // Parsing the defintion of the tables into classes
-    tableTypes += await parseTableDefinition(outputTableDefinition);
+    tableClasses += await parseTableDefinition(outputTableDefinition);
   }
 
-  // Adding the export statment
-  const typeNames: string[] = tableNames.map((tableName) =>
-    getTypeNameFromeTableName(tableName)
-  );
-  tableTypes += `export {\n${INDENT + typeNames.join(", \n" + INDENT)}\n};`;
-
   // Writing all the newly created classes to the class types file
-  const outputTypesFile: string = `${process.cwd()}/api/types/types.ts`;
+  const outputTypesFile: string = `${process.cwd()}/api/classes/transformer-classes.ts`;
   try {
-    await writeFile(outputTypesFile, tableTypes, { encoding: "utf-8" });
+    await writeFile(outputTypesFile, tableClasses, { encoding: "utf-8" });
     Logger.info(`Writing the types.ts file finished successfully.`);
   } catch (error) {
     Logger.error(`Writing the types.ts file failed:\n${error}`);

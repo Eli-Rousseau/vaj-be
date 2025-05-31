@@ -12,3 +12,6 @@
 
 # .env files
 /.env*
+
+# definition-files
+/api/classes/*.csv
