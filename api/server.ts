@@ -46,6 +46,9 @@ async function setupServer() {
   // Initiate the api server
   app = express();
 
+  // Parse the incoming JSON bodies
+  app.use(express.json());
+
   // Handeling the query parameters
   app.use((req: ExpectedRequest, res: ExpectedResponse, next) => {
     // Handeling the limit query parameter

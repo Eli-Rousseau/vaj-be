@@ -1,5 +1,5 @@
 export const toInteger = function (value: number): number {
-  if (typeof value != "number") {
+  if (typeof value !== "number") {
     throw new Error(`Expected a numeric value. Received: ${value}`);
   }
 
@@ -7,7 +7,7 @@ export const toInteger = function (value: number): number {
 };
 
 export const fromInteger = function (value: number): number {
-  if (typeof value != "number") {
+  if (typeof value !== "number") {
     throw new Error(`Expected a numeric value. Received: ${value}`);
   }
 
@@ -19,7 +19,7 @@ const isDayString = function (value: string): boolean {
 };
 
 export const toDay = function (value: string): Date {
-  if (typeof value != "string" || !isDayString(value)) {
+  if (typeof value !== "string" || !isDayString(value)) {
     throw new Error(`Expected a day value. Received: ${value}`);
   }
 
@@ -43,7 +43,7 @@ const isValidTime = function (value: string): boolean {
 };
 
 export const toTime = function (value: string) {
-  if (typeof value != "string" || !isValidTime(value)) {
+  if (typeof value !== "string" || !isValidTime(value)) {
     throw new Error(`Expected a time value. Received: ${value}`);
   }
 
@@ -85,7 +85,7 @@ const isValidDatetime = function (value: string): boolean {
 };
 
 export const toDatetime = function (value: string) {
-  if (typeof value != "string" || !isValidDatetime(value)) {
+  if (typeof value !== "string" || !isValidDatetime(value)) {
     throw new Error(`Expected a day value. Received: ${value}`);
   }
 
@@ -124,4 +124,16 @@ export const fromDatetime = function (value: Date) {
     2,
     milliseconds.length
   )}`;
+};
+
+export const toJSON = function (value: string) {
+  if (typeof value !== "string") {
+    throw new Error(`Expected an JSON instance. Recieved: ${value}`);
+  }
+
+  return JSON.parse(value);
+};
+
+export const fromJSON = function (value: any) {
+  return JSON.stringify(value);
 };

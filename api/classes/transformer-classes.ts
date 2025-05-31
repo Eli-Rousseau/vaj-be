@@ -1,7 +1,7 @@
 import { Transform, Expose } from "class-transformer";
 import "reflect-metadata"
 
-import { toInteger, fromInteger, toDay, fromDay, toTime, fromTime, toDatetime, fromDatetime } from "../../utils/class-transformers";
+import { toInteger, fromInteger, toDay, fromDay, toTime, fromTime, toDatetime, fromDatetime, toJSON, fromJSON } from "../../utils/class-transformers";
 
 export class Address {
   @Expose()
@@ -90,6 +90,8 @@ export class Article {
   @Expose()
   material!: string | null;
 
+  @Transform(({ value }) => toJSON(value), { toClassOnly: true })
+  @Transform(({ value }) => fromJSON(value), { toPlainOnly: true })
   @Expose()
   media!: any | null;
 
@@ -123,6 +125,8 @@ export class Article {
   @Expose()
   status!: string;
 
+  @Transform(({ value }) => toJSON(value), { toClassOnly: true })
+  @Transform(({ value }) => fromJSON(value), { toPlainOnly: true })
   @Expose()
   thumbnail!: any | null;
 

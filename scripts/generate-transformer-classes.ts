@@ -61,8 +61,8 @@ const TRANSFORMER_MAPPER: Record<
   date: { to: "toDay", from: "fromDay" },
   "double precision": null,
   integer: { to: "toInteger", from: "fromInteger" },
-  json: null,
-  jsonb: null,
+  json: { to: "toJSON", from: "fromJSON" },
+  jsonb: { to: "toJSON", from: "fromJSON" },
   numeric: null,
   smallint: { to: "toInteger", from: "fromInteger" },
   text: null,
@@ -236,7 +236,7 @@ async function main() {
   // Define the tables classes and adding the import statements
   let tableClasses: string = `import { Transform, Expose } from "class-transformer";\n`;
   tableClasses += `import "reflect-metadata"\n\n`;
-  tableClasses += `import { toInteger, fromInteger, toDay, fromDay, toTime, fromTime, toDatetime, fromDatetime } from "../../utils/class-transformers";\n\n`;
+  tableClasses += `import { toInteger, fromInteger, toDay, fromDay, toTime, fromTime, toDatetime, fromDatetime, toJSON, fromJSON } from "../../utils/class-transformers";\n\n`;
 
   // Itterate over the tables
   for (let i: number = 0; i < tableNames.length; i++) {
