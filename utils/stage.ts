@@ -9,7 +9,7 @@ enum Stage {
 }
 
 // Async helper function for loading the environmental variables
-function loadStage(): Promise<void> {
+export function loadStage(): Promise<void> {
   return new Promise((resolve, reject) => {
     // Determine the stage from the command arguments
     const stage: Stage = process.argv.includes("prod") ? Stage.prod : Stage.dev;
@@ -78,5 +78,3 @@ function loadStage(): Promise<void> {
     });
   });
 }
-
-export { loadStage };

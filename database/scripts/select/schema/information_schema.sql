@@ -1,22 +1,17 @@
 COPY (
     SELECT 
-        cols.column_name,
-        cols.data_type,
-        cols.is_nullable,
-        (ct.conname IS NOT NULL) AS is_primary_key
-    FROM 
-        information_schema.columns AS cols
-    JOIN 
-        pg_class cls ON cls.relname = cols.table_name
-    JOIN 
-        pg_namespace nsp ON nsp.nspname = cols.table_schema AND nsp.oid = cls.relnamespace
-    LEFT JOIN 
-        pg_attribute attr ON attr.attrelid = cls.oid AND attr.attname = cols.column_name
-    LEFT JOIN 
-        pg_constraint ct ON ct.conrelid = cls.oid 
-            AND ct.contype = 'p' 
-            AND attr.attnum = ANY (ct.conkey)
-    WHERE 
-        cols.table_name = :table
-        AND cols.table_schema = 'shop'
+	    column_name,
+	    data_type,
+	    is_nullable,
+	    column_default,
+	    CASE 
+			WHEN column_default IS NOT NULL AND is_nullable = 'YES' THEN 'NO'
+	        WHEN column_default IS NOT NULL THEN 'YES'
+	        ELSE 'NO'
+	    END AS is_undefinable
+	FROM 
+	    information_schema.columns
+	WHERE 
+	    table_schema = :table
+	    AND table_name = 'article'
 ) TO :file DELIMITER ',' CSV HEADER;

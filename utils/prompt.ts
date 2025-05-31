@@ -1,12 +1,15 @@
 import * as readline from "readline";
 
-const rl = readline.createInterface({
+export const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
 // Helper function to ask a question and wait for user input
-function askQuestion(question: string, defaultValue?: string): Promise<string> {
+export function askQuestion(
+  question: string,
+  defaultValue?: string
+): Promise<string> {
   return new Promise((resolve) => {
     if (defaultValue) {
       question += ` (default: ${defaultValue})`;
@@ -18,7 +21,7 @@ function askQuestion(question: string, defaultValue?: string): Promise<string> {
 }
 
 // Helper function to ask a question and hides the user input
-function askQuestionWithHiddenInput(
+export function askQuestionWithHiddenInput(
   question: string,
   defaultValue?: string
 ): Promise<string> {
@@ -44,5 +47,3 @@ function askQuestionWithHiddenInput(
     rl.question(question, resolve);
   });
 }
-
-export { rl, askQuestion, askQuestionWithHiddenInput };

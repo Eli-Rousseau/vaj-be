@@ -5,7 +5,7 @@ import Logger from "./logger";
 
 const execAsync = promisify(exec);
 
-async function runSqlScript(command: string, stepName: string) {
+export async function runSqlScript(command: string, stepName: string) {
   try {
     const { stdout, stderr } = await execAsync(command);
     if (stderr) {
@@ -21,5 +21,3 @@ async function runSqlScript(command: string, stepName: string) {
     process.exit(1);
   }
 }
-
-export { runSqlScript };

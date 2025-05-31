@@ -11,7 +11,7 @@ CREATE TABLE shop.shipment_category (
 	max_depth_cm FLOAT DEFAULT NULL,
 	country shop.shipment_country NOT NULL,
 	"cost" FLOAT NOT NULL,
-	currency shop.currency DEFAULT 'EUR',
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	currency shop.currency NOT NULL DEFAULT 'EUR',
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

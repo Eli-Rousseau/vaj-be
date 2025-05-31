@@ -5,8 +5,8 @@ CREATE TABLE shop.article(
 	description TEXT DEFAULT NULL,
 	brand shop.brand NOT NULL,
 	release TIMESTAMP DEFAULT NULL,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
 	-- Product Attributes
 	category INT NOT NULL,
@@ -23,10 +23,10 @@ CREATE TABLE shop.article(
 	season shop.season DEFAULT NULL,
 
 	-- Inventory & Pricing
-	quantity INT DEFAULT 1 CHECK (quantity > 0),
+	quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
 	price FLOAT NOT NULL,
-	currency shop.currency DEFAULT 'EUR',
-	discount FLOAT DEFAULT 0 CHECK (discount >= 0 AND discount <= 100),
+	currency shop.currency NOT NULL DEFAULT 'EUR',
+	discount FLOAT NOT NULL DEFAULT 0 CHECK (discount >= 0 AND discount <= 100),
 	status shop.availability NOT NULL,
 	for_sale BOOLEAN NOT NULL,
 	for_rent BOOLEAN NOT NULL,

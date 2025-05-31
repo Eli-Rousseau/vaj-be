@@ -29,7 +29,7 @@ const Colors = {
 };
 
 // Static class that is used to display standardized info, warning, debug, and error logs
-class Logger {
+export default class Logger {
   static info(message: string): void {
     console.log(
       `${Colors.FgBlue}[INFO]${
@@ -64,5 +64,3 @@ class Logger {
     );
   }
 }
-
-export default Logger;

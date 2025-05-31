@@ -6,7 +6,7 @@ import Logger from "./logger";
 let pgClient: Client | null = null;
 
 // Responsible for creating a postgresql database client
-function createPgClient(): Client {
+export function createPgClient(): Client {
   // Import the environment variables
   const database: string = process.env.DATABASE_VAJ || "";
   const host: string = process.env.DATABASE_HOST || "";
@@ -30,7 +30,9 @@ function createPgClient(): Client {
 }
 
 // Initialize the database connection and defining the global postgresql client
-async function initializeDatabaseConnection(client: Client): Promise<boolean> {
+export async function initializeDatabaseConnection(
+  client: Client
+): Promise<boolean> {
   return new Promise(async (resolve, reject) => {
     try {
       await client.connect();
@@ -46,7 +48,7 @@ async function initializeDatabaseConnection(client: Client): Promise<boolean> {
 }
 
 // Disconnect from the database
-async function terminateDatabaseConnection(): Promise<boolean> {
+export async function terminateDatabaseConnection(): Promise<boolean> {
   return new Promise((resolve, reject) => {
     if (!pgClient) {
       throw reject(new Error("Unable to access a pgClient."));
@@ -63,7 +65,7 @@ async function terminateDatabaseConnection(): Promise<boolean> {
 }
 
 // Returns the globally defined postgresql client
-function getPgClient(): Client {
+export function getPgClient(): Client {
   if (!pgClient) {
     throw new Error("Unable to access a pgClient.");
   }
@@ -71,7 +73,7 @@ function getPgClient(): Client {
 }
 
 // Class that provides abstraction method for formatting SQL clauses
-class SQLClauseFormatter {
+export class SQLClauseFormatter {
   static generateLimitOffsetClause(
     limit: string | undefined,
     offset: string | undefined
@@ -79,11 +81,3 @@ class SQLClauseFormatter {
     return limit ? "LIMIT " + limit + (offset ? " OFFSET " + offset : "") : "";
   }
 }
-
-export {
-  createPgClient,
-  initializeDatabaseConnection,
-  terminateDatabaseConnection,
-  getPgClient,
-  SQLClauseFormatter,
-};

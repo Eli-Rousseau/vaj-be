@@ -10,8 +10,8 @@ CREATE TABLE shop.user (
     salt TEXT DEFAULT NULL,
     authentication shop.auth_type NOT NULL,
     role shop.role_type NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Alter the user table after the address table was created
