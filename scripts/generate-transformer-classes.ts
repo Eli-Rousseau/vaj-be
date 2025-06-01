@@ -149,36 +149,52 @@ function parseTableDefinition(tablePath: string): Promise<string> {
       return r1.columnName.localeCompare(r2.columnName);
     });
 
-    // Transforming the definition record into a attribute line
-    const attributeLines: string[] = definitionRecords.map(
+    // Transforming the definition record into a property line
+    const propertyLines: string[] = definitionRecords.map(
       (definitionRecord) => {
-        let attributeLine: string = "";
+        let propertyLine: string = "";
 
-        // Adding the transformers to the attribute
+        // Adding the transformers to the property
         const transformers: { to: string; from: string } | null =
           TRANSFORMER_MAPPER[definitionRecord.pgType];
         if (transformers) {
-          const toTransformerLine: string = `${INDENT}@Transform(({ value }) => ${transformers.to}(value), { toClassOnly: true })\n`;
-          const fromTransformerLine: string = `${INDENT}@Transform(({ value }) => ${transformers.from}(value), { toPlainOnly: true })\n`;
-          attributeLine += toTransformerLine + fromTransformerLine;
+          const toTransformerLine: string = `${INDENT}@Transform(({ value }) => ${
+            transformers.to
+          }(value${
+            definitionRecord.isNullable
+              ? ", { isNullable: true }"
+              : definitionRecord.isUndefinable
+              ? ", { isUndefinable: true }"
+              : ""
+          }), { toClassOnly: true })\n`;
+          const fromTransformerLine: string = `${INDENT}@Transform(({ value }) => ${
+            transformers.from
+          }(value${
+            definitionRecord.isNullable
+              ? ", { isNullable: true }"
+              : definitionRecord.isUndefinable
+              ? ", { isUndefinable: true }"
+              : ""
+          }), { toPlainOnly: true })\n`;
+          propertyLine += toTransformerLine + fromTransformerLine;
         }
 
-        // Adding the expose to the attribute
-        attributeLine += `${INDENT}@Expose()\n`;
+        // Adding the expose to the property
+        propertyLine += `${INDENT}@Expose()\n`;
 
-        // Adding the attribute and their types
-        attributeLine += `${INDENT}${definitionRecord.columnName}${
+        // Adding the property and their types
+        propertyLine += `${INDENT}${definitionRecord.columnName}${
           definitionRecord.isUndefinable ? "?" : "!"
         }: ${definitionRecord.tsType}${
           definitionRecord.isNullable ? " | null" : ""
         };`;
 
-        return attributeLine;
+        return propertyLine;
       }
     );
 
-    // Joining the attribute lines
-    result += attributeLines.join("\n".repeat(2));
+    // Joining the property lines
+    result += propertyLines.join("\n".repeat(2));
 
     // Adding the final newlines
     result += `\n}${"\n".repeat(2)}`;

@@ -1,4 +1,26 @@
-export const toInteger = function (value: number): number {
+type TransformerOptions = {
+  isNullable?: boolean;
+  isUndefinable?: boolean;
+};
+
+export const toInteger = function (
+  value: number | null | undefined,
+  options: TransformerOptions = { isNullable: false, isUndefinable: false }
+): number | null | undefined {
+  if (
+    options.hasOwnProperty("isNullable") &&
+    options.isNullable &&
+    value === null
+  ) {
+    return null;
+  }
+  if (
+    options.hasOwnProperty("isUndefinable") &&
+    options.isUndefinable &&
+    value === undefined
+  ) {
+    return undefined;
+  }
   if (typeof value !== "number") {
     throw new Error(`Expected a numeric value. Received: ${value}`);
   }
@@ -6,7 +28,24 @@ export const toInteger = function (value: number): number {
   return Math.round(value);
 };
 
-export const fromInteger = function (value: number): number {
+export const fromInteger = function (
+  value: number | null | undefined,
+  options: TransformerOptions = { isNullable: false, isUndefinable: false }
+): number | null | undefined {
+  if (
+    options.hasOwnProperty("isNullable") &&
+    options.isNullable &&
+    value === null
+  ) {
+    return null;
+  }
+  if (
+    options.hasOwnProperty("isUndefinable") &&
+    options.isUndefinable &&
+    value === undefined
+  ) {
+    return undefined;
+  }
   if (typeof value !== "number") {
     throw new Error(`Expected a numeric value. Received: ${value}`);
   }
@@ -18,7 +57,24 @@ const isDayString = function (value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 };
 
-export const toDay = function (value: string): Date {
+export const toDay = function (
+  value: string | null | undefined,
+  options: TransformerOptions = { isNullable: false, isUndefinable: false }
+): Date | null | undefined {
+  if (
+    options.hasOwnProperty("isNullable") &&
+    options.isNullable &&
+    value === null
+  ) {
+    return null;
+  }
+  if (
+    options.hasOwnProperty("isUndefinable") &&
+    options.isUndefinable &&
+    value === undefined
+  ) {
+    return undefined;
+  }
   if (typeof value !== "string" || !isDayString(value)) {
     throw new Error(`Expected a day value. Received: ${value}`);
   }
@@ -27,7 +83,24 @@ export const toDay = function (value: string): Date {
   return new Date(Date.UTC(year, month - 1, day));
 };
 
-export const fromDay = function (value: Date): string {
+export const fromDay = function (
+  value: Date | null | undefined,
+  options: TransformerOptions = { isNullable: false, isUndefinable: false }
+): string | null | undefined {
+  if (
+    options.hasOwnProperty("isNullable") &&
+    options.isNullable &&
+    value === null
+  ) {
+    return null;
+  }
+  if (
+    options.hasOwnProperty("isUndefinable") &&
+    options.isUndefinable &&
+    value === undefined
+  ) {
+    return undefined;
+  }
   if (!(value instanceof Date)) {
     throw new Error(`Expected an Date instance. Recieved: ${value}`);
   }
@@ -42,7 +115,24 @@ const isValidTime = function (value: string): boolean {
   return /^\d{2}:\d{2}:\d{2}\.\d{6}$/.test(value);
 };
 
-export const toTime = function (value: string) {
+export const toTime = function (
+  value: string | null | undefined,
+  options: TransformerOptions = { isNullable: false, isUndefinable: false }
+): Date | null | undefined {
+  if (
+    options.hasOwnProperty("isNullable") &&
+    options.isNullable &&
+    value === null
+  ) {
+    return null;
+  }
+  if (
+    options.hasOwnProperty("isUndefinable") &&
+    options.isUndefinable &&
+    value === undefined
+  ) {
+    return undefined;
+  }
   if (typeof value !== "string" || !isValidTime(value)) {
     throw new Error(`Expected a time value. Received: ${value}`);
   }
@@ -63,7 +153,24 @@ export const toTime = function (value: string) {
   );
 };
 
-export const fromTime = function (value: Date) {
+export const fromTime = function (
+  value: Date | null | undefined,
+  options: TransformerOptions = { isNullable: false, isUndefinable: false }
+): string | null | undefined {
+  if (
+    options.hasOwnProperty("isNullable") &&
+    options.isNullable &&
+    value === null
+  ) {
+    return null;
+  }
+  if (
+    options.hasOwnProperty("isUndefinable") &&
+    options.isUndefinable &&
+    value === undefined
+  ) {
+    return undefined;
+  }
   if (!(value instanceof Date)) {
     throw new Error(`Expected an Date instance. Recieved: ${value}`);
   }
@@ -80,11 +187,31 @@ export const fromTime = function (value: Date) {
   )}`;
 };
 
-const isValidDatetime = function (value: string): boolean {
+const isValidDatetime = function (
+  value: string,
+  options: TransformerOptions = { isNullable: false, isUndefinable: false }
+): boolean {
   return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}$/.test(value);
 };
 
-export const toDatetime = function (value: string) {
+export const toDatetime = function (
+  value: string | null | undefined,
+  options: TransformerOptions = { isNullable: false, isUndefinable: false }
+): Date | null | undefined {
+  if (
+    options.hasOwnProperty("isNullable") &&
+    options.isNullable &&
+    value === null
+  ) {
+    return null;
+  }
+  if (
+    options.hasOwnProperty("isUndefinable") &&
+    options.isUndefinable &&
+    value === undefined
+  ) {
+    return undefined;
+  }
   if (typeof value !== "string" || !isValidDatetime(value)) {
     throw new Error(`Expected a day value. Received: ${value}`);
   }
@@ -106,7 +233,24 @@ export const toDatetime = function (value: string) {
   );
 };
 
-export const fromDatetime = function (value: Date) {
+export const fromDatetime = function (
+  value: Date | null | undefined,
+  options: TransformerOptions = { isNullable: false, isUndefinable: false }
+): string | null | undefined {
+  if (
+    options.hasOwnProperty("isNullable") &&
+    options.isNullable &&
+    value === null
+  ) {
+    return null;
+  }
+  if (
+    options.hasOwnProperty("isUndefinable") &&
+    options.isUndefinable &&
+    value === undefined
+  ) {
+    return undefined;
+  }
   if (!(value instanceof Date)) {
     throw new Error(`Expected an Date instance. Recieved: ${value}`);
   }
@@ -126,7 +270,24 @@ export const fromDatetime = function (value: Date) {
   )}`;
 };
 
-export const toJSON = function (value: string) {
+export const toJSON = function (
+  value: string | null | undefined,
+  options: TransformerOptions = { isNullable: false, isUndefinable: false }
+): any | null | undefined {
+  if (
+    options.hasOwnProperty("isNullable") &&
+    options.isNullable &&
+    value === null
+  ) {
+    return null;
+  }
+  if (
+    options.hasOwnProperty("isUndefinable") &&
+    options.isUndefinable &&
+    value === undefined
+  ) {
+    return undefined;
+  }
   if (typeof value !== "string") {
     throw new Error(`Expected an JSON instance. Recieved: ${value}`);
   }
@@ -134,6 +295,23 @@ export const toJSON = function (value: string) {
   return JSON.parse(value);
 };
 
-export const fromJSON = function (value: any) {
+export const fromJSON = function (
+  value: any | null | undefined,
+  options: TransformerOptions = { isNullable: false, isUndefinable: false }
+): any | null | undefined {
+  if (
+    options.hasOwnProperty("isNullable") &&
+    options.isNullable &&
+    value === null
+  ) {
+    return null;
+  }
+  if (
+    options.hasOwnProperty("isUndefinable") &&
+    options.isUndefinable &&
+    value === undefined
+  ) {
+    return undefined;
+  }
   return JSON.stringify(value);
 };

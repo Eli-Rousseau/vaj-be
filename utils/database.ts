@@ -71,13 +71,3 @@ export function getPgClient(): Client {
   }
   return pgClient;
 }
-
-// Class that provides abstraction method for formatting SQL clauses
-export class SQLClauseFormatter {
-  static generateLimitOffsetClause(
-    limit: string | undefined,
-    offset: string | undefined
-  ): string {
-    return limit ? "LIMIT " + limit + (offset ? " OFFSET " + offset : "") : "";
-  }
-}
