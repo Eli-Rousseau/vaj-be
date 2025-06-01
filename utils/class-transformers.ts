@@ -53,12 +53,8 @@ export const fromInteger = function (
   return Math.round(value);
 };
 
-const isDayString = function (value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
-};
-
 export const toDay = function (
-  value: string | null | undefined,
+  value: string | Date | null | undefined,
   options: TransformerOptions = { isNullable: false, isUndefinable: false }
 ): Date | null | undefined {
   if (
@@ -75,11 +71,18 @@ export const toDay = function (
   ) {
     return undefined;
   }
-  if (typeof value !== "string" || !isDayString(value)) {
+  if (value instanceof Date) {
+    return value;
+  }
+
+  const isDayPattern: RegExp = /\d{4}-\d{2}-\d{2}/;
+  if (typeof value !== "string" || !isDayPattern.test(value)) {
     throw new Error(`Expected a day value. Received: ${value}`);
   }
 
-  const [year, month, day] = value.split("-").map(Number);
+  const dayValue: string = value.match(isDayPattern)?.[0]!;
+
+  const [year, month, day] = dayValue.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day));
 };
 
@@ -111,12 +114,8 @@ export const fromDay = function (
   return `${year}-${month}-${day}`;
 };
 
-const isValidTime = function (value: string): boolean {
-  return /^\d{2}:\d{2}:\d{2}\.\d{6}$/.test(value);
-};
-
 export const toTime = function (
-  value: string | null | undefined,
+  value: string | Date | null | undefined,
   options: TransformerOptions = { isNullable: false, isUndefinable: false }
 ): Date | null | undefined {
   if (
@@ -133,11 +132,18 @@ export const toTime = function (
   ) {
     return undefined;
   }
-  if (typeof value !== "string" || !isValidTime(value)) {
+  if (value instanceof Date) {
+    return value;
+  }
+
+  const isTimePattern: RegExp = /\d{2}:\d{2}:\d{2}\.\d{3,6}/;
+  if (typeof value !== "string" || !isTimePattern.test(value)) {
     throw new Error(`Expected a time value. Received: ${value}`);
   }
 
-  const [hours, minutes, seconds] = value.split(":").map(Number);
+  const timeValue: string = value.match(isTimePattern)?.[0]!;
+
+  const [hours, minutes, seconds] = timeValue.split(":").map(Number);
   const milliseconds: number = (seconds - Math.floor(seconds)) * 1000;
   const now = new Date();
   return new Date(
@@ -187,15 +193,8 @@ export const fromTime = function (
   )}`;
 };
 
-const isValidDatetime = function (
-  value: string,
-  options: TransformerOptions = { isNullable: false, isUndefinable: false }
-): boolean {
-  return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}$/.test(value);
-};
-
 export const toDatetime = function (
-  value: string | null | undefined,
+  value: string | Date | null | undefined,
   options: TransformerOptions = { isNullable: false, isUndefinable: false }
 ): Date | null | undefined {
   if (
@@ -212,11 +211,18 @@ export const toDatetime = function (
   ) {
     return undefined;
   }
-  if (typeof value !== "string" || !isValidDatetime(value)) {
-    throw new Error(`Expected a day value. Received: ${value}`);
+  if (value instanceof Date) {
+    return value;
   }
 
-  const splittedDatetime: string[] = value.split(" ");
+  const isDatetimePattern: RegExp =
+    /\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}/;
+  if (typeof value !== "string" || !isDatetimePattern.test(value)) {
+    throw new Error(`Expected a day value. Received: ${value}`);
+  }
+  const datetimeValue: string = value.match(isDatetimePattern)?.[0]!;
+
+  const splittedDatetime: string[] = datetimeValue.split(" ");
   const [year, month, day] = splittedDatetime[0].split("-").map(Number);
   const [hours, minutes, seconds] = splittedDatetime[1].split(":").map(Number);
   const milliseconds: number = (seconds - Math.floor(seconds)) * 1000;
