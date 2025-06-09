@@ -226,7 +226,7 @@ async function main() {
   const stage: string = process.env.STAGE!;
 
   // Define the table names selection script and command
-  const outputTableNames: string = `${process.cwd()}/api/classes/table_names.csv`;
+  const outputTableNames: string = `${process.cwd()}/classes/table_names.csv`;
   const tableNamesScript: string = `${process.cwd()}/database/scripts/select/schema/tables.sql`;
   const tableNamesCommand: string = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseVAJ} -v file="'${outputTableNames}'" -f "${tableNamesScript}"; unset PGPASSWORD`;
 
@@ -252,14 +252,14 @@ async function main() {
   // Define the tables classes and adding the import statements
   let tableClasses: string = `import { Transform, Expose } from "class-transformer";\n`;
   tableClasses += `import "reflect-metadata"\n\n`;
-  tableClasses += `import { toInteger, fromInteger, toDay, fromDay, toTime, fromTime, toDatetime, fromDatetime, toJSON, fromJSON } from "../../utils/class-transformers";\n\n`;
+  tableClasses += `import { toInteger, fromInteger, toDay, fromDay, toTime, fromTime, toDatetime, fromDatetime, toJSON, fromJSON } from "../utils/class-transformers";\n\n`;
 
   // Itterate over the tables
   for (let i: number = 0; i < tableNames.length; i++) {
     const table: string = tableNames[i];
 
     // Define the table definition selection script and command
-    const outputTableDefinition: string = `${process.cwd()}/api/classes/definition_${table}.csv`;
+    const outputTableDefinition: string = `${process.cwd()}/classes/definition_${table}.csv`;
     const tableDefinitionScript: string = `${process.cwd()}/database/scripts/select/schema/information_schema.sql`;
     const tableDefinitionCommand: string = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseVAJ} -v table="'${table}'" -v file="'${outputTableDefinition}'" -f "${tableDefinitionScript}"; unset PGPASSWORD`;
 
@@ -276,7 +276,7 @@ async function main() {
   }
 
   // Writing all the newly created classes to the class types file
-  const outputTypesFile: string = `${process.cwd()}/api/classes/transformer-classes.ts`;
+  const outputTypesFile: string = `${process.cwd()}/classes/transformer-classes.ts`;
   try {
     await writeFile(outputTypesFile, tableClasses, { encoding: "utf-8" });
     Logger.info(`Writing the types.ts file finished successfully.`);

@@ -8,10 +8,9 @@ import {
   initializeDatabaseConnection,
   terminateDatabaseConnection,
   isConnectedToDatabase,
-  getPgClient,
   checkDatabaseHealth,
 } from "../utils/database";
-import userRouter from "./routes/user";
+import databaseUserRoute from "./routes/database/user";
 import { Client } from "pg";
 
 // Extend the request and reponse interfaces
@@ -151,7 +150,7 @@ async function setupServer() {
   });
 
   // Adding the routers
-  app.use("/user", userRouter);
+  app.use("/database/user", databaseUserRoute);
 
   // Catching requests to undefined routes
   app.use((req: ExpectedRequest, res: ExpectedResponse, next) => {

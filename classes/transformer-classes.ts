@@ -1,7 +1,7 @@
 import { Transform, Expose } from "class-transformer";
 import "reflect-metadata"
 
-import { toInteger, fromInteger, toDay, fromDay, toTime, fromTime, toDatetime, fromDatetime, toJSON, fromJSON } from "../../utils/class-transformers";
+import { toInteger, fromInteger, toDay, fromDay, toTime, fromTime, toDatetime, fromDatetime, toJSON, fromJSON } from "../utils/class-transformers";
 
 export class Address {
   @Expose()
