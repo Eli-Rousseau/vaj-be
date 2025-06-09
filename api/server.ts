@@ -52,6 +52,31 @@ async function setupServer() {
   // Initiate the api server
   app = express();
 
+  // See whether request is signed with a registered API key
+  app.use((req: ExpectedRequest, res: ExpectedResponse, next) => {
+    // Fetch the request API key
+    const reqAPIKey: string | string[] | undefined = req.headers["x-api-key"];
+
+    // Retrieve all the API keys present in the environmental variables
+    let APIKeys: Record<string, string> = {};
+    for (const [key, value] of Object.entries(process.env)) {
+      if (/VAJ_API_KEY/.test(key) && value !== undefined) {
+        APIKeys[key] = value;
+      }
+    }
+
+    // Check to see if the request API key is present in the list of registered API keys
+    if (
+      !reqAPIKey ||
+      Array.isArray(reqAPIKey) ||
+      !Object.values(APIKeys).includes(reqAPIKey)
+    ) {
+      res.status(403).json({ error: "Forbidden: Invalid API Key" }).end();
+      return;
+    }
+    next();
+  });
+
   // Parse the incoming JSON bodies
   app.use(express.json());
 

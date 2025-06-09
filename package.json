@@ -8,7 +8,8 @@
     "database-restore": "tsc && node ./dist/scripts/database-restore.js",
     "database-setup": "tsc && node ./dist/scripts/database-setup.js",
     "generate-transformer-classes": "tsc && node ./dist/scripts/generate-transformer-classes.js",
-    "api": "nodemon --watch api --ext ts,tsx --exec ts-node ./api/server.ts"
+    "api": "nodemon --watch api --ext ts,tsx --exec ts-node ./api/server.ts",
+    "generate-api-key": "tsc && node ./dist/scripts/generate-api-key.js"
   },
   "author": "",
   "license": "ISC",
