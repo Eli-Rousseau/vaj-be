@@ -7,6 +7,9 @@ import {
   createPgClient,
   initializeDatabaseConnection,
   terminateDatabaseConnection,
+  isConnectedToDatabase,
+  getPgClient,
+  checkDatabaseHealth,
 } from "../utils/database";
 import userRouter from "./routes/user";
 import { Client } from "pg";
@@ -45,13 +48,16 @@ async function setupServer() {
   const pgClient: Client = createPgClient();
 
   // Initiating a connection with the pgClient
-  const connected: boolean = await initializeDatabaseConnection(pgClient);
+  await initializeDatabaseConnection(pgClient);
 
   // Skip server listening
-  if (!connected) {
+  if (!isConnectedToDatabase()) {
     Logger.info("Skipping the server listening.");
     process.exit(1);
   }
+
+  // Setup a database healthcheck on defined intervals
+  setInterval(() => checkDatabaseHealth(pgClient), 3600_000); // 1 hour
 
   // Initiate the api server
   app = express();
@@ -81,10 +87,25 @@ async function setupServer() {
     next();
   });
 
-  let requestCounter = 0;
-  let windowStart = Date.now();
+  // Checks to see the status of the database
+  app.use(async (req: ExpectedRequest, res: ExpectedResponse, next) => {
+    if (!isConnectedToDatabase()) {
+      Logger.info("Attempting new connection to the database.");
+      await initializeDatabaseConnection(pgClient);
+      if (!isConnectedToDatabase) {
+        res
+          .status(503)
+          .json({ error: "Service unavailable: database is unreachable." })
+          .end();
+        return;
+      }
+    }
+    next();
+  });
 
   // Rate limiting the requests using a global fixed window counter strategy
+  let requestCounter = 0;
+  let windowStart = Date.now();
   app.use((req: ExpectedRequest, res: ExpectedResponse, next) => {
     const now = Date.now();
 
@@ -131,6 +152,15 @@ async function setupServer() {
 
   // Adding the routers
   app.use("/user", userRouter);
+
+  // Catching requests to undefined routes
+  app.use((req: ExpectedRequest, res: ExpectedResponse, next) => {
+    res
+      .status(404)
+      .json({ error: `Route '${req.originalUrl}' not found.` })
+      .end();
+    return;
+  });
 }
 
 // Starting up the server process
@@ -155,16 +185,16 @@ function terminateServer() {
     Logger.info(
       "Received SIGINT. Terminating the server process. Cleaning up..."
     );
-    const disconnected: boolean = await terminateDatabaseConnection();
-    process.exit(disconnected ? 0 : 1);
+    await terminateDatabaseConnection();
+    process.exit(isConnectedToDatabase() ? 0 : 1);
   });
 
   process.on("SIGTERM", async () => {
     Logger.info(
       "Received SIGTERM. Terminating the server process. Cleaning up..."
     );
-    const disconnected: boolean = await terminateDatabaseConnection();
-    process.exit(disconnected ? 0 : 1);
+    await terminateDatabaseConnection();
+    process.exit(isConnectedToDatabase() ? 0 : 1);
   });
 }
 

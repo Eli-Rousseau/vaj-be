@@ -1,9 +1,12 @@
-import { Client, QueryResult } from "pg";
+import { Client } from "pg";
 
 import Logger from "./logger";
 
 // Define a global postgresql client
 let pgClient: Client | null = null;
+
+// Define a global variable to see if database is connected
+let isDatabaseOnline = true;
 
 // Responsible for creating a postgresql database client
 export function createPgClient(): Client {
@@ -32,23 +35,24 @@ export function createPgClient(): Client {
 // Initialize the database connection and defining the global postgresql client
 export async function initializeDatabaseConnection(
   client: Client
-): Promise<boolean> {
+): Promise<void> {
   return new Promise(async (resolve, reject) => {
     try {
       await client.connect();
       pgClient = client;
-      const queryResult: QueryResult = await pgClient.query("SELECT 1;"); // Health check on database connection
+      await pgClient.query("SELECT 1;"); // Health check on database connection
       Logger.info("Connected to database successfully.");
-      resolve(true);
+      isDatabaseOnline = true;
+      resolve();
     } catch (error) {
       Logger.error("Unable to initialize a connection with the database.");
-      resolve(false);
+      isDatabaseOnline = false;
     }
   });
 }
 
 // Disconnect from the database
-export async function terminateDatabaseConnection(): Promise<boolean> {
+export async function terminateDatabaseConnection(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!pgClient) {
       throw reject(new Error("Unable to access a pgClient."));
@@ -56,10 +60,26 @@ export async function terminateDatabaseConnection(): Promise<boolean> {
     try {
       pgClient!.end();
       Logger.info("Disconnected from the database successfully.");
-      resolve(true);
+      isDatabaseOnline = false;
+      resolve();
     } catch (error) {
       Logger.error("Unable to terminate the connection to the database.");
-      resolve(false);
+    }
+  });
+}
+
+// Does a health check on the database to see if the client is still connected
+export function checkDatabaseHealth(client: Client): Promise<void> {
+  return new Promise(async (resolve, reject) => {
+    pgClient = client;
+    try {
+      await pgClient.query("SELECT 1;");
+      Logger.info("Postgres client is well connected to the database.");
+      isDatabaseOnline = true;
+      resolve();
+    } catch (error) {
+      Logger.error("Postgres client is not connected to the database.");
+      isDatabaseOnline = false;
     }
   });
 }
@@ -70,4 +90,9 @@ export function getPgClient(): Client {
     throw new Error("Unable to access a pgClient.");
   }
   return pgClient;
+}
+
+// Returns the globally defined status of the datbase connection
+export function isConnectedToDatabase(): boolean {
+  return isDatabaseOnline;
 }

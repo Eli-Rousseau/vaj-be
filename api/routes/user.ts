@@ -22,7 +22,7 @@ userRouter.param(
   }
 );
 
-// Handeling the retrieval of the pgClient
+// Handle the retrieval of the pgClient
 userRouter.use((req: ExpectedRequest, res: ExpectedResponse, next) => {
   try {
     req.pgClient = getPgClient();
@@ -261,7 +261,7 @@ userRouter
   .get(async (req: ExpectedRequest, res: ExpectedResponse) => {
     // Retrieve the query params
     const limit: string | undefined = req.limit;
-    const offset: string | undefined = req.limit;
+    const offset: string | undefined = req.offset;
 
     // Format the database query
     const querySelectRecords: string = `
