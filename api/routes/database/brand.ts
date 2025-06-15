@@ -165,20 +165,32 @@ SELECT unnest(enum_range(null::shop.brand));
     }
 
     // Format the database query
-    const queryAlterEnum: string = `
+    const queryDeleteEnum: string = `
 DO $$
 DECLARE
   b TEXT;
+  t TEXT;
   new_enum_values TEXT[] := ARRAY[]::TEXT[];
   brands_to_remove TEXT[] := ARRAY[${body
     .map((value: string) => `'${value}'`)
     .join(", ")}];
+  tables_with_brand TEXT[];
   allowed_values_sql TEXT;
 BEGIN
-  -- 1. Rename the existing enum
+  -- 1. Get all tables with a 'brand' column in schema 'shop'
+  SELECT ARRAY(
+    SELECT t.table_name
+    FROM information_schema.tables t
+    JOIN information_schema.columns c ON c.table_name = t.table_name AND c.table_schema = t.table_schema
+    WHERE c.column_name = 'brand'
+      AND t.table_schema = 'shop'
+      AND t.table_type = 'BASE TABLE'
+  ) INTO tables_with_brand;
+
+  -- 2. Rename the existing enum
   ALTER TYPE shop.brand RENAME TO brand_old;
 
-  -- 2. Collect allowed enum values
+  -- 3. Collect allowed enum values
   FOR b IN SELECT unnest(enum_range(NULL::shop.brand_old))
   LOOP
     IF b NOT IN (SELECT unnest(brands_to_remove)) THEN
@@ -186,18 +198,14 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- 3. Create the new enum type
+  -- 4. Create the new enum
   EXECUTE format(
     'CREATE TYPE shop.brand AS ENUM (%s)',
     array_to_string(array_agg(quote_literal(val)), ', ')
   )
   FROM unnest(new_enum_values) AS val;
 
-  -- 4. Convert the column to TEXT first
-  ALTER TABLE shop.article
-    ALTER COLUMN brand TYPE TEXT;
-
-  -- 5. Build a static IN list for allowed values
+  -- 5. Build allowed value list for dynamic SQL
   allowed_values_sql := array_to_string(
     ARRAY(
       SELECT format('%L', val)
@@ -205,17 +213,24 @@ BEGIN
     ), ', '
   );
 
-  -- 6. Recast the column to the new enum with fallback to NULL
-  EXECUTE format($sql$
-    ALTER TABLE shop.article
-    ALTER COLUMN brand TYPE shop.brand
-    USING (
-      CASE
-        WHEN brand IN (%s) THEN brand::shop.brand
-        ELSE NULL
-      END
-    )
-  $sql$, allowed_values_sql);
+  -- 6. Iterate over tables and update the brand column
+  FOREACH t IN ARRAY tables_with_brand
+  LOOP
+    -- Convert to TEXT first
+    EXECUTE format('ALTER TABLE shop.%I ALTER COLUMN brand TYPE TEXT;', t);
+
+    -- Then convert to new enum with fallback to NULL
+    EXECUTE format($sql$
+      ALTER TABLE shop.%I
+      ALTER COLUMN brand TYPE shop.brand
+      USING (
+        CASE
+          WHEN brand IN (%s) THEN brand::shop.brand
+          ELSE NULL
+        END
+      )
+    $sql$, t, allowed_values_sql);
+  END LOOP;
 
   -- 7. Drop the old enum
   DROP TYPE shop.brand_old;
@@ -228,7 +243,7 @@ SELECT unnest(enum_range(null::shop.brand));
     // Run the query on the database
     let rows: any[] = [];
     try {
-      await req.pgClient!.query(queryAlterEnum);
+      await req.pgClient!.query(queryDeleteEnum);
       const queryResult: QueryResult = await req.pgClient!.query(
         querySelectEnum
       );
@@ -238,7 +253,7 @@ SELECT unnest(enum_range(null::shop.brand));
         .status(400)
         .json({
           error: `Failed to execute the query on the database: ${error}`,
-          query: queryAlterEnum,
+          query: queryDeleteEnum,
         })
         .end();
       return;
@@ -251,7 +266,7 @@ SELECT unnest(enum_range(null::shop.brand));
         .json({
           error:
             "No records could be retrieved upon execution of the database query.",
-          query: queryAlterEnum,
+          query: queryDeleteEnum,
         })
         .end();
       return;
