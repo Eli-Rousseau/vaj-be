@@ -10,8 +10,9 @@ import {
   isConnectedToDatabase,
   checkDatabaseHealth,
 } from "../utils/database";
-import databaseUserRoute from "./routes/database/user";
 import { Client } from "pg";
+import databaseUserRoute from "./routes/database/user";
+import databaseBrandRoute from "./routes/database/brand";
 
 // Extend the request and reponse interfaces
 export interface ExpectedRequest extends express.Request {
@@ -151,6 +152,7 @@ async function setupServer() {
 
   // Adding the routers
   app.use("/database/user", databaseUserRoute);
+  app.use("/database/brand", databaseBrandRoute);
 
   // Catching requests to undefined routes
   app.use((req: ExpectedRequest, res: ExpectedResponse, next) => {
