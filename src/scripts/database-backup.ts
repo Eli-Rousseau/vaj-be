@@ -36,7 +36,7 @@ async function main() {
 
   // Define the output file
   const timestamp: Date = new Date();
-  const output: string = `./database/backups/${
+  const output: string = `./src/database/backups/${
     schemaOnly ? "schema-only" : "full"
   }/database_backup_${stage === "dev" ? "dev" : "prod"}.tar`;
 
@@ -49,7 +49,7 @@ async function main() {
   await runSqlScript(backupCommand, "Database backup");
 
   // Copy the output file to the history directory
-  const copy: string = `./database/backups/${
+  const copy: string = `./src/database/backups/${
     schemaOnly ? "schema-only" : "full"
   }/history/${stage === "dev" ? "dev" : "prod"}/${timestamp.toISOString()}.tar`;
   copyFile(output, copy, (error) => {

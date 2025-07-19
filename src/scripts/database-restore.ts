@@ -28,10 +28,10 @@ async function main() {
   const stage: string = process.env.STAGE!;
 
   // Path to database backups
-  const fullDbBackup: string = `${process.cwd()}/database/backups/full/database_backup_${
+  const fullDbBackup: string = `${process.cwd()}/src/database/backups/full/database_backup_${
     stage === "dev" ? "dev" : "prod"
   }.tar`;
-  const schemaOnlyDbBackup: string = `${process.cwd()}/database/backups/schema-only/database_backup_${
+  const schemaOnlyDbBackup: string = `${process.cwd()}/src/database/backups/schema-only/database_backup_${
     stage === "dev" ? "dev" : "prod"
   }.tar`;
 

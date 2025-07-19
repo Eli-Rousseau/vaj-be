@@ -36,15 +36,15 @@ async function main() {
   rl.close();
 
   // Define the database creation script and command
-  const dbScript = `${cwd()}/database/scripts/create/database/vintage_archive_jungle.sql`;
+  const dbScript = `${cwd()}/src/database/scripts/create/database/vintage_archive_jungle.sql`;
   const dbCommand = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseDefault} -f "${dbScript}"; unset PGPASSWORD`;
 
   // Define the schema creation script and command
-  const schemaScript = `${cwd()}/database/scripts/create/schema/shop.sql`;
+  const schemaScript = `${cwd()}/src/database/scripts/create/schema/shop.sql`;
   const schemaCommand = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseDefault} -f "${schemaScript}"; unset PGPASSWORD`;
 
   // Define the admininistrator user creation script and command
-  const userScript = `${cwd()}/database/scripts/create/user/administrator.sql`;
+  const userScript = `${cwd()}/src/database/scripts/create/user/administrator.sql`;
   const userCommand = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseVAJ} -v password="'${password}'" -f "${userScript}"; unset PGPASSWORD`;
 
   // Running the setup scripts

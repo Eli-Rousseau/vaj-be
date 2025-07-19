@@ -227,7 +227,7 @@ async function main() {
 
   // Define the table names selection script and command
   const outputTableNames: string = `${process.cwd()}/src/classes/table_names.csv`;
-  const tableNamesScript: string = `${process.cwd()}/database/scripts/select/schema/tables.sql`;
+  const tableNamesScript: string = `${process.cwd()}/src/database/scripts/select/schema/tables.sql`;
   const tableNamesCommand: string = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseVAJ} -v file="'${outputTableNames}'" -f "${tableNamesScript}"; unset PGPASSWORD`;
 
   // Running the table names selection process
@@ -260,7 +260,7 @@ async function main() {
 
     // Define the table definition selection script and command
     const outputTableDefinition: string = `${process.cwd()}/src/classes/definition_${table}.csv`;
-    const tableDefinitionScript: string = `${process.cwd()}/database/scripts/select/schema/information_schema.sql`;
+    const tableDefinitionScript: string = `${process.cwd()}/src/database/scripts/select/schema/information_schema.sql`;
     const tableDefinitionCommand: string = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseVAJ} -v table="'${table}'" -v file="'${outputTableDefinition}'" -f "${tableDefinitionScript}"; unset PGPASSWORD`;
 
     // Running the table definition selection process
@@ -277,7 +277,9 @@ async function main() {
     // Remove the table definition file
     try {
       await unlink(outputTableDefinition);
-      Logger.debug(`${path.basename(outputTableDefinition)} was successfully removed.`);
+      Logger.debug(
+        `${path.basename(outputTableDefinition)} was successfully removed.`
+      );
     } catch (error) {
       Logger.error(
         `Failed to remove ${path.basename(outputTableDefinition)}: ${error}`

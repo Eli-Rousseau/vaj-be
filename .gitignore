@@ -2,10 +2,10 @@
 /dist/
 
 # Database backups
-/database/backups/full/history/dev/*
-/database/backups/full/history/prod/*
-/database/backups/schema-only/history/dev/*
-/database/backups/schema-only/history/prod/*
+/src/database/backups/full/history/dev/*
+/src/database/backups/full/history/prod/*
+/src/database/backups/schema-only/history/dev/*
+/src/database/backups/schema-only/history/prod/*
 
 # Node packages
 /node_modules/
