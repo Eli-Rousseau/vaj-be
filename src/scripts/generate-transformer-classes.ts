@@ -277,7 +277,7 @@ async function main() {
     // Remove the table definition file
     try {
       await unlink(outputTableDefinition);
-      Logger.info(`${path.basename(outputTableDefinition)} was successfully removed.`);
+      Logger.debug(`${path.basename(outputTableDefinition)} was successfully removed.`);
     } catch (error) {
       Logger.error(
         `Failed to remove ${path.basename(outputTableDefinition)}: ${error}`

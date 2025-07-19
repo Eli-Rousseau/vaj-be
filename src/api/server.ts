@@ -12,7 +12,7 @@ import {
 } from "../utils/database";
 import { Client } from "pg";
 import databaseUserRoute from "./routes/database/user";
-import databaseBrandRoute from "./routes/database/brand";
+import databaseSystemAuthenticationRoute from "./routes/database/system_authentication";
 
 // Extend the request and reponse interfaces
 export interface ExpectedRequest extends express.Request {
@@ -152,7 +152,7 @@ async function setupServer() {
 
   // Adding the routers
   app.use("/database/user", databaseUserRoute);
-  app.use("/database/brand", databaseBrandRoute);
+  app.use("/database/system_authentication", databaseSystemAuthenticationRoute);
 
   // Catching requests to undefined routes
   app.use((req: ExpectedRequest, res: ExpectedResponse, next) => {
