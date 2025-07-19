@@ -1,1 +1,0 @@
-CREATE TYPE shop.auth_type AS ENUM ('INTERN', 'GOOGLE', 'APPLE');

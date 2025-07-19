@@ -1,1 +1,0 @@
-CREATE TYPE shop.currency AS ENUM ('EUR');

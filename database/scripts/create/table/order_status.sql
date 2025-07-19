@@ -1,0 +1,19 @@
+CREATE TABLE shop.order_status (
+	reference TEXT PRIMARY KEY NOT NULL UNIQUE
+);
+
+INSERT INTO shop.order_status (reference) VALUES
+('PENDING'),
+('CONFIRMED'),
+('PROCESSING'),
+('AWAITING_PAYMENT'),
+('PAID'),
+('SHIPPED'),
+('IN_TRANSIT'),
+('DELIVERED'),
+('COMPLETED'),
+('CANCELLED'),
+('RETURNED'),
+('REFUNDED'),
+('FAILED'),
+('ON_HOLD');

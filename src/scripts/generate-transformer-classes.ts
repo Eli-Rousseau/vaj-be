@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "fs/promises";
+import { readFile, writeFile, unlink } from "fs/promises";
 import * as path from "path";
 
 import { loadStage } from "../utils/stage";
@@ -226,7 +226,7 @@ async function main() {
   const stage: string = process.env.STAGE!;
 
   // Define the table names selection script and command
-  const outputTableNames: string = `${process.cwd()}/classes/table_names.csv`;
+  const outputTableNames: string = `${process.cwd()}/src/classes/table_names.csv`;
   const tableNamesScript: string = `${process.cwd()}/database/scripts/select/schema/tables.sql`;
   const tableNamesCommand: string = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseVAJ} -v file="'${outputTableNames}'" -f "${tableNamesScript}"; unset PGPASSWORD`;
 
@@ -259,7 +259,7 @@ async function main() {
     const table: string = tableNames[i];
 
     // Define the table definition selection script and command
-    const outputTableDefinition: string = `${process.cwd()}/classes/definition_${table}.csv`;
+    const outputTableDefinition: string = `${process.cwd()}/src/classes/definition_${table}.csv`;
     const tableDefinitionScript: string = `${process.cwd()}/database/scripts/select/schema/information_schema.sql`;
     const tableDefinitionCommand: string = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseVAJ} -v table="'${table}'" -v file="'${outputTableDefinition}'" -f "${tableDefinitionScript}"; unset PGPASSWORD`;
 
@@ -273,15 +273,37 @@ async function main() {
 
     // Parsing the defintion of the tables into classes
     tableClasses += await parseTableDefinition(outputTableDefinition);
+
+    // Remove the table definition file
+    try {
+      await unlink(outputTableDefinition);
+      Logger.info(`${path.basename(outputTableDefinition)} was successfully removed.`);
+    } catch (error) {
+      Logger.error(
+        `Failed to remove ${path.basename(outputTableDefinition)}: ${error}`
+      );
+      process.exit(1);
+    }
   }
 
   // Writing all the newly created classes to the class types file
-  const outputTypesFile: string = `${process.cwd()}/classes/transformer-classes.ts`;
+  const outputTypesFile: string = `${process.cwd()}/src/classes/transformer-classes.ts`;
   try {
     await writeFile(outputTypesFile, tableClasses, { encoding: "utf-8" });
-    Logger.info(`Writing the types.ts file finished successfully.`);
+    Logger.debug(`Writing the types.ts file finished successfully.`);
   } catch (error) {
     Logger.error(`Writing the types.ts file failed:\n${error}`);
+    process.exit(1);
+  }
+
+  // Remove the table names file
+  try {
+    await unlink(outputTableNames);
+    Logger.debug(`${path.basename(outputTableNames)} is successfully removed.`);
+  } catch (error) {
+    Logger.error(
+      `Failed to remove ${path.basename(outputTableNames)}: ${error}`
+    );
     process.exit(1);
   }
 }

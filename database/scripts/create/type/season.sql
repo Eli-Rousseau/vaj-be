@@ -1,1 +1,0 @@
-CREATE TYPE shop.season AS ENUM ('SUMMER', 'SPRING', 'AUTUMN', 'WINTER');

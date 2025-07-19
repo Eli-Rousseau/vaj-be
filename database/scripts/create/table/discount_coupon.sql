@@ -1,8 +1,8 @@
 CREATE TABLE shop.discount_coupon (
     reference SERIAL PRIMARY KEY,
-    code VARCHAR(255) UNIQUE NOT NULL,
+    code TEXT UNIQUE NOT NULL,
     description TEXT DEFAULT NULL,
-    discount_type VARCHAR(20) NOT NULL,
+    discount_type TEXT NOT NULL,
     discount_value FLOAT NOT NULL,
     max_uses INT NOT NULL DEFAULT 1,
     uses INT NOT NULL DEFAULT 0,

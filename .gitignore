@@ -14,4 +14,4 @@
 /.env*
 
 # definition-files
-/classes/*.csv
+/src/classes/*.csv

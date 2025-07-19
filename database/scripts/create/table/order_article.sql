@@ -1,17 +1,13 @@
 CREATE TABLE shop.order_article (
     reference SERIAL PRIMARY KEY,
     "order" INT NOT NULL,
-    CONSTRAINT order_article_order_fk 
-        FOREIGN KEY (order_reference) 
-        REFERENCES shop.order(reference) 
-        ON DELETE CASCADE 
-        ON UPDATE CASCADE,
+    CONSTRAINT fk_order FOREIGN KEY ("order") REFERENCES shop.order(reference) 
+        ON UPDATE CASCADE 
+        ON DELETE NO ACTION,
     article INT NOT NULL,
-    CONSTRAINT order_article_article_fk 
-        FOREIGN KEY (article_reference) 
-        REFERENCES shop.article(reference) 
-        ON DELETE CASCADE 
-        ON UPDATE CASCADE,
+    CONSTRAINT fk_article FOREIGN KEY (article) REFERENCES shop.article(reference) 
+        ON UPDATE CASCADE 
+        ON DELETE NO ACTION,
     quantity INT NOT NULL DEFAULT 1,
     sale_price FLOAT NOT NULL,
     rental_price FLOAT DEFAULT NULL,

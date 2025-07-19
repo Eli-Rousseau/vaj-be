@@ -1,1 +1,0 @@
-CREATE TYPE shop.condition AS ENUM ('NEW', 'GEAT', 'MODERATE', 'POOR');
