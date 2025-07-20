@@ -9,7 +9,7 @@ let pgClient: Client | null = null;
 let isDatabaseOnline = true;
 
 // Responsible for creating a postgresql database client
-export function createPgClient(): Client {
+export function createPgClient(): Client | undefined {
   // Import the environment variables
   const database: string = process.env.DATABASE_VAJ || "";
   const host: string = process.env.DATABASE_HOST || "";
@@ -19,6 +19,13 @@ export function createPgClient(): Client {
   const user: string = process.env.DATABASE_ADMINISTRATOR_USER_NAME || "";
   const password: string =
     process.env.DATABASE_ADMINISTRATOR_USER_PASSWORD || "";
+
+  if (!database || !host || !port || !user || !password) {
+    Logger.error(
+      "Missing required environment variables: DATABASE_VAJ, DATABASE_HOST, DATABASE_PORT, DATABASE_ADMINISTRATOR_USER_NAME or DATABASE_ADMINISTRATOR_USER_PASSWORD."
+    );
+    return;
+  }
 
   // Initiate the pg client
   const pgClient: Client = new Client({

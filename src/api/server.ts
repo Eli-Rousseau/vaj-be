@@ -62,7 +62,11 @@ async function setupServer() {
   await loadStage();
 
   // Creating a postgresql client
-  const pgClient: Client = createPgClient();
+  const pgClient: Client | undefined = createPgClient();
+  if (pgClient === undefined) {
+    Logger.info("Skipping the server listening.");
+    process.exit(1);
+  }
 
   // Initiating a connection with the pgClient
   await initializeDatabaseConnection(pgClient);
