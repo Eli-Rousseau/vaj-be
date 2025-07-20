@@ -9,7 +9,8 @@
     "database-setup": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/database-setup.js",
     "generate-transformer-classes": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/generate-transformer-classes.js",
     "server": "nodemon --watch api --ext ts,tsx --exec ts-node ./src/api/server.ts",
-    "generate-api-key": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/generate-api-key.js"
+    "generate-api-key": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/generate-api-key.js",
+    "test": "vitest"
   },
   "author": "",
   "license": "ISC",
@@ -26,6 +27,7 @@
     "@types/pg": "^8.11.14",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   }
 }
