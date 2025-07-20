@@ -1,16 +1,5 @@
--- Drop triggers first
-DROP TRIGGER IF EXISTS trigger_set_updated_at ON shop.user;
-DROP TRIGGER IF EXISTS trigger_set_updated_at ON shop.address;
-DROP TRIGGER IF EXISTS trigger_set_updated_at ON shop.article;
-DROP TRIGGER IF EXISTS trigger_set_updated_at ON shop.order;
-DROP TRIGGER IF EXISTS trigger_set_updated_at ON shop.order_article;
-DROP TRIGGER IF EXISTS trigger_set_updated_at ON shop.shipment_category;
-DROP TRIGGER IF EXISTS trigger_set_updated_at ON shop.role_permission;
-
--- Now drop the function
 DROP FUNCTION IF EXISTS shop.set_updated_at();
 
--- Recreate the trigger function
 CREATE FUNCTION shop.set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -19,38 +8,37 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Reattach the trigger to tables
-CREATE TRIGGER trigger_set_updated_at
-BEFORE UPDATE ON shop.user
-FOR EACH ROW
-EXECUTE FUNCTION shop.set_updated_at();
+DO $$
+DECLARE
+    tbl RECORD;
+    has_updated_at BOOLEAN;
+BEGIN
+    FOR tbl IN 
+        SELECT tablename 
+        FROM pg_tables 
+        WHERE schemaname = 'shop'
+    LOOP
+        -- Check if the table has an updated_at column
+        SELECT EXISTS (
+            SELECT 1 
+            FROM information_schema.columns 
+            WHERE table_schema = 'shop' 
+              AND table_name = tbl.tablename 
+              AND column_name = 'updated_at'
+        ) INTO has_updated_at;
 
-CREATE TRIGGER trigger_set_updated_at
-BEFORE UPDATE ON shop.address
-FOR EACH ROW
-EXECUTE FUNCTION shop.set_updated_at();
+        IF has_updated_at THEN
+            -- Drop trigger if it exists
+            EXECUTE format('DROP TRIGGER IF EXISTS trigger_set_updated_at ON shop.%I;', tbl.tablename);
 
-CREATE TRIGGER trigger_set_updated_at
-BEFORE UPDATE ON shop.article
-FOR EACH ROW
-EXECUTE FUNCTION shop.set_updated_at();
-
-CREATE TRIGGER trigger_set_updated_at
-BEFORE UPDATE ON shop.order
-FOR EACH ROW
-EXECUTE FUNCTION shop.set_updated_at();
-
-CREATE TRIGGER trigger_set_updated_at
-BEFORE UPDATE ON shop.order_article
-FOR EACH ROW
-EXECUTE FUNCTION shop.set_updated_at();
-
-CREATE TRIGGER trigger_set_updated_at
-BEFORE UPDATE ON shop.shipment_category
-FOR EACH ROW
-EXECUTE FUNCTION shop.set_updated_at();
-
-CREATE TRIGGER trigger_set_updated_at
-BEFORE UPDATE ON shop.role_permission
-FOR EACH ROW
-EXECUTE FUNCTION shop.set_updated_at();
+            -- Create the trigger
+            EXECUTE format($f$
+                CREATE TRIGGER trigger_set_updated_at
+                BEFORE UPDATE ON shop.%I
+                FOR EACH ROW
+                EXECUTE FUNCTION shop.set_updated_at();
+            $f$, tbl.tablename);
+        END IF;
+    END LOOP;
+END;
+$$
