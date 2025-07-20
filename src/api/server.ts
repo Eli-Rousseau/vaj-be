@@ -14,11 +14,28 @@ import { Client } from "pg";
 import databaseUserRoute from "./routes/database/user";
 import databaseSystemAuthenticationRoute from "./routes/database/system_authentication";
 
+// Define the order by query parameter interfaces
+export type Direction = "asc" | "desc";
+export interface OrderByField {
+  field: string;
+  direction: Direction;
+}
+
+// Define the where query parameter interfaces
+export type Operator = "=" | "!=" | ">" | ">=" | "<" | "<=";
+export interface WhereCondition {
+  field: string;
+  operator: Operator;
+  value: string;
+}
+
 // Extend the request and reponse interfaces
 export interface ExpectedRequest extends express.Request {
   id?: string;
   limit?: string;
   offset?: string;
+  orderBy?: OrderByField[];
+  where?: WhereCondition[];
   pgClient?: Client | null;
 }
 export interface ExpectedResponse extends express.Response {}
@@ -146,6 +163,42 @@ async function setupServer() {
       offset = req.query.offset;
     }
     req.offset = offset;
+
+    // Handeling the orderBy query parameter
+    let orderBy: OrderByField[] | undefined = undefined;
+    if (typeof req.query.orderBy === "string") {
+      orderBy = [];
+      const parts: string[] = req.query.orderBy.split(",");
+
+      for (const part of parts) {
+        const [field, direction] = part.split(":");
+
+        if (field && (direction === "asc" || direction === "desc")) {
+          orderBy.push({ field, direction });
+        }
+      }
+    }
+    req.orderBy = orderBy;
+
+    // Handeling the <here query parameter
+    let where: WhereCondition[] | undefined = undefined;
+    if (typeof req.query.where === "string") {
+      where = [];
+      const parts: string[] = req.query.where.split(",");
+
+      for (const part of parts) {
+        const operatorMatch = part.match(/(<=|>=|!=|=|<|>)/);
+        if (!operatorMatch) continue;
+
+        const operator = operatorMatch[0] as Operator;
+        const [field, value] = part.split(operator);
+
+        if (field && value !== undefined) {
+          where.push({ field, operator, value });
+        }
+      }
+    }
+    req.where = where;
 
     next();
   });
