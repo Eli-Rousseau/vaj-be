@@ -4,12 +4,12 @@
   "description": "vintage archive jungle - backend project",
   "main": "index.js",
   "scripts": {
-    "database-backup": "tsc && node ./dist/scripts/database-backup.js",
-    "database-restore": "tsc && node ./dist/scripts/database-restore.js",
-    "database-setup": "tsc && node ./dist/scripts/database-setup.js",
-    "generate-transformer-classes": "tsc && node ./dist/scripts/generate-transformer-classes.js",
-    "api": "nodemon --watch api --ext ts,tsx --exec ts-node ./src/api/server.ts",
-    "generate-api-key": "tsc && node ./dist/scripts/generate-api-key.js"
+    "database-backup": "tsc -p tsconfig.script.json && node ./.temp/scripts/database-backup.js",
+    "database-restore": "tsc -p tsconfig.script.json && node ./.temp/scripts/database-restore.js",
+    "database-setup": "tsc -p tsconfig.script.json && node ./.temp/scripts/database-setup.js",
+    "generate-transformer-classes": "tsc -p tsconfig.script.json && node ./.temp/scripts/generate-transformer-classes.js",
+    "server": "nodemon --watch api --ext ts,tsx --exec ts-node ./src/api/server.ts",
+    "generate-api-key": "tsc -p tsconfig.script.json && node ./.temp/scripts/generate-api-key.js"
   },
   "author": "",
   "license": "ISC",

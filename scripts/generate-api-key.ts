@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
-import Logger from "../utils/logger";
-import { loadStage } from "../utils/stage";
+import Logger from "../src/utils/logger";
+import { loadStage } from "../src/utils/stage";
 
 function generateEnvApiKey(label = "VAJ_API_KEY"): string {
   const key = crypto.randomBytes(32).toString("hex");

@@ -1,9 +1,9 @@
 import { readFile, writeFile, unlink } from "fs/promises";
 import * as path from "path";
 
-import { loadStage } from "../utils/stage";
-import { runSqlScript } from "../utils/sql";
-import Logger from "../utils/logger";
+import { loadStage } from "../src/utils/stage";
+import { runSqlScript } from "../src/utils/sql";
+import Logger from "../src/utils/logger";
 
 const INDENT: string = " ".repeat(2);
 

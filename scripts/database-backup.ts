@@ -1,9 +1,9 @@
 import { copyFile } from "fs";
 
-import { loadStage } from "../utils/stage";
-import Logger from "../utils/logger";
-import { rl, askQuestion } from "../utils/prompt";
-import { runSqlScript } from "../utils/sql";
+import { loadStage } from "../src/utils/stage";
+import Logger from "../src/utils/logger";
+import { rl, askQuestion } from "../src/utils/prompt";
+import { runSqlScript } from "../src/utils/sql";
 
 async function main() {
   // Loading the stage variable
