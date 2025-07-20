@@ -1,5 +1,6 @@
-# Dist folder
+# TypeScript compilation folders
 /dist/
+/.temp/
 
 # Database backups
 /src/database/backups/full/history/dev/*

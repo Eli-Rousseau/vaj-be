@@ -1,8 +1,11 @@
 {
   "extends": "./tsconfig.json",
   "include": ["scripts", "src"],
+  "exclude": ["tests", "dist", "node_modules", ".temp"],
   "compilerOptions": {
-    "outDir": "./.temp",            // Temporary output if needed
-    "noEmit": false
+    "outDir": "./.temp",
+    "rootDir": "./",
+    "noEmit": false,
+    "composite": false
   }
 }
