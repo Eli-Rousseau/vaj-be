@@ -154,7 +154,7 @@ export const putRequestOnParamRouteHandlerWrapper = function <T extends object>(
     try {
       const enumInstance: T = plainToInstance(cls, { reference: "check" });
       const fields: string[] = Object.keys(enumInstance);
-      isEnumClass = fields.length === 1;
+      isEnumClass = fields.length === 1 && fields[0] === "reference";
     } catch {
       isEnumClass = false;
     }
@@ -593,7 +593,7 @@ export const putRequestOnMainRouteHandlerWrapper = function <T extends object>(
     try {
       const enumInstance: T = plainToInstance(cls, { reference: "check" });
       const fields: string[] = Object.keys(enumInstance);
-      isEnumClass = fields.length === 1;
+      isEnumClass = fields.length === 1 && fields[0] === "reference";
     } catch {
       isEnumClass = false;
     }

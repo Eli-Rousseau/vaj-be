@@ -2,6 +2,11 @@ import {
   S3Client,
   ListObjectsCommand,
   ListObjectsCommandOutput,
+  _Object,
+  PutObjectCommand,
+  PutObjectCommandOutput,
+  HeadObjectCommand,
+  HeadObjectCommandOutput,
 } from "@aws-sdk/client-s3";
 
 import Logger from "./logger";
@@ -35,49 +40,93 @@ export function createS3Client(): S3Client | undefined {
 }
 
 export async function listObjectsCloudStorage(
+  bucket: string,
   prefix: string = ""
-): Promise<ListObjectsCommandOutput | undefined> {
-  // Import the environment variables
-  const bucketName: string = process.env.B2_BUCKET_NAME || "";
-
-  if (!bucketName) {
-    Logger.debug(
-      "Missing required environment variables: B2_BUCKET_ENDPOINT or B2_BUCKET_OWNER."
-    );
-    return;
-  }
-
+): Promise<_Object[] | undefined> {
   // Request the S3 Client
   const s3Client: S3Client | undefined = createS3Client();
-
   if (S3Client === undefined) return;
 
-  // Make the S3 ListObjectsCommand
+  // Execute the S3 ListObjectsCommand
+  let output: ListObjectsCommandOutput;
   try {
-    const listObjects = await s3Client!.send(
+    output = await s3Client!.send(
       new ListObjectsCommand({
-        Bucket: bucketName,
+        Bucket: bucket,
         Delimiter: "/",
         MaxKeys: 1000,
         Prefix: prefix,
       })
     );
+    const statusCode: number | undefined = output.$metadata.httpStatusCode;
+    Logger.debug(
+      `Terminated the S3 ListObjectsCommand with status code: ${statusCode}.`
+    );
 
-    Logger.debug("Succeeded the S3 ListObjectsCommand.");
-    return listObjects;
+    // Exit when status code is not 200
+    if (!statusCode || !(statusCode >= 200 && statusCode < 300)) {
+      return;
+    }
   } catch (error) {
     Logger.error(`Failed the S3 ListObjectsCommand: ${error}`);
     return;
   }
+
+  // Return the output contents
+  return output.Contents;
 }
 
-export async function putSingleObjectCloudStorage() {}
+export interface PutS3Object {
+  bucket: string;
+  key: string;
+  contentType: string;
+  fileContent: Buffer;
+}
+
+export async function putSingleObjectCloudStorage(
+  object: PutS3Object
+): Promise<string | void> {
+  // Request the S3 Client
+  const s3Client: S3Client | undefined = createS3Client();
+  if (S3Client === undefined) return;
+
+  // Excute the S3 PutObjectCommand
+  let output: PutObjectCommandOutput;
+  try {
+    output = await s3Client!.send(
+      new PutObjectCommand({
+        Bucket: object.bucket,
+        Key: object.key,
+        Body: object.fileContent,
+        ContentType: object.contentType,
+        Metadata: {
+          uploadedBy: "owner",
+        },
+        CacheControl: "max-age=3600",
+        ServerSideEncryption: "AES256",
+      })
+    );
+    const statusCode: number | undefined = output.$metadata.httpStatusCode;
+    Logger.debug(
+      `Terminated the S3 PutObjectCommand with status code: ${statusCode}.`
+    );
+
+    // Exit when status code is not 200
+    if (!statusCode || !(statusCode >= 200 && statusCode < 300)) {
+      return;
+    }
+  } catch (error) {
+    Logger.error(`Failed the S3 PutObjectCommand: ${error}`);
+    return;
+  }
+
+  // Construct the friendly url
+  const url: string = `https://f003.backblazeb2.com/file/${object.bucket}/${object.key}`;
+
+  return url;
+}
 
 export async function putMultipleObjectsCloudStorage() {}
-
-export async function getSingleObjectCloudStorage() {}
-
-export async function getMultipleObjectsCloudStorage() {}
 
 export async function deleteSingleObjectCloudStorage() {}
 
