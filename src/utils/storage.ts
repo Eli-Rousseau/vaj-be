@@ -81,11 +81,12 @@ export interface PutS3Object {
   key: string;
   contentType: string;
   fileContent: Buffer;
+  url?: string;
 }
 
 export async function putSingleObjectCloudStorage(
   object: PutS3Object
-): Promise<string | void> {
+): Promise<void> {
   // Request the S3 Client
   const s3Client: S3Client | undefined = createS3Client();
   if (S3Client === undefined) return;
@@ -122,8 +123,9 @@ export async function putSingleObjectCloudStorage(
 
   // Construct the friendly url
   const url: string = `https://f003.backblazeb2.com/file/${object.bucket}/${object.key}`;
+  object["url"] = url;
 
-  return url;
+  return;
 }
 
 export async function putMultipleObjectsCloudStorage() {}
