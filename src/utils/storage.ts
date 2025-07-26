@@ -1,135 +1,149 @@
-import {
-  S3Client,
-  ListObjectsCommand,
-  ListObjectsCommandOutput,
-  _Object,
-  PutObjectCommand,
-  PutObjectCommandOutput,
-  HeadObjectCommand,
-  HeadObjectCommandOutput,
-} from "@aws-sdk/client-s3";
-
 import Logger from "./logger";
 
-export function createS3Client(): S3Client | undefined {
+type Allowed = {
+  buckets: any[];
+  capabilities: string[];
+  namePrefix: string;
+};
+
+type StorageApi = {
+  absoluteMinimumPartSize: number;
+  apiUrl: string;
+  allowed: Allowed;
+  recommendedPartSize: number;
+  s3ApiUrl: string;
+};
+
+type GroupsApi = {
+  capabilities: string[];
+  groupsApiUrl: string;
+  infoType: string;
+};
+
+type ApiInfo = {
+  groupsApi: GroupsApi;
+  storageApi: StorageApi;
+};
+
+type AccountAuthorizationUrlResponse = {
+  accountId: string;
+  apiInfo: ApiInfo;
+  authorizationToken: string;
+  applicationKeyExpirationTimestamp: number;
+};
+
+type UploadUrlResponse = {
+  bucketId: string;
+  uploadUrl: string;
+  authorizationToken: string;
+};
+
+// Define global variables
+let authResponse: AccountAuthorizationUrlResponse | null;
+
+export const getAccountAuthorization = async function (): Promise<
+  AccountAuthorizationUrlResponse | null | undefined
+> {
+  // Check whether an authResponse is already defined
+  if (authResponse) {
+    const expirationSeconds = authResponse.applicationKeyExpirationTimestamp;
+    const expirationDate =
+      expirationSeconds != null
+        ? new Date(expirationSeconds * 1000)
+        : new Date("5000-01-01T00:00:00Z");
+    if (Date.now() < expirationDate.getTime()) {
+      return authResponse;
+    }
+  }
+
   // Import the environment variables
-  const endpoint: string = process.env.B2_ENDPOINT || "";
-  const region: string = process.env.B2_REGION || "";
-  const keyId: string = process.env.B2_KEY_ID || "";
+  const applicationKeyId: string = process.env.B2_KEY_ID || "";
   const applicationKey: string = process.env.B2_APPLICATION_KEY || "";
-
-  if (!endpoint || !region || !keyId || !applicationKey) {
-    Logger.debug(
-      "Missing required environment variables: B2_ENDPOINT, B2_OWNER, B2_KEY_ID or B2_APPLICATION_KEY."
+  const baseUrl: string = process.env.B2_BASE_URL || "";
+  if (!applicationKeyId || !applicationKey || !baseUrl) {
+    Logger.error(
+      "Missing required environment variables: B2_KEY_ID, B2_APPLICATION_KEY, or B2_BASE_URL."
     );
     return;
   }
 
-  // Initialize the S3Client
-  const s3Client: S3Client = new S3Client({
-    endpoint: "https://" + endpoint,
-    region: region,
-    credentials: {
-      accessKeyId: keyId,
-      secretAccessKey: applicationKey,
-    },
-    forcePathStyle: true,
-  });
-
-  return s3Client;
-}
-
-export async function listObjectsCloudStorage(
-  bucket: string,
-  prefix: string = ""
-): Promise<_Object[] | undefined> {
-  // Request the S3 Client
-  const s3Client: S3Client | undefined = createS3Client();
-  if (S3Client === undefined) return;
-
-  // Execute the S3 ListObjectsCommand
-  let output: ListObjectsCommandOutput;
+  // Perform the b2_authorize_account request
   try {
-    output = await s3Client!.send(
-      new ListObjectsCommand({
-        Bucket: bucket,
-        Delimiter: "/",
-        MaxKeys: 1000,
-        Prefix: prefix,
-      })
-    );
-    const statusCode: number | undefined = output.$metadata.httpStatusCode;
-    Logger.debug(
-      `Terminated the S3 ListObjectsCommand with status code: ${statusCode}.`
-    );
+    const url: string = `${baseUrl}/b2api/v4/b2_authorize_account`;
+    const headers = {
+      Authorization:
+        "Basic " +
+        Buffer.from(`${applicationKeyId}:${applicationKey}`).toString("base64"),
+    };
 
-    // Exit when status code is not 200
-    if (!statusCode || !(statusCode >= 200 && statusCode < 300)) {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: headers,
+    });
+
+    if (!response.ok) {
+      Logger.error(
+        `Failed b2_authorize_account: HTTP ${response.status} ${response.statusText}`
+      );
       return;
     }
+
+    authResponse = await response.json();
+    Logger.info(`Succeeded b2_authorize_account request.`);
   } catch (error) {
-    Logger.error(`Failed the S3 ListObjectsCommand: ${error}`);
+    Logger.error(`Failed b2_authorize_account request: ${error}.`);
     return;
   }
 
-  // Return the output contents
-  return output.Contents;
-}
+  return authResponse;
+};
 
-export interface PutS3Object {
-  bucket: string;
-  key: string;
-  contentType: string;
-  fileContent: Buffer;
-  url?: string;
-}
+export const uploadFile = async function () {
+  // Import the environment variables
+  const baseUrl: string = process.env.B2_BASE_URL || "";
+  const bucketId: string = process.env.B2_BUCKET_ID || "";
+  if (!baseUrl || !bucketId) {
+    Logger.error(
+      "Missing required environment variables: B2_BASE_URL or B2_BUCKET_ID."
+    );
+    return;
+  }
 
-export async function putSingleObjectCloudStorage(
-  object: PutS3Object
-): Promise<void> {
-  // Request the S3 Client
-  const s3Client: S3Client | undefined = createS3Client();
-  if (S3Client === undefined) return;
+  // Retrieve the account authorization response
+  const authorizationResponse = await getAccountAuthorization();
+  if (!authorizationResponse) {
+    throw Error("Unable to retrieve account authorization.");
+  }
 
-  // Excute the S3 PutObjectCommand
-  let output: PutObjectCommandOutput;
+  // Peform b2_get_upload_url request
+  let uploadUrlResponse: UploadUrlResponse;
   try {
-    output = await s3Client!.send(
-      new PutObjectCommand({
-        Bucket: object.bucket,
-        Key: object.key,
-        Body: object.fileContent,
-        ContentType: object.contentType,
-        Metadata: {
-          uploadedBy: "owner",
-        },
-        CacheControl: "max-age=3600",
-        ServerSideEncryption: "AES256",
-      })
-    );
-    const statusCode: number | undefined = output.$metadata.httpStatusCode;
-    Logger.debug(
-      `Terminated the S3 PutObjectCommand with status code: ${statusCode}.`
-    );
+    const url: string = `${baseUrl}/b2api/v4/b2_get_upload_url?bucketId=${bucketId}`;
+    const headers = {
+      Authorization: authorizationResponse.authorizationToken,
+    };
 
-    // Exit when status code is not 200
-    if (!statusCode || !(statusCode >= 200 && statusCode < 300)) {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: headers,
+    });
+
+    if (!response.ok) {
+      Logger.error(
+        `Failed b2_get_upload_url: HTTP ${response.status} ${response.statusText}`
+      );
       return;
     }
+
+    uploadUrlResponse = await response.json();
   } catch (error) {
-    Logger.error(`Failed the S3 PutObjectCommand: ${error}`);
+    Logger.error(`Failed b2_get_upload_url request: ${error}.`);
     return;
   }
 
-  // Construct the friendly url
-  const url: string = `https://f003.backblazeb2.com/file/${object.bucket}/${object.key}`;
-  object["url"] = url;
+  return uploadUrlResponse;
+};
 
-  return;
-}
+export const fileExists = async function () {};
 
-export async function putMultipleObjectsCloudStorage() {}
-
-export async function deleteSingleObjectCloudStorage() {}
-
-export async function deleteMultipleObjectsCloudStorage() {}
+export const deleteFile = async function () {};
