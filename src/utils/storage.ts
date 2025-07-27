@@ -47,6 +47,7 @@ export type File = {
   content: Buffer;
   contentType: string;
   publicUrl?: string;
+  id?: string;
 };
 
 type FileRetention = {
@@ -80,6 +81,41 @@ type UploadFileResponse = {
   replicationStatus: string;
   serverSideEncryption: ServerSideEncryption;
   uploadTimestamp: number;
+};
+
+type GetFileInfoResponse = {
+  accountId: string;
+  action: string;
+  bucketId: string;
+  contentLength: string;
+  contentSha1: string;
+  contentMd5: string;
+  contentType: string;
+  fileId: string;
+  fileInfo: any;
+  fileName: string;
+  fileRetention: FileRetention;
+  legalHold: LegalHold;
+  replicationStatus: string;
+  serverSideEncryption: ServerSideEncryption;
+  uploadTimestamp: number;
+};
+
+type BadFileIdResponse = {
+  code: string;
+  message: string;
+  status: number;
+};
+
+type DeleteFileResponse = {
+  keyName: string;
+  applicationKeyId: string;
+  capabilities: string[];
+  accountId: string;
+  expirationTimestamp: number;
+  bucketIds: string;
+  namePrefix: string;
+  options: string[];
 };
 
 // Define global variables
@@ -199,7 +235,7 @@ const getUploadUrl = async function (): Promise<
 
     globalUploadUrlResponse = await response.json();
     globalUploadUrlResponse!["authorizationTokenExpirationTimestamp"] = now;
-    Logger.info(`Succeeded b2_authorize_account request.`);
+    Logger.info(`Succeeded b2_get_upload_url request.`);
 
     return globalUploadUrlResponse;
   } catch (error) {
@@ -208,9 +244,7 @@ const getUploadUrl = async function (): Promise<
   }
 };
 
-export const uploadFile = async function (
-  file: File
-): Promise<UploadFileResponse | undefined> {
+export const uploadFile = async function (file: File): Promise<void> {
   // Import the environment variables
   const bucketRegion: string = process.env.B2_REGION || "";
   const bucketName: string = process.env.B2_BUCKET_NAME || "";
@@ -264,14 +298,121 @@ export const uploadFile = async function (
       bucketRegion.match(/\d{3}/)![0]
     }.backblazeb2.com/file/${bucketName}/${file.name}`;
     file["publicUrl"] = publicUrl;
+    file["id"] = uploadFileResponse.fileId;
 
-    return uploadFileResponse;
+    return;
   } catch (error) {
     Logger.error(`Failed b2_upload_file request: ${error}.`);
     return;
   }
 };
 
-export const fileExists = async function () {};
+export const fileExists = async function (
+  file: File
+): Promise<boolean | undefined> {
+  // Import the environment variables
+  const baseUrl: string = process.env.B2_BASE_URL || "url";
+  if (!baseUrl) {
+    Logger.error("Missing required environment variables: B2_BASE_URL.");
+    return;
+  }
 
-export const deleteFile = async function () {};
+  // Retrieve the account authorization response
+  const authResponse = await getAccountAuthorization();
+  if (!authResponse) {
+    throw Error("Unable to retrieve account authorization.");
+  }
+
+  // Peform the b2_get_file_info request
+  try {
+    const url: string = `${baseUrl}/b2api/v4/b2_get_file_info?fileId=${file.id}`;
+    const headers = {
+      Authorization: authResponse.authorizationToken,
+    };
+
+    const response = await fetch(url, {
+      headers: headers,
+    });
+
+    if (!response.ok && response.status !== 400) {
+      Logger.error(
+        `Failed b2_get_file_info: HTTP ${response.status} ${response.statusText}`
+      );
+      return;
+    }
+
+    const getFileInfoResponse: GetFileInfoResponse | BadFileIdResponse =
+      await response.json();
+    if (
+      "message" in getFileInfoResponse &&
+      /Bad File ID/i.test(getFileInfoResponse.message)
+    ) {
+      Logger.info("Succeeded b2_get_file_info request.");
+      return false;
+    }
+
+    if (response.ok) {
+      Logger.info("Succeeded b2_get_file_info request.");
+      return true;
+    } else {
+      Logger.error(
+        `Failed b2_get_file_info: HTTP ${response.status} ${response.statusText}`
+      );
+      return;
+    }
+  } catch (error) {
+    Logger.error(`Failed b2_get_file_info request: ${error}.`);
+    return;
+  }
+};
+
+export const deleteFile = async function (file: File): Promise<void> {
+  // Import the environment variables
+  const baseUrl: string = process.env.B2_BASE_URL || "url";
+  if (!baseUrl) {
+    Logger.error("Missing required environment variables: B2_BASE_URL.");
+    return;
+  }
+
+  // Retrieve the account authorization response
+  const authResponse = await getAccountAuthorization();
+  if (!authResponse) {
+    throw Error("Unable to retrieve account authorization.");
+  }
+
+  // Peform the b2_delete_file_version request
+  try {
+    const url: string = `${baseUrl}/b2api/v2/b2_delete_file_version`;
+    const headers = {
+      Authorization: authResponse.authorizationToken,
+      "Content-Type": "application/json",
+    };
+    const body = {
+      fileName: file.name,
+      fileId: file.id,
+    };
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      Logger.error(
+        `Failed b2_delete_file_version: HTTP ${response.status} ${response.statusText}`
+      );
+      return;
+    }
+
+    const deleteFileResponse: DeleteFileResponse = await response.json();
+    Logger.info("Succeeded b2_delete_file_version request.");
+
+    file["publicUrl"] = undefined;
+    file["id"] = undefined;
+    return;
+  } catch (error) {
+    Logger.error(`Failed b2_delete_file_version request: ${error}.`);
+    return;
+  }
+};
