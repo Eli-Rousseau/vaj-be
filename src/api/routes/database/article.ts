@@ -3,7 +3,4 @@ import initializeDatabaseRouter from "../../database_router";
 
 import { Article } from "../../../classes/transformer-classes";
 
-export const databaseArticleRoute: Router = initializeDatabaseRouter(
-  "article",
-  Article
-);
+export const article: Router = initializeDatabaseRouter("article", Article);

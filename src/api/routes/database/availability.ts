@@ -3,7 +3,7 @@ import initializeDatabaseRouter from "../../database_router";
 
 import { Availability } from "../../../classes/transformer-classes";
 
-export const databaseAvailabilityRoute: Router = initializeDatabaseRouter(
+export const availability: Router = initializeDatabaseRouter(
   "availability",
   Availability
 );

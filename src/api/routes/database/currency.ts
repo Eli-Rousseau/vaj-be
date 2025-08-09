@@ -3,7 +3,4 @@ import initializeDatabaseRouter from "../../database_router";
 
 import { Currency } from "../../../classes/transformer-classes";
 
-export const databaseCurrencyRoute: Router = initializeDatabaseRouter(
-  "currency",
-  Currency
-);
+export const currency: Router = initializeDatabaseRouter("currency", Currency);

@@ -3,5 +3,7 @@ import initializeDatabaseRouter from "../../database_router";
 
 import { SystemAuthentication } from "../../../classes/transformer-classes";
 
-export const databaseSystemAuthenticationRoute: Router =
-  initializeDatabaseRouter("system_authentication", SystemAuthentication);
+export const systemAuthentication: Router = initializeDatabaseRouter(
+  "system_authentication",
+  SystemAuthentication
+);

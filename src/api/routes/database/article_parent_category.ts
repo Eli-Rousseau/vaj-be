@@ -3,5 +3,7 @@ import initializeDatabaseRouter from "../../database_router";
 
 import { ArticleParentCategory } from "../../../classes/transformer-classes";
 
-export const databaseArticleParentCategoryRoute: Router =
-  initializeDatabaseRouter("article_parent_category", ArticleParentCategory);
+export const articleParentCategory: Router = initializeDatabaseRouter(
+  "article_parent_category",
+  ArticleParentCategory
+);

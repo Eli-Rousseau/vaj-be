@@ -3,7 +3,7 @@ import initializeDatabaseRouter from "../../database_router";
 
 import { ArticleSubCategory } from "../../../classes/transformer-classes";
 
-export const databaseArticleSubCategoryRoute: Router = initializeDatabaseRouter(
+export const articleSubCategory: Router = initializeDatabaseRouter(
   "article_sub_category",
   ArticleSubCategory
 );

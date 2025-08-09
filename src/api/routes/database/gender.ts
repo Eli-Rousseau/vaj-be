@@ -3,7 +3,4 @@ import initializeDatabaseRouter from "../../database_router";
 
 import { Gender } from "../../../classes/transformer-classes";
 
-export const databaseGenderRoute: Router = initializeDatabaseRouter(
-  "gender",
-  Gender
-);
+export const gender: Router = initializeDatabaseRouter("gender", Gender);

@@ -11,32 +11,7 @@ import {
   checkDatabaseHealth,
 } from "../utils/database";
 import { Client } from "pg";
-import {
-  databaseAddressRoute,
-  databaseArticleRoute,
-  databaseArticleParentCategoryRoute,
-  databaseArticleSubCategoryRoute,
-  databaseAvailabilityRoute,
-  databaseBrandRoute,
-  databaseColorRoute,
-  databaseConditionRoute,
-  databaseCurrencyRoute,
-  databaseDiscountCouponRoute,
-  databaseGenderRoute,
-  databaseMaterialRoute,
-  databaseOrderRoute,
-  databaseOrderArticleRoute,
-  databaseOrderStatusRoute,
-  databaseOrderTypeRoute,
-  databasePaymentMethodRoute,
-  databaseSeasonRoute,
-  databaseSizeRoute,
-  databaseSystemAuthenticationRoute,
-  databaseSystemPermissionRoute,
-  databaseSystemRoleRoute,
-  databaseSystemRolePermissionRoute,
-  databaseUserRoute,
-} from "./routes/database/index";
+import * as databaseRouter from "./routes/database/index";
 
 // Define the order by query parameter interfaces
 export type Direction = "asc" | "desc";
@@ -223,36 +198,39 @@ async function setupServer() {
   });
 
   // Adding the routers
-  app.use("/database/address", databaseAddressRoute);
-  app.use("/database/article", databaseArticleRoute);
+  app.use("/database/address", databaseRouter.address);
+  app.use("/database/article", databaseRouter.article);
   app.use(
     "/database/article_parent_category",
-    databaseArticleParentCategoryRoute
+    databaseRouter.articleParentCategory
   );
-  app.use("/database/availability", databaseAvailabilityRoute);
-  app.use("/database/article_sub_category", databaseArticleSubCategoryRoute);
-  app.use("/database/brand", databaseBrandRoute);
-  app.use("/database/color", databaseColorRoute);
-  app.use("/database/condition", databaseConditionRoute);
-  app.use("/database/currency", databaseCurrencyRoute);
-  app.use("/database/discount_coupon", databaseDiscountCouponRoute);
-  app.use("/database/gender", databaseGenderRoute);
-  app.use("/database/material", databaseMaterialRoute);
-  app.use("/database/order", databaseOrderRoute);
-  app.use("/database/order_article", databaseOrderArticleRoute);
-  app.use("/database/order_status", databaseOrderStatusRoute);
-  app.use("/database/order_type", databaseOrderTypeRoute);
-  app.use("/database/payment_method", databasePaymentMethodRoute);
-  app.use("/database/season", databaseSeasonRoute);
-  app.use("/database/size", databaseSizeRoute);
-  app.use("/database/system_authentication", databaseSystemAuthenticationRoute);
-  app.use("/database/system_permission", databaseSystemPermissionRoute);
-  app.use("/database/system_role", databaseSystemRoleRoute);
+  app.use("/database/article_sub_category", databaseRouter.articleSubCategory);
+  app.use("/database/availability", databaseRouter.availability);
+  app.use("/database/brand", databaseRouter.brand);
+  app.use("/database/color", databaseRouter.color);
+  app.use("/database/condition", databaseRouter.condition);
+  app.use("/database/currency", databaseRouter.currency);
+  app.use("/database/discount_coupon", databaseRouter.discountCoupon);
+  app.use("/database/gender", databaseRouter.gender);
+  app.use("/database/material", databaseRouter.material);
+  app.use("/database/order", databaseRouter.order);
+  app.use("/database/order_article", databaseRouter.orderArticle);
+  app.use("/database/order_status", databaseRouter.orderStatus);
+  app.use("/database/order_type", databaseRouter.orderType);
+  app.use("/database/payment_method", databaseRouter.paymentMethod);
+  app.use("/database/season", databaseRouter.season);
+  app.use("/database/size", databaseRouter.size);
+  app.use(
+    "/database/system_authentication",
+    databaseRouter.systemAuthentication
+  );
+  app.use("/database/system_permission", databaseRouter.systemPermission);
+  app.use("/database/system_role", databaseRouter.systemRole);
   app.use(
     "/database/system_role_permission",
-    databaseSystemRolePermissionRoute
+    databaseRouter.systemRolePermission
   );
-  app.use("/database/user", databaseUserRoute);
+  app.use("/database/user", databaseRouter.user);
 
   // Catching requests to undefined routes
   app.use((req: ExpectedRequest, res: ExpectedResponse, next) => {

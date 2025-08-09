@@ -3,7 +3,7 @@ import initializeDatabaseRouter from "../../database_router";
 
 import { DiscountCoupon } from "../../../classes/transformer-classes";
 
-export const databaseDiscountCouponRoute: Router = initializeDatabaseRouter(
+export const discountCoupon: Router = initializeDatabaseRouter(
   "discount_coupon",
   DiscountCoupon
 );

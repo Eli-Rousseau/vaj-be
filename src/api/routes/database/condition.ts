@@ -3,7 +3,7 @@ import initializeDatabaseRouter from "../../database_router";
 
 import { Condition } from "../../../classes/transformer-classes";
 
-export const databaseConditionRoute: Router = initializeDatabaseRouter(
+export const condition: Router = initializeDatabaseRouter(
   "condition",
   Condition
 );

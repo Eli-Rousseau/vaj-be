@@ -3,4 +3,4 @@ import initializeDatabaseRouter from "../../database_router";
 
 import { Size } from "../../../classes/transformer-classes";
 
-export const databaseSizeRoute: Router = initializeDatabaseRouter("size", Size);
+export const size: Router = initializeDatabaseRouter("size", Size);
