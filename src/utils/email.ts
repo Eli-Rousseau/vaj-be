@@ -3,7 +3,7 @@ import { createTransport, SendMailOptions, Transporter } from "nodemailer";
 import Logger from "./logger";
 
 // Define global variables
-let globalTransporter: Transporter | null;
+let globalTransporter: Transporter | null = null;
 
 const getEmailTransporter = function (): Transporter | null | undefined {
   // Check to see if an transporter is already defined

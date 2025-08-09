@@ -1,4 +1,4 @@
-import { QueryResult } from "pg";
+import { Client, QueryResult } from "pg";
 import { NextFunction } from "express";
 import { instanceToPlain, plainToInstance } from "class-transformer";
 
@@ -11,7 +11,7 @@ import {
 } from "./server";
 import { getPgClient } from "../utils/database";
 
-export const routParametersHandler = function (
+export const routeParametersHandler = function (
   req: ExpectedRequest,
   res: ExpectedResponse,
   next: NextFunction,
@@ -27,12 +27,16 @@ export const getPgClientHandler = function (
   next: NextFunction
 ): void {
   try {
-    req.pgClient = getPgClient();
+    const pgClient: Client | null | undefined = getPgClient();
+    if (!pgClient) {
+      throw Error("Unable to retrieve the Postgres Client.");
+    }
+    req.pgClient = pgClient;
   } catch (error) {
     res
       .status(500)
       .json({
-        error: `Encountered an error when getting the postgresql client: ${error}`,
+        error: `Encountered an error when getting the Postgres Client: ${error}`,
       })
       .end();
     return;
@@ -149,25 +153,6 @@ export const putRequestOnParamRouteHandlerWrapper = function <T extends object>(
       return;
     }
 
-    // Check whether this is a enum class
-    let isEnumClass: boolean;
-    try {
-      const enumInstance: T = plainToInstance(cls, { reference: "check" });
-      const fields: string[] = Object.keys(enumInstance);
-      isEnumClass = fields.length === 1 && fields[0] === "reference";
-    } catch {
-      isEnumClass = false;
-    }
-    if (isEnumClass) {
-      res
-        .status(400)
-        .json({
-          error: `Invalid request: The transformer class ${clsName} has only one field, which is interpreted as an enum. PUT requests are not supported for enum-based endpoints.`,
-        })
-        .end();
-      return;
-    }
-
     // Convert plain objects into instances
     let instance: T;
     try {
@@ -176,7 +161,7 @@ export const putRequestOnParamRouteHandlerWrapper = function <T extends object>(
       res
         .status(400)
         .json({
-          error: `Failed to tranform the plain object into an class instance: ${error}`,
+          error: `Failed to tranform the plain object into a class instance: ${error}`,
           record: body,
         })
         .end();
@@ -204,6 +189,15 @@ export const putRequestOnParamRouteHandlerWrapper = function <T extends object>(
           : plain[field]
       }`;
     });
+
+    // No data fields to update
+    if (!recordValues) {
+      res
+        .status(400)
+        .json({ error: "Unable to retrieve any data field from request." })
+        .end();
+      return;
+    }
 
     // Format the database query
     const queryUpdateRecord: string = `
@@ -588,25 +582,6 @@ export const putRequestOnMainRouteHandlerWrapper = function <T extends object>(
       return;
     }
 
-    // Check whether this is a enum class
-    let isEnumClass: boolean;
-    try {
-      const enumInstance: T = plainToInstance(cls, { reference: "check" });
-      const fields: string[] = Object.keys(enumInstance);
-      isEnumClass = fields.length === 1 && fields[0] === "reference";
-    } catch {
-      isEnumClass = false;
-    }
-    if (isEnumClass) {
-      res
-        .status(400)
-        .json({
-          error: `Invalid request: The transformer class ${clsName} has only one field, which is interpreted as an enum. PUT requests are not supported for enum-based endpoints.`,
-        })
-        .end();
-      return;
-    }
-
     // Transform object into a list of objects
     if (!inputIsArray) {
       body = [body];
@@ -656,7 +631,18 @@ export const putRequestOnMainRouteHandlerWrapper = function <T extends object>(
           ? `'${plain[field]}'`
           : plain[field]
       );
-      valuesRecords.push(`(${valuesRecord.join(", ")})`);
+      if (valuesRecord) {
+        valuesRecords.push(`(${valuesRecord.join(", ")})`);
+      }
+    }
+
+    // No data fields to update
+    if (!valuesRecords) {
+      res
+        .status(400)
+        .json({ error: "Unable to retrieve any data field from request." })
+        .end();
+      return;
     }
 
     // Retrieve all the fields to update

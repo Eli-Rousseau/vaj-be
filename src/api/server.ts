@@ -4,15 +4,39 @@ import { Express } from "express";
 import Logger from "../utils/logger";
 import { loadStage } from "../utils/stage";
 import {
-  createPgClient,
+  getPgClient,
   initializeDatabaseConnection,
   terminateDatabaseConnection,
   isConnectedToDatabase,
   checkDatabaseHealth,
 } from "../utils/database";
 import { Client } from "pg";
-import databaseUserRoute from "./routes/database/user";
-import databaseSystemAuthenticationRoute from "./routes/database/system_authentication";
+import {
+  databaseAddressRoute,
+  databaseArticleRoute,
+  databaseArticleParentCategoryRoute,
+  databaseArticleSubCategoryRoute,
+  databaseAvailabilityRoute,
+  databaseBrandRoute,
+  databaseColorRoute,
+  databaseConditionRoute,
+  databaseCurrencyRoute,
+  databaseDiscountCouponRoute,
+  databaseGenderRoute,
+  databaseMaterialRoute,
+  databaseOrderRoute,
+  databaseOrderArticleRoute,
+  databaseOrderStatusRoute,
+  databaseOrderTypeRoute,
+  databasePaymentMethodRoute,
+  databaseSeasonRoute,
+  databaseSizeRoute,
+  databaseSystemAuthenticationRoute,
+  databaseSystemPermissionRoute,
+  databaseSystemRoleRoute,
+  databaseSystemRolePermissionRoute,
+  databaseUserRoute,
+} from "./routes/database/index";
 
 // Define the order by query parameter interfaces
 export type Direction = "asc" | "desc";
@@ -36,7 +60,7 @@ export interface ExpectedRequest extends express.Request {
   offset?: string;
   orderBy?: OrderByField[];
   where?: WhereCondition[];
-  pgClient?: Client | null;
+  pgClient?: Client;
 }
 export interface ExpectedResponse extends express.Response {}
 
@@ -62,17 +86,24 @@ async function setupServer() {
   await loadStage();
 
   // Creating a postgresql client
-  const pgClient: Client | undefined = createPgClient();
-  if (pgClient === undefined) {
+  const pgClient: Client | null | undefined = getPgClient();
+  if (!pgClient) {
+    Logger.error("Unable to retrieve the Postgres Client.");
     Logger.info("Skipping the server listening.");
     process.exit(1);
   }
 
   // Initiating a connection with the pgClient
-  await initializeDatabaseConnection(pgClient);
+  try {
+    await initializeDatabaseConnection(pgClient);
+  } catch (error) {
+    Logger.error(`Unable to initialize database connection: ${error}`);
+    process.exit(1);
+  }
 
   // Skip server listening
   if (!isConnectedToDatabase()) {
+    Logger.error("Unable to connect with the Postgres database.");
     Logger.info("Skipping the server listening.");
     process.exit(1);
   }
@@ -102,24 +133,8 @@ async function setupServer() {
       Array.isArray(reqAPIKey) ||
       !Object.values(APIKeys).includes(reqAPIKey)
     ) {
-      res.status(403).json({ error: "Forbidden: Invalid API Key" }).end();
+      res.status(403).json({ error: "Invalid API Key." }).end();
       return;
-    }
-    next();
-  });
-
-  // Checks to see the status of the database
-  app.use(async (req: ExpectedRequest, res: ExpectedResponse, next) => {
-    if (!isConnectedToDatabase()) {
-      Logger.info("Attempting new connection to the database.");
-      await initializeDatabaseConnection(pgClient);
-      if (!isConnectedToDatabase) {
-        res
-          .status(503)
-          .json({ error: "Service unavailable: database is unreachable." })
-          .end();
-        return;
-      }
     }
     next();
   });
@@ -184,7 +199,7 @@ async function setupServer() {
     }
     req.orderBy = orderBy;
 
-    // Handeling the <here query parameter
+    // Handeling the where query parameter
     let where: WhereCondition[] | undefined = undefined;
     if (typeof req.query.where === "string") {
       where = [];
@@ -208,8 +223,36 @@ async function setupServer() {
   });
 
   // Adding the routers
-  app.use("/database/user", databaseUserRoute);
+  app.use("/database/address", databaseAddressRoute);
+  app.use("/database/article", databaseArticleRoute);
+  app.use(
+    "/database/article_parent_category",
+    databaseArticleParentCategoryRoute
+  );
+  app.use("/database/availability", databaseAvailabilityRoute);
+  app.use("/database/article_sub_category", databaseArticleSubCategoryRoute);
+  app.use("/database/brand", databaseBrandRoute);
+  app.use("/database/color", databaseColorRoute);
+  app.use("/database/condition", databaseConditionRoute);
+  app.use("/database/currency", databaseCurrencyRoute);
+  app.use("/database/discount_coupon", databaseDiscountCouponRoute);
+  app.use("/database/gender", databaseGenderRoute);
+  app.use("/database/material", databaseMaterialRoute);
+  app.use("/database/order", databaseOrderRoute);
+  app.use("/database/order_article", databaseOrderArticleRoute);
+  app.use("/database/order_status", databaseOrderStatusRoute);
+  app.use("/database/order_type", databaseOrderTypeRoute);
+  app.use("/database/payment_method", databasePaymentMethodRoute);
+  app.use("/database/season", databaseSeasonRoute);
+  app.use("/database/size", databaseSizeRoute);
   app.use("/database/system_authentication", databaseSystemAuthenticationRoute);
+  app.use("/database/system_permission", databaseSystemPermissionRoute);
+  app.use("/database/system_role", databaseSystemRoleRoute);
+  app.use(
+    "/database/system_role_permission",
+    databaseSystemRolePermissionRoute
+  );
+  app.use("/database/user", databaseUserRoute);
 
   // Catching requests to undefined routes
   app.use((req: ExpectedRequest, res: ExpectedResponse, next) => {
