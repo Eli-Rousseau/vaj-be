@@ -1,9 +1,9 @@
 CREATE TABLE shop.address (
     reference SERIAL PRIMARY KEY,
-    "user" INT NOT NULL,
+    "user" INT,
     CONSTRAINT fk_user FOREIGN KEY ("user") REFERENCES shop.user(reference)
         ON UPDATE CASCADE
-        ON DELETE NO ACTION,
+        ON DELETE SET NULL,
     country VARCHAR(255) NOT NULL,
     state_or_province VARCHAR(255) DEFAULT NULL,
     city VARCHAR(255) NOT NULL,

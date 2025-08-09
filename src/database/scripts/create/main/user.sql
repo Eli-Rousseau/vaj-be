@@ -34,10 +34,10 @@ CREATE TABLE shop.user (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_system_authentication FOREIGN KEY (system_authentication) REFERENCES shop.system_authentication(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		ON DELETE SET NULL,
     CONSTRAINT fk_system_role FOREIGN KEY (system_role) REFERENCES shop.system_role(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION
+		ON DELETE SET NULL
 );
 
 CREATE TABLE shop.address (
@@ -45,7 +45,7 @@ CREATE TABLE shop.address (
     "user" INT NOT NULL,
     CONSTRAINT fk_user FOREIGN KEY ("user") REFERENCES shop.user(reference)
         ON UPDATE CASCADE
-        ON DELETE NO ACTION,
+        ON DELETE SET NULL,
     country VARCHAR(255) NOT NULL,
     state_or_province VARCHAR(255) DEFAULT NULL,
     city VARCHAR(255) NOT NULL,
@@ -60,7 +60,7 @@ CREATE TABLE shop.address (
 ALTER TABLE shop.user
     ADD CONSTRAINT fk_shipping_address FOREIGN KEY (shipping_address) REFERENCES shop.address(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		ON DELETE SET NULL,
     ADD CONSTRAINT fk_billing_address FOREIGN KEY (billing_address) REFERENCES shop.address(reference)
         ON UPDATE CASCADE
-		ON DELETE NO ACTION;
+		ON DELETE SET NULL;

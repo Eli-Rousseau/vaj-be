@@ -241,7 +241,7 @@ CREATE TABLE shop.article(
 	brand TEXT NOT NULL,
 	CONSTRAINT fk_brand FOREIGN KEY (brand) REFERENCES shop.brand(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		ON DELETE SET NULL,
 	release TIMESTAMP DEFAULT NULL,
 	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -250,35 +250,35 @@ CREATE TABLE shop.article(
 	parent_category TEXT NOT NULL,
 	CONSTRAINT fk_article_parent_category FOREIGN KEY (parent_category) REFERENCES shop.article_parent_category(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		ON DELETE SET NULL,
 	sub_category TEXT NOT NULL,
 	CONSTRAINT fk_article_sub_category FOREIGN KEY (sub_category) REFERENCES shop.article_sub_category(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		ON DELETE SET NULL,
 	gender TEXT DEFAULT NULL,
 	CONSTRAINT fk_gender FOREIGN KEY (gender) REFERENCES shop.gender(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		ON DELETE SET NULL,
 	size TEXT NOT NULL,
 	CONSTRAINT fk_size FOREIGN KEY (size) REFERENCES shop.size(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		ON DELETE SET NULL,
 	color TEXT DEFAULT NULL,
 	CONSTRAINT fk_color FOREIGN KEY (color) REFERENCES shop.color(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		ON DELETE SET NULL,
 	material TEXT DEFAULT NULL,
 	CONSTRAINT fk_material FOREIGN KEY (material) REFERENCES shop.material(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		ON DELETE SET NULL,
 	condition TEXT NOT NULL,
 	CONSTRAINT fk_condition FOREIGN KEY (condition) REFERENCES shop.condition(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		ON DELETE SET NULL,
 	season TEXT DEFAULT NULL,
 	CONSTRAINT fk_season FOREIGN KEY (season) REFERENCES shop.season(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		ON DELETE SET NULL,
 
 	-- Inventory & Pricing
 	quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
@@ -286,12 +286,12 @@ CREATE TABLE shop.article(
 	currency TEXT NOT NULL DEFAULT 'EUR',
 	CONSTRAINT fk_currency FOREIGN KEY (currency) REFERENCES shop.currency(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		ON DELETE SET NULL,
 	discount FLOAT NOT NULL DEFAULT 0 CHECK (discount >= 0 AND discount <= 100),
 	availability TEXT NOT NULL,
 	CONSTRAINT fk_availibility FOREIGN KEY (availability) REFERENCES shop.availability(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		ON DELETE SET NULL,
 	for_sale BOOLEAN NOT NULL,
 	for_rent BOOLEAN NOT NULL,
 	rental_price FLOAT DEFAULT NULL,

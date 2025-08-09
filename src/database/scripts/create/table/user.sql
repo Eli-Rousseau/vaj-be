@@ -8,23 +8,23 @@ CREATE TABLE shop.user (
     billing_address INT,
     password TEXT DEFAULT NULL,
     salt TEXT DEFAULT NULL,
-    system_authentication TEXT NOT NULL,
-    system_role TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, 
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    system_authentication TEXT,
     CONSTRAINT fk_system_authentication FOREIGN KEY (system_authentication) REFERENCES shop.system_authentication(reference)
-		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		    ON UPDATE CASCADE
+		    ON DELETE SET NULL,
+    system_role TEXT,
     CONSTRAINT fk_system_role FOREIGN KEY (system_role) REFERENCES shop.system_role(reference)
-		ON UPDATE CASCADE
-		ON DELETE NO ACTION
+		    ON UPDATE CASCADE
+		    ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Alter the user table after the address table was created
 ALTER TABLE shop.user
     ADD CONSTRAINT fk_shipping_address FOREIGN KEY (shipping_address) REFERENCES shop.address(reference)
 		ON UPDATE CASCADE
-		ON DELETE NO ACTION,
+		ON DELETE SET NULL,
     ADD CONSTRAINT fk_billing_address FOREIGN KEY (billing_address) REFERENCES shop.address(reference)
         ON UPDATE CASCADE
-		ON DELETE NO ACTION;
+		ON DELETE SET NULL;
