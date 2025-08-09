@@ -10,7 +10,6 @@ export async function runSqlScript(command: string, stepName: string) {
     const { stdout, stderr } = await execAsync(command);
     if (stderr) {
       Logger.debug(`${stepName} generated an error stream:\n${stderr}`);
-      process.exit(1);
     }
     Logger.info(`${stepName} finished successfully.`);
     if (stdout) {

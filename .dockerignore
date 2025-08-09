@@ -1,6 +1,9 @@
-# TypeScript compilation folders
-/dist/
-/.temp/
+# Build outputs
+dist/
+.temp/
+
+# Node dependencies (install fresh in container)
+node_modules/
 
 # Database backups
 /src/database/backups/full/history/dev/*
@@ -8,15 +11,8 @@
 /src/database/backups/schema-only/history/dev/*
 /src/database/backups/schema-only/history/prod/*
 
-# Node packages
-/node_modules/
+# Definition CSV files
+src/classes/*.csv
 
-# .env files
-/.env*
-!/.env-example
-
-# Definition-files
-/src/classes/*.csv
-
-# Scratch files
-/scripts/scratch/
+# Scratch or experimental scripts
+scripts/scratch/
