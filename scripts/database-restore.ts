@@ -68,7 +68,7 @@ async function main() {
   rl.close();
 
   // Format the database restore command
-  const restoreCommand: string = `export PGPASSWORD='${databaseDefaultUserPassword}'; pg_restore -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -C -c --if-exists -d ${databaseDefault} ${
+  const restoreCommand: string = `export PGPASSWORD='${databaseDefaultUserPassword}'; pg_restore -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -C -c --if-exists -d ${databaseVAJ} ${
     schemaOnly ? schemaOnlyDbBackup : fullDbBackup
   }; unset PGPASSWORD`;
 

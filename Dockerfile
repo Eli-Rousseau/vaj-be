@@ -16,7 +16,7 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 
-EXPOSE 8080
+EXPOSE 1111
 
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh

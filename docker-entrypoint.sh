@@ -1,6 +1,18 @@
 #!/bin/bash
 set -e
 
+# Prompt for stage
+STAGE=""
+while [ "$STAGE" != "dev" ] && [ "$STAGE" != "prod" ]; do
+    read -p "Enter developmental stage [prod/dev] (default: dev): " STAGE
+    STAGE=${STAGE:-dev}
+    if [ "$STAGE" != "dev" ] && [ "$STAGE" != "prod" ]; then
+        echo "Invalid stage: $STAGE"
+        echo "Please try again."
+    fi
+done
+echo "Selected stage: $STAGE"
+
 # Start PostgreSQL in the background
 service postgresql start
 
@@ -12,10 +24,10 @@ echo
 echo "ALTER USER postgres PASSWORD '${POSTGRES_PASSWORD}';" | su - postgres -c psql
 
 # Setup the database
-npm run database-setup dev
+npm run database-setup "$STAGE"
 
 # Load the database backup
-npm run database-restore dev
+npm run database-restore "$STAGE"
 
 # Start Node app
-exec npm run server dev
+exec npm run server "$STAGE"
