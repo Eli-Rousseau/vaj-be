@@ -1,9 +1,11 @@
 import { copyFile } from "fs";
+import { readFile } from "fs/promises";
 
 import { loadStage } from "../src/utils/stage";
 import Logger from "../src/utils/logger";
 import { rl, askQuestion } from "../src/utils/prompt";
 import { runSqlScript } from "../src/utils/sql";
+import { File, uploadFile } from "../src/utils/storage";
 
 async function main() {
   // Loading the stage variable
@@ -30,6 +32,10 @@ async function main() {
   // Readin user input
   const schemaOnly: boolean =
     /y/i.test(await askQuestion("Schema-only backup [yes/no]", "no")) || false;
+  const makeStorageCopy: boolean =
+    /y/i.test(
+      await askQuestion("Needs a copy to be saved on the cloud [yes/no]", "no")
+    ) || false;
 
   // Close the input stream
   rl.close();
@@ -60,6 +66,32 @@ async function main() {
 
     Logger.info(`The backup file was copied to the history directory.`);
   });
+
+  // Make copy of the backup to the cloud storage
+  if (makeStorageCopy) {
+    try {
+      const name: string = `database/backups/${
+        schemaOnly ? "schema-only" : "full"
+      }/${stage}/${timestamp.toISOString()}`;
+      const content: Buffer = await readFile(copy);
+      const file: File = {
+        name: name,
+        bucket: "VintageArchiveJunglePrivate",
+        content: content,
+        contentType: "application/x-tar",
+      };
+      await uploadFile(file);
+
+      if (!file.id) {
+        Logger.error(`The database backup file storage failed.`);
+        process.exit(1);
+      }
+
+      Logger.info("The database backup file storage succeeded.");
+    } catch (error) {
+      Logger.error(`An error occurred during the file storage: ${error}`);
+    }
+  }
 }
 
 main();

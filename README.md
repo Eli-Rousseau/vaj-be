@@ -131,3 +131,8 @@ Again, it asks whether the backup should be for the entire database including th
 ## 4. Fly.io
 
 https://fly.io/docs/js/the-basics/
+
+## 5. Docker
+
+docker build -t vaj-be:1.0.0 .
+docker run -it -p 1111:1111 vaj-be:1.0.0

@@ -44,6 +44,7 @@ type UploadUrlResponse = {
 
 export type File = {
   name: string;
+  bucket: string;
   content: Buffer;
   contentType: string;
   publicUrl?: string;
@@ -118,9 +119,54 @@ type DeleteFileResponse = {
   options: string[];
 };
 
+type Bucket = {
+  id: string;
+  name: string;
+  region: string;
+  endpoint: string;
+};
+
 // Define global variables
 let globalAuthResponse: AccountAuthorizationUrlResponse | null;
 let globalUploadUrlResponse: UploadUrlResponse | null;
+
+const getBucketMap = function (): Map<string, Bucket> | undefined {
+  // Retrieve all the bucket names
+  let bucketNames: Set<string> = new Set();
+  for (let key in process.env) {
+    if (/^B2_.*_BUCKET/.test(key)) {
+      bucketNames.add(key.split("_")[1]);
+    }
+  }
+
+  // Make a map of bucket names over bucket instance
+  const bucketMap: Map<string, Bucket> = new Map();
+  for (let bucketName of bucketNames) {
+    // Import the environment variables
+    const id: string = process.env[`B2_${bucketName}_BUCKET_ID`] || "";
+    const name: string = process.env[`B2_${bucketName}_BUCKET_NAME`] || "";
+    const region: string = process.env[`B2_${bucketName}_BUCKET_REGION`] || "";
+    const endpoint: string =
+      process.env[`B2_${bucketName}_BUCKET_ENDPOINT`] || "";
+
+    if (!id || !name || !region || !endpoint) {
+      Logger.error(
+        `Missing required environment variables: B2_${name}_BUCKET_ID, B2_${name}_BUCKET_NAME, B2_${name}_BUCKET_REGION or B2_${name}_BUCKET_ENDPOINT.`
+      );
+      return;
+    }
+
+    // Add key and values to bucket map
+    bucketMap.set(bucketName, {
+      id,
+      name,
+      region,
+      endpoint,
+    });
+  }
+
+  return bucketMap;
+};
 
 const getAccountAuthorization = async function (): Promise<
   AccountAuthorizationUrlResponse | null | undefined
@@ -180,9 +226,9 @@ const getAccountAuthorization = async function (): Promise<
   }
 };
 
-const getUploadUrl = async function (): Promise<
-  UploadUrlResponse | undefined | null
-> {
+const getUploadUrl = async function (
+  bucketObject: Bucket
+): Promise<UploadUrlResponse | undefined | null> {
   // Check whether an authResponse is already defined
   if (globalUploadUrlResponse) {
     const expirationSeconds =
@@ -198,11 +244,8 @@ const getUploadUrl = async function (): Promise<
 
   // Import the environment variables
   const baseUrl: string = process.env.B2_BASE_URL || "";
-  const bucketId: string = process.env.B2_BUCKET_ID || "";
-  if (!baseUrl || !bucketId) {
-    Logger.error(
-      "Missing required environment variables: B2_BASE_URL or B2_BUCKET_ID."
-    );
+  if (!baseUrl) {
+    Logger.error("Missing required environment variables: B2_BASE_URL.");
     return;
   }
 
@@ -216,7 +259,7 @@ const getUploadUrl = async function (): Promise<
   try {
     const now: number = Date.now() / 1000;
 
-    const url: string = `${baseUrl}/b2api/v4/b2_get_upload_url?bucketId=${bucketId}`;
+    const url: string = `${baseUrl}/b2api/v4/b2_get_upload_url?bucketId=${bucketObject.id}`;
     const headers = {
       Authorization: authResponse.authorizationToken,
     };
@@ -245,18 +288,20 @@ const getUploadUrl = async function (): Promise<
 };
 
 export const uploadFile = async function (file: File): Promise<void> {
-  // Import the environment variables
-  const bucketRegion: string = process.env.B2_REGION || "";
-  const bucketName: string = process.env.B2_BUCKET_NAME || "";
-  if (!bucketRegion || !bucketName) {
-    Logger.error(
-      "Missing required environment variables: B2_REGION or B2_BUCKET_NAME."
-    );
+  // Retrieve the bucket instance
+  const bucketMap = getBucketMap();
+  if (bucketMap === undefined || bucketMap.size === 0) {
+    Logger.error(`Unable to parse retrieve any storage bucket.`);
+    return;
+  }
+  const bucketObject = bucketMap.get(file.bucket.toUpperCase());
+  if (!bucketObject) {
+    Logger.error(`Unable to retrieve bucket object for: ${file.bucket}.`);
     return;
   }
 
   // Retrieve the upload url response
-  const uploadUrlResponse = await getUploadUrl();
+  const uploadUrlResponse = await getUploadUrl(bucketObject);
   if (!uploadUrlResponse) {
     throw Error("Unable to retrieve the upload url.");
   }
@@ -292,11 +337,10 @@ export const uploadFile = async function (file: File): Promise<void> {
     }
 
     const uploadFileResponse: UploadFileResponse = await response.json();
-    Logger.info(`Succeeded b2_upload_file request.`);
 
     const publicUrl: string = `https://f${
-      bucketRegion.match(/\d{3}/)![0]
-    }.backblazeb2.com/file/${bucketName}/${file.name}`;
+      bucketObject.region.match(/\d{3}/)![0]
+    }.backblazeb2.com/file/${file.bucket}/${file.name}`;
     file["publicUrl"] = publicUrl;
     file["id"] = uploadFileResponse.fileId;
 
