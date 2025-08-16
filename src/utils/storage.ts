@@ -119,6 +119,11 @@ type DeleteFileResponse = {
   options: string[];
 };
 
+type ListFileNamesResponse = {
+  files: GetFileInfoResponse[];
+  nextFileName: string;
+};
+
 type Bucket = {
   id: string;
   name: string;
@@ -457,6 +462,80 @@ export const deleteFile = async function (file: File): Promise<void> {
     return;
   } catch (error) {
     Logger.error(`Failed b2_delete_file_version request: ${error}.`);
+    return;
+  }
+};
+
+export const listFileNames = async function (
+  bucket: string,
+  prefix: string = ""
+): Promise<string[] | undefined> {
+  // Import the environment variables
+  const baseUrl: string = process.env.B2_BASE_URL || "url";
+  if (!baseUrl) {
+    Logger.error("Missing required environment variables: B2_BASE_URL.");
+    return;
+  }
+
+  // Retrieve the bucket instance
+  const bucketMap = getBucketMap();
+  if (bucketMap === undefined || bucketMap.size === 0) {
+    Logger.error(`Unable to parse retrieve any storage bucket.`);
+    return;
+  }
+  const bucketObject = bucketMap.get(bucket.toUpperCase());
+  if (!bucketObject) {
+    Logger.error(`Unable to retrieve bucket object for: ${bucket}.`);
+    return;
+  }
+
+  // Retrieve the account authorization response
+  const authResponse = await getAccountAuthorization();
+  if (!authResponse) {
+    throw Error("Unable to retrieve account authorization.");
+  }
+
+  // Perform the b2_list_file_names request
+  try {
+    let startFileName: string | null = "";
+    let fileNames: string[] = [];
+
+    while (startFileName !== null) {
+      const url: string = `${baseUrl}/b2api/v4/b2_list_file_names?bucketId=${
+        bucketObject.id
+      }${prefix ? `&prefix=${prefix}` : ""}${
+        startFileName ? `&startFileName=${startFileName}` : ""
+      }`;
+      const headers = {
+        Authorization: authResponse.authorizationToken,
+      };
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: headers,
+      });
+
+      if (!response.ok) {
+        Logger.error(
+          `Failed b2_list_file_names: HTTP ${response.status} ${response.statusText}`
+        );
+        return;
+      }
+
+      const listFileNamesResponse: ListFileNamesResponse =
+        await response.json();
+      for (let i: number = 0; i < listFileNamesResponse.files.length; i++) {
+        const file: GetFileInfoResponse = listFileNamesResponse.files[i];
+        fileNames.push(file.fileName);
+      }
+      startFileName = listFileNamesResponse.nextFileName;
+    }
+
+    Logger.info("Succeeded b2_list_file_names request.");
+
+    return fileNames;
+  } catch (error) {
+    Logger.error(`Failed b2_list_file_names request: ${error}.`);
     return;
   }
 };
