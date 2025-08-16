@@ -29,5 +29,9 @@ npm run database-setup "$STAGE"
 # Load the database backup
 npm run database-restore "$STAGE"
 
-# Start Node app
-exec npm run server "$STAGE"
+# Start server in background
+npm run server "$STAGE" &
+
+# Drop into an interactive bash shell
+exec bash
+
