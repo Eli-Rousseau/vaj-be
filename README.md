@@ -2,27 +2,27 @@
 
 ## Table of Contents
 
-1. [Introduction](#introduction)  
-2. [Development](#development)  
-   - [Dependencies](#dependencies)  
-     - [Cloning the Repository](#a-cloning-the-repository)  
-     - [Node.js](#b-nodejs)  
-     - [Environmental Variables](#c-environmental-variables)  
-     - [Database](#d-database)  
-       - [Setting Up a PostgreSQL Server and Creating the User](#setting-up-a-postgresql-server-and-creating-the-user)  
-       - [Setting Up the Database](#setting-up-the-database)  
-       - [Restoring the Database](#restoring-the-database)  
-       - [Backup of the Database](#backup-of-the-database)  
-     - [Cloud Storage](#e-cloud-storage)  
-   - [Server](#server)  
-     - [Authentication](#a-authentication)  
-     - [Rate Limiting](#b-rate-limiting)  
-     - [Routing](#c-routing)  
-3. [Container](#container)  
-4. [Web Application](#web-application)  
-   - [Domain](#domain)  
-   - [Email Provider](#email-provider)  
-   - [Hosting](#hosting)  
+1. [Introduction](#introduction)
+2. [Development](#development)
+   - [Dependencies](#dependencies)
+     - [Cloning the Repository](#a-cloning-the-repository)
+     - [Node.js](#b-nodejs)
+     - [Environmental Variables](#c-environmental-variables)
+     - [Database](#d-database)
+       - [Setting Up a PostgreSQL Server and Creating the User](#setting-up-a-postgresql-server-and-creating-the-user)
+       - [Setting Up the Database](#setting-up-the-database)
+       - [Restoring the Database](#restoring-the-database)
+       - [Backup of the Database](#backup-of-the-database)
+     - [Cloud Storage](#e-cloud-storage)
+   - [Server](#server)
+     - [Authentication](#a-authentication)
+     - [Rate Limiting](#b-rate-limiting)
+     - [Routing](#c-routing)
+3. [Container](#container)
+4. [Web Application](#web-application)
+   - [Domain](#domain)
+   - [Email Provider](#email-provider)
+   - [Hosting](#hosting)
 
 ## 1. Introduction
 
@@ -90,29 +90,29 @@ Follow these simple instructions for setting up a PostgreSQL server and connecti
 1. Install the database engine (`postgres`), the command-line client (`psql`), and background services from the official [website](https://www.postgresql.org/).
 
 2. Initialize a database cluster to generate a structured directory containing your databases and configuration files. Use the command:
-   
+
    ```shell
    initdb -D /usr/local/pgsql/data
    ```
 
 3. Create a `postgres` role to act as entry point into the database system for administrative tasks.
-   
+
    ```shell
    createuser -s postgres
    ```
 
 4. Start a PostgreSQL server process to accept database connections and handle client queries in the background:
-   
+
    ```shell
    sudo service postgresql start
    ```
-   
+
    By default, the server will accept connections and requests from the `localhost` on port `5432`.
 
-5. Create a client connection between the running PostgreSQL server and pgAdmin. Install the latter from the official [website](https://www.pgadmin.org/). To connect with pgAdmin, open the app and select **Add New Server**. In the **General** tab, enter a name for the connection. In the **Connection** tab, provide the *Host* (e.g., `localhost`), *Port* (`5432` by default), *Username* (e.g., `postgres`), and your *Password*. Once saved, pgAdmin will connect and display a graphical interface to manage databases and users.
+5. Create a client connection between the running PostgreSQL server and pgAdmin. Install the latter from the official [website](https://www.pgadmin.org/). To connect with pgAdmin, open the app and select **Add New Server**. In the **General** tab, enter a name for the connection. In the **Connection** tab, provide the _Host_ (e.g., `localhost`), _Port_ (`5432` by default), _Username_ (e.g., `postgres`), and your _Password_. Once saved, pgAdmin will connect and display a graphical interface to manage databases and users.
 
 6. Once terminating the client connection with pgAdmin, the server PostgreSQL server process can be terminated:
-   
+
    ```shell
    sudo service postgresql stop
    ```
@@ -129,11 +129,11 @@ npm run database-setup dev
 
 This script helps setting up the `vintage_archive_jungle` database, the `shop` schema, and create a new user on the database named `administrator` with certain privileges.
 
-> *All npm scripts in this project requires to provide `dev` or `prod` as latest argument, to enable reading the variables from your corresponding `.env` files.*
+> _All npm scripts in this project requires to provide `dev` or `prod` as latest argument, to enable reading the variables from your corresponding `.env` files._
 
 ##### Restoring the Database
 
-The project includes two backups of the database: (1) *a full archive* of the database with all its data, and (2) *a schema-only archive* of the database. These files can be used to load a copy of the database for this project. To load such a backup you can use the database restore script. It is another `npm` script that relies on the `pg_restore` utility and which you can execute using the command:
+The project includes two backups of the database: (1) _a full archive_ of the database with all its data, and (2) _a schema-only archive_ of the database. These files can be used to load a copy of the database for this project. To load such a backup you can use the database restore script. It is another `npm` script that relies on the `pg_restore` utility and which you can execute using the command:
 
 ```shell
 npm run database-restore dev
@@ -175,7 +175,7 @@ Every HTTP request must include at least one API token in the request headers as
 npm run generate-api-key dev
 ```
 
-This will create a key you can copy into your `.env` file. Any request to the server must include one of the keys defined under the `API_KEY_X` variables in `.env`.
+This will create a key you can copy into your `.env` file. Any request to the server must include one of the keys defined under the `VAJ_API_KEY_X` variables in `.env`.
 
 #### b. Rate Limiting
 
@@ -198,17 +198,17 @@ docker build -t vaj-be:1.0.0 .
 docker run -it -p 1111:1111 vaj-be:1.0.0
 ```
 
-The container’s entrypoint script will prompt you for interactive input (such as environment selection) before launching the server. 
+The container’s entrypoint script will prompt you for interactive input (such as environment selection) before launching the server.
 
 You can stop the server at any time by pressing `CTRL + C`, which will drop you into the container’s shell without shutting it down completely.
 
 ## 4. Web Application
 
-In this section, I will briefly explain how the project and its full web application were brought online, along with the key steps involved in making it live. 
+In this section, I will briefly explain how the project and its full web application were brought online, along with the key steps involved in making it live.
 
 ### Domain
 
-The domain name `vintagearchivejungle.com` was purchased through the registrar [domain.com](https://www.domain.com/). 
+The domain name `vintagearchivejungle.com` was purchased through the registrar [domain.com](https://www.domain.com/).
 
 ### Email Provider
 
@@ -218,4 +218,4 @@ For email services, we chose [Zoho Mail](https://www.zoho.com/mail/) as the prim
 
 [Fly.io](https://fly.io/docs/js/the-basics/)
 
-More documentation soon ...
+More documentation on this soon ...

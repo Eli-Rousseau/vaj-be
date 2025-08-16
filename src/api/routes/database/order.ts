@@ -1,5 +1,5 @@
 import { Router } from "express";
-import initializeDatabaseRouter from "../../database_router";
+import initializeDatabaseRouter from "../../database-router";
 
 import { Order } from "../../../classes/transformer-classes";
 
