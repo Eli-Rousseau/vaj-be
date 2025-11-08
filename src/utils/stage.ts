@@ -5,23 +5,26 @@ import path from "path";
 import { dropDown } from "./prompt";
 import getLogger from "./logger";
 
-const STAGES = ["dev", "prod"];
+enum Stages {
+  dev = "dev",
+  prod = "prod"
+}
 
-const stageConfigs: Record<(typeof STAGES)[number], string> = {
+const stageConfigs: Record<keyof typeof Stages, string> = {
   dev: ".env.dev",
-  prod: ".env.prod",
+  prod: ".env.prod"
 };
 
 /**
  * @description Helps to load the environments from the desired stage.
  */
 export const loadStage = async function (
-  stage: (typeof STAGES)[number] | null = null
+  stage: keyof typeof Stages | null = null
 ) {
   if (process.env.STAGE) return;
 
   if (!stage)
-    stage = await dropDown("Please, select your environment:", STAGES);
+    stage = await dropDown("Please, select your environment:", Object.keys(Stages)) as keyof typeof Stages;
   process.env["STAGE"] = stage;
 
   const config = stageConfigs[stage];
