@@ -1,7 +1,5 @@
 import { Client, ClientConfig } from "pg";
 
-import Logger from "./logger";
-
 // Global Postgres client and status flag
 let pgClient: Client | null = null;
 let isDatabaseOnline: boolean = false;
@@ -22,9 +20,9 @@ export function getPgClient(): Client | null | undefined {
     process.env.DATABASE_ADMINISTRATOR_USER_PASSWORD || "";
 
   if (!database || !host || !port || !user || !password) {
-    Logger.error(
-      "Missing required environment variables: DATABASE_VAJ, DATABASE_HOST, DATABASE_PORT, DATABASE_ADMINISTRATOR_USER_NAME, or DATABASE_ADMINISTRATOR_USER_PASSWORD."
-    );
+    // Logger.error(
+    //   "Missing required environment variables: DATABASE_VAJ, DATABASE_HOST, DATABASE_PORT, DATABASE_ADMINISTRATOR_USER_NAME, or DATABASE_ADMINISTRATOR_USER_PASSWORD."
+    // );
     return;
   }
 
@@ -38,10 +36,10 @@ export function getPgClient(): Client | null | undefined {
     };
 
     pgClient = new Client(clientConfig);
-    Logger.info("Postgres client initialized.");
+    // Logger.info("Postgres client initialized.");
     return pgClient;
   } catch (error) {
-    Logger.error(`Failed to initialize Postgres client: ${error}`);
+    // Logger.error(`Failed to initialize Postgres client: ${error}`);
     return;
   }
 }
@@ -60,7 +58,7 @@ export async function initializeDatabaseConnection(
       throw new Error("Database connection could not be initialized.");
     }
 
-    Logger.info("Connected to database successfully.");
+    // Logger.info("Connected to database successfully.");
   } catch (error) {
     throw error;
   }
@@ -74,11 +72,11 @@ export async function terminateDatabaseConnection(): Promise<void> {
 
   try {
     await pgClient.end();
-    Logger.info("Disconnected from database successfully.");
+    // Logger.info("Disconnected from database successfully.");
     isDatabaseOnline = false;
     pgClient = null;
   } catch (error) {
-    Logger.error(`Failed to terminate database connection: ${error}`);
+    // Logger.error(`Failed to terminate database connection: ${error}`);
     throw error;
   }
 }
@@ -87,10 +85,10 @@ export async function terminateDatabaseConnection(): Promise<void> {
 export async function checkDatabaseHealth(client: Client): Promise<void> {
   try {
     await client.query("SELECT 1;");
-    Logger.info("Postgres Client is connected.");
+    // Logger.info("Postgres Client is connected.");
     isDatabaseOnline = true;
   } catch (error) {
-    Logger.error("Postgres Client is not connected.");
+    // Logger.error("Postgres Client is not connected.");
     isDatabaseOnline = false;
   }
 }

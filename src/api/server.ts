@@ -1,7 +1,6 @@
 import express from "express";
 import { Express } from "express";
 
-import Logger from "../utils/logger";
 import { loadStage } from "../utils/stage";
 import {
   getPgClient,
@@ -63,8 +62,8 @@ async function setupServer() {
   // Creating a postgresql client
   const pgClient: Client | null | undefined = getPgClient();
   if (!pgClient) {
-    Logger.error("Unable to retrieve the Postgres Client.");
-    Logger.info("Skipping the server listening.");
+    // Logger.error("Unable to retrieve the Postgres Client.");
+    // Logger.info("Skipping the server listening.");
     process.exit(1);
   }
 
@@ -72,14 +71,14 @@ async function setupServer() {
   try {
     await initializeDatabaseConnection(pgClient);
   } catch (error) {
-    Logger.error(`Unable to initialize database connection: ${error}`);
+    // Logger.error(`Unable to initialize database connection: ${error}`);
     process.exit(1);
   }
 
   // Skip server listening
   if (!isConnectedToDatabase()) {
-    Logger.error("Unable to connect with the Postgres database.");
-    Logger.info("Skipping the server listening.");
+    // Logger.error("Unable to connect with the Postgres database.");
+    // Logger.info("Skipping the server listening.");
     process.exit(1);
   }
 
@@ -249,29 +248,29 @@ async function startServer() {
     // Load the host and the port
     const host: string | undefined = process.env.DATABASE_HOST;
     if (!host) {
-      Logger.error(
-        "Unable to retrieve the database host from the environmental variables."
-      );
+      // Logger.error(
+      //   "Unable to retrieve the database host from the environmental variables."
+      // );
       process.exit(1);
     }
-    Logger.info(`Server listening at http://${host}:${PORT}`);
+    // Logger.info(`Server listening at http://${host}:${PORT}`);
   });
 }
 
 // On terminating the server process
 function terminateServer() {
   process.on("SIGINT", async () => {
-    Logger.info(
-      "Received SIGINT. Terminating the server process. Cleaning up..."
-    );
+    // Logger.info(
+    //   "Received SIGINT. Terminating the server process. Cleaning up..."
+    // );
     await terminateDatabaseConnection();
     process.exit(isConnectedToDatabase() ? 0 : 1);
   });
 
   process.on("SIGTERM", async () => {
-    Logger.info(
-      "Received SIGTERM. Terminating the server process. Cleaning up..."
-    );
+    // Logger.info(
+    //   "Received SIGTERM. Terminating the server process. Cleaning up..."
+    // );
     await terminateDatabaseConnection();
     process.exit(isConnectedToDatabase() ? 0 : 1);
   });

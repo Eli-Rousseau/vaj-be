@@ -1,80 +1,48 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as dotenv from "dotenv";
+import { existsSync } from "fs";
+import path from "path";
 
-import Logger from "./logger";
+import { dropDown } from "./prompt";
+import getLogger from "./logger";
 
-enum Stage {
-  dev = "dev",
-  prod = "prod",
-}
+const STAGES = ["dev", "prod"];
 
-// Async helper function for loading the environmental variables
-export function loadStage(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    // Determine the stage from the command arguments
-    const stage: Stage = process.argv.includes("prod") ? Stage.prod : Stage.dev;
+const stageConfigs: Record<(typeof STAGES)[number], string> = {
+  dev: ".env.dev",
+  prod: ".env.prod",
+};
 
-    // Saving the stage to process.env
-    process.env["STAGE"] = stage;
-    Logger.info(`Loading the "${stage}" environmental variables.`);
+/**
+ * @description Helps to load the environments from the desired stage.
+ */
+export const loadStage = async function (
+  stage: (typeof STAGES)[number] | null = null
+) {
+  if (process.env.STAGE) return;
 
-    // Determine the root of the project
-    const root: string = process.cwd();
+  if (!stage)
+    stage = await dropDown("Please, select your environment:", STAGES);
+  process.env["STAGE"] = stage;
 
-    // Read the content of the root
-    fs.readdir(root, (error, files) => {
-      if (error) {
-        Logger.error(`Unable to read files from project root: ${error}`);
-        return reject(error);
-      }
+  const config = stageConfigs[stage];
+  dotenv.config({ path: config, quiet: true });
 
-      // Filter the relevant .env files
-      const envFiles: string[] = files.filter((file) => {
-        return file.includes(`${stage}`) && file.includes(".env");
-      });
-
-      // Initialize a variable map
-      const variables: Map<string, string> = new Map();
-
-      // Number of env files
-      let filesLeft = envFiles.length;
-
-      if (filesLeft === 0) {
-        Logger.warning(`No environment files found for stage '${stage}'.`);
-        return resolve();
-      }
-
-      envFiles.forEach((fileName) => {
-        const filePath: string = path.join(root, fileName);
-
-        // Reading the variables from the file content
-        fs.readFile(filePath, "utf-8", (error, data) => {
-          if (error) {
-            Logger.error(`Could not read file ${fileName}: ${error}`);
-          } else {
-            const lines: string[] = data.split(/\n/);
-            lines.forEach((line) => {
-              const match = line.match(/^([A-Z0-9_]+)=(.+)$/);
-              if (match) {
-                const key = match[1];
-                const value = match[2];
-                variables.set(key, value);
-              }
-            });
-          }
-
-          filesLeft--;
-
-          // Save the variables in the process.env
-          if (filesLeft === 0) {
-            variables.forEach((value, key) => {
-              process.env[key] = value;
-            });
-            Logger.debug(`Loaded ${variables.size} environment variables.`);
-            resolve();
-          }
-        });
-      });
-    });
+  /*
+    Normally, you would create the logger as a global variable.
+    In this case, we first need to load the environment variables.
+    The variables are needed to initialize the logger LEVEL and FOMAT correctly.
+    Please note that this is an exception to the rule.
+    Leave it as it is.
+  */
+  const logger = getLogger({
+    source: "utils",
+    module: path.basename(__dirname),
   });
-}
+
+  const configFullPath = `${process.cwd()}/${config}`;
+  if (!existsSync(configFullPath)) {
+    logger.error(`Missing .env file for ${stage}: ${configFullPath}`);
+    process.exit(-1);
+  }
+  logger.info("Environment loaded.");
+};

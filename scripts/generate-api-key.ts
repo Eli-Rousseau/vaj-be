@@ -1,6 +1,5 @@
 import crypto from "crypto";
 
-import Logger from "../src/utils/logger";
 import { loadStage } from "../src/utils/stage";
 
 function generateEnvApiKey(label = "VAJ_API_KEY"): string {
@@ -33,9 +32,9 @@ async function main() {
   const newAPIKey: string = generateEnvApiKey(`VAJ_API_KEY_${++lastIndex}`);
 
   // Log the new key onto the console
-  Logger.info(
-    `A new key was generated for the VAJ API. Please, copy this new key-value pair onto a new line in the appropriate stage .env file for activation:\n${newAPIKey}`
-  );
+  // Logger.info(
+  //   `A new key was generated for the VAJ API. Please, copy this new key-value pair onto a new line in the appropriate stage .env file for activation:\n${newAPIKey}`
+  // );
 }
 
 main();

@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { Readable } from "stream";
 
-import Logger from "./logger";
+// import Logger from "./logger";
 
 type Allowed = {
   buckets: any[];
@@ -155,9 +155,9 @@ const getBucketMap = function (): Map<string, Bucket> | undefined {
       process.env[`B2_${bucketName}_BUCKET_ENDPOINT`] || "";
 
     if (!id || !name || !region || !endpoint) {
-      Logger.error(
-        `Missing required environment variables: B2_${name}_BUCKET_ID, B2_${name}_BUCKET_NAME, B2_${name}_BUCKET_REGION or B2_${name}_BUCKET_ENDPOINT.`
-      );
+      // Logger.error(
+      //   `Missing required environment variables: B2_${name}_BUCKET_ID, B2_${name}_BUCKET_NAME, B2_${name}_BUCKET_REGION or B2_${name}_BUCKET_ENDPOINT.`
+      // );
       return;
     }
 
@@ -194,9 +194,9 @@ const getAccountAuthorization = async function (): Promise<
   const applicationKey: string = process.env.B2_APPLICATION_KEY || "";
   const baseUrl: string = process.env.B2_BASE_URL || "";
   if (!applicationKeyId || !applicationKey || !baseUrl) {
-    Logger.error(
-      "Missing required environment variables: B2_KEY_ID, B2_APPLICATION_KEY, or B2_BASE_URL."
-    );
+    // Logger.error(
+    //   "Missing required environment variables: B2_KEY_ID, B2_APPLICATION_KEY, or B2_BASE_URL."
+    // );
     return;
   }
 
@@ -215,18 +215,18 @@ const getAccountAuthorization = async function (): Promise<
     });
 
     if (!response.ok) {
-      Logger.error(
-        `Failed b2_authorize_account: HTTP ${response.status} ${response.statusText}`
-      );
+      // Logger.error(
+      //   `Failed b2_authorize_account: HTTP ${response.status} ${response.statusText}`
+      // );
       return;
     }
 
     globalAuthResponse = await response.json();
-    Logger.info(`Succeeded b2_authorize_account request.`);
+    // Logger.info(`Succeeded b2_authorize_account request.`);
 
     return globalAuthResponse;
   } catch (error) {
-    Logger.error(`Failed b2_authorize_account request: ${error}.`);
+    // Logger.error(`Failed b2_authorize_account request: ${error}.`);
     return;
   }
 };
@@ -250,7 +250,7 @@ const getUploadUrl = async function (
   // Import the environment variables
   const baseUrl: string = process.env.B2_BASE_URL || "";
   if (!baseUrl) {
-    Logger.error("Missing required environment variables: B2_BASE_URL.");
+    // Logger.error("Missing required environment variables: B2_BASE_URL.");
     return;
   }
 
@@ -275,19 +275,19 @@ const getUploadUrl = async function (
     });
 
     if (!response.ok) {
-      Logger.error(
-        `Failed b2_get_upload_url: HTTP ${response.status} ${response.statusText}`
-      );
+      // Logger.error(
+      //   `Failed b2_get_upload_url: HTTP ${response.status} ${response.statusText}`
+      // );
       return;
     }
 
     globalUploadUrlResponse = await response.json();
     globalUploadUrlResponse!["authorizationTokenExpirationTimestamp"] = now;
-    Logger.info(`Succeeded b2_get_upload_url request.`);
+    // Logger.info(`Succeeded b2_get_upload_url request.`);
 
     return globalUploadUrlResponse;
   } catch (error) {
-    Logger.error(`Failed b2_get_upload_url request: ${error}.`);
+    // Logger.error(`Failed b2_get_upload_url request: ${error}.`);
     return;
   }
 };
@@ -296,12 +296,12 @@ export const uploadFile = async function (file: File): Promise<void> {
   // Retrieve the bucket instance
   const bucketMap = getBucketMap();
   if (bucketMap === undefined || bucketMap.size === 0) {
-    Logger.error(`Unable to parse retrieve any storage bucket.`);
+    // Logger.error(`Unable to parse retrieve any storage bucket.`);
     return;
   }
   const bucketObject = bucketMap.get(file.bucket.toUpperCase());
   if (!bucketObject) {
-    Logger.error(`Unable to retrieve bucket object for: ${file.bucket}.`);
+    // Logger.error(`Unable to retrieve bucket object for: ${file.bucket}.`);
     return;
   }
 
@@ -335,9 +335,9 @@ export const uploadFile = async function (file: File): Promise<void> {
     });
 
     if (!response.ok) {
-      Logger.error(
-        `Failed b2_upload_file: HTTP ${response.status} ${response.statusText}`
-      );
+      // Logger.error(
+      //   `Failed b2_upload_file: HTTP ${response.status} ${response.statusText}`
+      // );
       return;
     }
 
@@ -351,7 +351,7 @@ export const uploadFile = async function (file: File): Promise<void> {
 
     return;
   } catch (error) {
-    Logger.error(`Failed b2_upload_file request: ${error}.`);
+    // Logger.error(`Failed b2_upload_file request: ${error}.`);
     return;
   }
 };
@@ -362,7 +362,7 @@ export const fileExists = async function (
   // Import the environment variables
   const baseUrl: string = process.env.B2_BASE_URL || "url";
   if (!baseUrl) {
-    Logger.error("Missing required environment variables: B2_BASE_URL.");
+    // Logger.error("Missing required environment variables: B2_BASE_URL.");
     return;
   }
 
@@ -384,9 +384,9 @@ export const fileExists = async function (
     });
 
     if (!response.ok && response.status !== 400) {
-      Logger.error(
-        `Failed b2_get_file_info: HTTP ${response.status} ${response.statusText}`
-      );
+      // Logger.error(
+      //   `Failed b2_get_file_info: HTTP ${response.status} ${response.statusText}`
+      // );
       return;
     }
 
@@ -396,21 +396,21 @@ export const fileExists = async function (
       "message" in getFileInfoResponse &&
       /Bad File ID/i.test(getFileInfoResponse.message)
     ) {
-      Logger.info("Succeeded b2_get_file_info request.");
+      // Logger.info("Succeeded b2_get_file_info request.");
       return false;
     }
 
     if (response.ok) {
-      Logger.info("Succeeded b2_get_file_info request.");
+      // Logger.info("Succeeded b2_get_file_info request.");
       return true;
     } else {
-      Logger.error(
-        `Failed b2_get_file_info: HTTP ${response.status} ${response.statusText}`
-      );
+      // Logger.error(
+      //   `Failed b2_get_file_info: HTTP ${response.status} ${response.statusText}`
+      // );
       return;
     }
   } catch (error) {
-    Logger.error(`Failed b2_get_file_info request: ${error}.`);
+    // Logger.error(`Failed b2_get_file_info request: ${error}.`);
     return;
   }
 };
@@ -419,7 +419,7 @@ export const deleteFile = async function (file: File): Promise<void> {
   // Import the environment variables
   const baseUrl: string = process.env.B2_BASE_URL || "url";
   if (!baseUrl) {
-    Logger.error("Missing required environment variables: B2_BASE_URL.");
+    // Logger.error("Missing required environment variables: B2_BASE_URL.");
     return;
   }
 
@@ -448,20 +448,20 @@ export const deleteFile = async function (file: File): Promise<void> {
     });
 
     if (!response.ok) {
-      Logger.error(
-        `Failed b2_delete_file_version: HTTP ${response.status} ${response.statusText}`
-      );
+      // Logger.error(
+      //   `Failed b2_delete_file_version: HTTP ${response.status} ${response.statusText}`
+      // );
       return;
     }
 
     const deleteFileResponse: DeleteFileResponse = await response.json();
-    Logger.info("Succeeded b2_delete_file_version request.");
+    // Logger.info("Succeeded b2_delete_file_version request.");
 
     file["publicUrl"] = undefined;
     file["id"] = undefined;
     return;
   } catch (error) {
-    Logger.error(`Failed b2_delete_file_version request: ${error}.`);
+    // Logger.error(`Failed b2_delete_file_version request: ${error}.`);
     return;
   }
 };
@@ -473,19 +473,19 @@ export const listFileNames = async function (
   // Import the environment variables
   const baseUrl: string = process.env.B2_BASE_URL || "url";
   if (!baseUrl) {
-    Logger.error("Missing required environment variables: B2_BASE_URL.");
+    // Logger.error("Missing required environment variables: B2_BASE_URL.");
     return;
   }
 
   // Retrieve the bucket instance
   const bucketMap = getBucketMap();
   if (bucketMap === undefined || bucketMap.size === 0) {
-    Logger.error(`Unable to parse retrieve any storage bucket.`);
+    // Logger.error(`Unable to parse retrieve any storage bucket.`);
     return;
   }
   const bucketObject = bucketMap.get(bucket.toUpperCase());
   if (!bucketObject) {
-    Logger.error(`Unable to retrieve bucket object for: ${bucket}.`);
+    // Logger.error(`Unable to retrieve bucket object for: ${bucket}.`);
     return;
   }
 
@@ -516,9 +516,9 @@ export const listFileNames = async function (
       });
 
       if (!response.ok) {
-        Logger.error(
-          `Failed b2_list_file_names: HTTP ${response.status} ${response.statusText}`
-        );
+        // Logger.error(
+        //   `Failed b2_list_file_names: HTTP ${response.status} ${response.statusText}`
+        // );
         return;
       }
 
@@ -531,11 +531,11 @@ export const listFileNames = async function (
       startFileName = listFileNamesResponse.nextFileName;
     }
 
-    Logger.info("Succeeded b2_list_file_names request.");
+    // Logger.info("Succeeded b2_list_file_names request.");
 
     return fileNames;
   } catch (error) {
-    Logger.error(`Failed b2_list_file_names request: ${error}.`);
+    // Logger.error(`Failed b2_list_file_names request: ${error}.`);
     return;
   }
 };

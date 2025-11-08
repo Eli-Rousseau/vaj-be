@@ -2,7 +2,6 @@ import { copyFile } from "fs";
 import { readFile } from "fs/promises";
 
 import { loadStage } from "../src/utils/stage";
-import Logger from "../src/utils/logger";
 import { rl, askQuestion } from "../src/utils/prompt";
 import { runSqlScript } from "../src/utils/sql";
 import { File, uploadFile } from "../src/utils/storage";
@@ -60,11 +59,11 @@ async function main() {
   }/history/${stage === "dev" ? "dev" : "prod"}/${timestamp.toISOString()}.tar`;
   copyFile(output, copy, (error) => {
     if (error) {
-      Logger.error(`The database backup file could not be copied: ${error}`);
+      // Logger.error(`The database backup file could not be copied: ${error}`);
       process.exit(1);
     }
 
-    Logger.info(`The backup file was copied to the history directory.`);
+    // Logger.info(`The backup file was copied to the history directory.`);
   });
 
   // Make copy of the backup to the cloud storage
@@ -83,13 +82,13 @@ async function main() {
       await uploadFile(file);
 
       if (!file.id) {
-        Logger.error(`The database backup file storage failed.`);
+        // Logger.error(`The database backup file storage failed.`);
         process.exit(1);
       }
 
-      Logger.info("The database backup file storage succeeded.");
+      // Logger.info("The database backup file storage succeeded.");
     } catch (error) {
-      Logger.error(`An error occurred during the file storage: ${error}`);
+      // Logger.error(`An error occurred during the file storage: ${error}`);
     }
   }
 }

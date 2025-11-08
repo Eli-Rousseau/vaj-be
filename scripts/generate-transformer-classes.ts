@@ -3,7 +3,6 @@ import * as path from "path";
 
 import { loadStage } from "../src/utils/stage";
 import { runSqlScript } from "../src/utils/sql";
-import Logger from "../src/utils/logger";
 
 const INDENT: string = " ".repeat(2);
 
@@ -105,9 +104,9 @@ function parseTableDefinition(tablePath: string): Promise<string> {
     let fileContent: string = "";
     try {
       fileContent = await readFile(tablePath, { encoding: "utf-8" });
-      Logger.info(`Reading the ${fileName} file successfully.`);
+      // Logger.info(`Reading the ${fileName} file successfully.`);
     } catch (error) {
-      Logger.error(`Reading the ${fileName} file failed: ${error}`);
+      // Logger.error(`Reading the ${fileName} file failed: ${error}`);
       process.exit(1);
     }
 
@@ -124,7 +123,7 @@ function parseTableDefinition(tablePath: string): Promise<string> {
           const pgType = splitRecord[1].trim() as PostgresType;
 
           if (!(pgType in TYPE_MAPPER)) {
-            Logger.error(`Unknown Postgres type: '${pgType}'`);
+            // Logger.error(`Unknown Postgres type: '${pgType}'`);
             process.exit(1);
           }
 
@@ -136,9 +135,9 @@ function parseTableDefinition(tablePath: string): Promise<string> {
             isUndefinable: splitRecord[3].match(/YES/i) ? true : false,
           };
         } catch (error) {
-          Logger.error(
-            `An error was thrown when parsing the DefinitionRecord instances:\n${error}`
-          );
+          // Logger.error(
+          //   `An error was thrown when parsing the DefinitionRecord instances:\n${error}`
+          // );
           process.exit(1);
         }
       }
@@ -239,9 +238,9 @@ async function main() {
     tableNamesFileContent = await readFile(outputTableNames, {
       encoding: "utf-8",
     });
-    Logger.info(`Reading the table_names.csv file successfully.`);
+    // Logger.info(`Reading the table_names.csv file successfully.`);
   } catch (error) {
-    Logger.error(`Reading the table_names.csv file failed: ${error}`);
+    // Logger.error(`Reading the table_names.csv file failed: ${error}`);
     process.exit(1);
   }
 
@@ -277,13 +276,13 @@ async function main() {
     // Remove the table definition file
     try {
       await unlink(outputTableDefinition);
-      Logger.debug(
-        `${path.basename(outputTableDefinition)} was successfully removed.`
-      );
+      // Logger.debug(
+      //   `${path.basename(outputTableDefinition)} was successfully removed.`
+      // );
     } catch (error) {
-      Logger.error(
-        `Failed to remove ${path.basename(outputTableDefinition)}: ${error}`
-      );
+      // Logger.error(
+      //   `Failed to remove ${path.basename(outputTableDefinition)}: ${error}`
+      // );
       process.exit(1);
     }
   }
@@ -292,20 +291,20 @@ async function main() {
   const outputTypesFile: string = `${process.cwd()}/src/classes/transformer-classes.ts`;
   try {
     await writeFile(outputTypesFile, tableClasses, { encoding: "utf-8" });
-    Logger.debug(`Writing the types.ts file finished successfully.`);
+    // Logger.debug(`Writing the types.ts file finished successfully.`);
   } catch (error) {
-    Logger.error(`Writing the types.ts file failed:\n${error}`);
+    // Logger.error(`Writing the types.ts file failed:\n${error}`);
     process.exit(1);
   }
 
   // Remove the table names file
   try {
     await unlink(outputTableNames);
-    Logger.debug(`${path.basename(outputTableNames)} is successfully removed.`);
+    // Logger.debug(`${path.basename(outputTableNames)} is successfully removed.`);
   } catch (error) {
-    Logger.error(
-      `Failed to remove ${path.basename(outputTableNames)}: ${error}`
-    );
+    // Logger.error(
+    //   `Failed to remove ${path.basename(outputTableNames)}: ${error}`
+    // );
     process.exit(1);
   }
 }

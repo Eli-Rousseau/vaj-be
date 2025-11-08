@@ -1,6 +1,5 @@
 import { fileExistsSync } from "tsconfig-paths/lib/filesystem";
 
-import Logger from "../src/utils/logger";
 import { askQuestion, rl } from "../src/utils/prompt";
 import { loadStage } from "../src/utils/stage";
 import { runSqlScript } from "../src/utils/sql";
@@ -46,21 +45,21 @@ async function main() {
     fileExistsSync(schemaOnlyDbBackup)
   ) {
     schemaOnly = true;
-    Logger.debug(
-      "No full database backup file could be retrieved. Defaulting to the schema only database backup."
-    );
+    // Logger.debug(
+    //   "No full database backup file could be retrieved. Defaulting to the schema only database backup."
+    // );
   } else if (
     fileExistsSync(fullDbBackup) &&
     !fileExistsSync(schemaOnlyDbBackup)
   ) {
     schemaOnly = false;
-    Logger.debug(
-      "No schema-only database backup file could be retrieved. Defaulting to the full database backup."
-    );
+    // Logger.debug(
+    //   "No schema-only database backup file could be retrieved. Defaulting to the full database backup."
+    // );
   } else {
-    Logger.error(
-      "No database backup file could be retrieved. Please, run the following command first:\nnpm run database-backup dev"
-    );
+    // Logger.error(
+    //   "No database backup file could be retrieved. Please, run the following command first:\nnpm run database-backup dev"
+    // );
     process.exit(1);
   }
 

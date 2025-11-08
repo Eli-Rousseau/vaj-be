@@ -1,7 +1,5 @@
 import { createTransport, SendMailOptions, Transporter } from "nodemailer";
 
-import Logger from "./logger";
-
 // Define global variables
 let globalTransporter: Transporter | null = null;
 
@@ -19,9 +17,9 @@ const getEmailTransporter = function (): Transporter | null | undefined {
   const zohoUser: string = process.env.ZOHO_USER || "";
   const zohoPassword: string = process.env.ZOHO_PASSWORD || "";
   if (!zohoHost || !zohoPort || !zohoUser || !zohoPassword) {
-    Logger.error(
-      "Missing required environment variables: ZOHO_HOST, ZOHO_HOST, ZOHO_USER, or ZOHO_PASSWORD."
-    );
+    // Logger.error(
+    //   "Missing required environment variables: ZOHO_HOST, ZOHO_HOST, ZOHO_USER, or ZOHO_PASSWORD."
+    // );
     return;
   }
 
@@ -39,11 +37,11 @@ const getEmailTransporter = function (): Transporter | null | undefined {
 
     // Create an SMTP transporter
     globalTransporter = createTransport(transporterConfiguration) || null;
-    Logger.info("SMTP Transporter was successfully created.");
+    // Logger.info("SMTP Transporter was successfully created.");
 
     return globalTransporter;
   } catch (error) {
-    Logger.error(`Failed to create SMTP Transporter: ${error}.`);
+    // Logger.error(`Failed to create SMTP Transporter: ${error}.`);
     return;
   }
 };
@@ -73,12 +71,12 @@ export async function sendEmail(email: Email): Promise<void> {
   try {
     // Send the email object
     const result = await transporter.sendMail(mailOptions);
-    Logger.info(
-      `Email was correctly received by SMTP transporter with identfier: ${result.messageId}.`
-    );
+    // Logger.info(
+    //   `Email was correctly received by SMTP transporter with identfier: ${result.messageId}.`
+    // );
     return;
   } catch (error) {
-    Logger.error(`Email could not be received by SMTP transporter: ${error}.`);
-    return;
+    // Logger.error(`Email could not be received by SMTP transporter: ${error}.`);
+    // return;
   }
 }
