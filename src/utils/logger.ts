@@ -23,8 +23,8 @@ let baseLogger: winston.Logger | null = null;
 /**
  * Creates and caches a Winston base logger.
  */
-function createBaseLogger(): winston.Logger {
-  if (baseLogger) return baseLogger;
+function createBaseLogger(replace: boolean = false): winston.Logger {
+  if (baseLogger && !replace) return baseLogger;
 
   const level = process.env.LOG_LEVEL ?? "info";
   const envFormat = (process.env.LOG_FORMAT ?? "CLI") as LogFormat;
@@ -49,8 +49,11 @@ interface LoggerContext {
  * @description Returns a configured Winston child logger.
  * Automatically lazy-initializes the base logger.
  */
-function getLogger(context: LoggerContext = {}): winston.Logger {
-  const logger = createBaseLogger();
+function getLogger(
+  context: LoggerContext = {},
+  replaceLogger: boolean = false
+): winston.Logger {
+  const logger = createBaseLogger(replaceLogger);
   return logger.child(context);
 }
 

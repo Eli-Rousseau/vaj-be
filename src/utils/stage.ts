@@ -5,14 +5,19 @@ import path from "path";
 import { dropDown } from "./prompt";
 import getLogger from "./logger";
 
+let logger = getLogger({
+  source: "utils",
+  module: path.basename(__filename),
+});
+
 enum Stages {
   dev = "dev",
-  prod = "prod"
+  prod = "prod",
 }
 
 const stageConfigs: Record<keyof typeof Stages, string> = {
   dev: ".env.dev",
-  prod: ".env.prod"
+  prod: ".env.prod",
 };
 
 /**
@@ -24,28 +29,29 @@ export const loadStage = async function (
   if (process.env.STAGE) return;
 
   if (!stage)
-    stage = await dropDown("Please, select your environment:", Object.keys(Stages)) as keyof typeof Stages;
+    stage = (await dropDown(
+      "Please, select your environment:",
+      Object.keys(Stages)
+    )) as keyof typeof Stages;
   process.env["STAGE"] = stage;
 
   const config = stageConfigs[stage];
-  dotenv.config({ path: config, quiet: true });
-
-  /*
-    Normally, you would create the logger as a global variable.
-    In this case, we first need to load the environment variables.
-    The variables are needed to initialize the logger LEVEL and FOMAT correctly.
-    Please note that this is an exception to the rule.
-    Leave it as it is.
-  */
-  const logger = getLogger({
-    source: "utils",
-    module: path.basename(__dirname),
-  });
-
   const configFullPath = `${process.cwd()}/${config}`;
   if (!existsSync(configFullPath)) {
     logger.error(`Missing .env file for ${stage}: ${configFullPath}`);
     process.exit(-1);
   }
+
+  dotenv.config({ path: config, quiet: true });
+
+  // Reinitialize the baseLogger once the environment is loaded
+  logger = getLogger(
+    {
+      source: "utils",
+      module: path.basename(__filename),
+    },
+    true
+  );
+
   logger.info("Environment loaded.");
 };
