@@ -1,7 +1,11 @@
 import crypto from "crypto";
+import path from "path";
+import { existsSync, readFileSync } from "fs";
 import { Readable } from "stream";
 
-// import Logger from "./logger";
+import getLogger from "./logger";
+import { S3ContentType } from "./enums";
+import { Expose, plainToInstance } from "class-transformer";
 
 type Allowed = {
   buckets: any[];
@@ -40,15 +44,6 @@ type UploadUrlResponse = {
   uploadUrl: string;
   authorizationToken: string;
   authorizationTokenExpirationTimestamp?: number;
-};
-
-export type File = {
-  name: string;
-  bucket: string;
-  content: Buffer;
-  contentType: string;
-  publicUrl?: string;
-  id?: string;
 };
 
 type FileRetention = {
@@ -124,83 +119,130 @@ type ListFileNamesResponse = {
   nextFileName: string;
 };
 
-type Bucket = {
-  id: string;
-  name: string;
-  region: string;
-  endpoint: string;
-};
+class Bucket {
+  @Expose()
+  id!: string;
+  @Expose()
+  name!: string;
+  @Expose()
+  region!: string;
+  @Expose()
+  endpoint!: string;
+}
+
+export { S3ContentType };
+
+export class File {
+  key!: string;
+  name!: string;
+  bucket!: Bucket;
+  content!: Buffer;
+  contentType!: S3ContentType;
+  publicUrl?: string;
+  id?: string;
+
+  constructor(init: {
+    key: string;
+    bucket: Bucket;
+    content: Buffer;
+    contentType: S3ContentType;
+    publicUrl?: string;
+    id?: string;
+  }) {
+    this.key = init.key;
+    this.bucket = init.bucket;
+    this.content = init.content;
+    this.contentType = init.contentType;
+    this.name = path.basename(init.key);
+    this.publicUrl = init.publicUrl;
+    this.id = init.id;
+  }
+}
 
 // Define global variables
-let globalAuthResponse: AccountAuthorizationUrlResponse | null;
-let globalUploadUrlResponse: UploadUrlResponse | null;
+let globalAuthResponse: AccountAuthorizationUrlResponse | null = null;
+let globalUploadUrlResponses: Record<string, UploadUrlResponse> | null = null;
 
-const getBucketMap = function (): Map<string, Bucket> | undefined {
-  // Retrieve all the bucket names
-  let bucketNames: Set<string> = new Set();
-  for (let key in process.env) {
-    if (/^B2_.*_BUCKET/.test(key)) {
-      bucketNames.add(key.split("_")[1]);
-    }
+const logger = getLogger({
+  source: "utils",
+  module: path.basename(__filename),
+});
+
+let baseBuckets: Record<string, Bucket> | null = null;
+
+const getBuckets = function () {
+  if (baseBuckets) return baseBuckets;
+
+  const stage = process.env.STAGE;
+  if (!stage) {
+    logger.error("Missing required environmental variable: STAGE.");
+    process.exit(-1);
   }
 
-  // Make a map of bucket names over bucket instance
-  const bucketMap: Map<string, Bucket> = new Map();
-  for (let bucketName of bucketNames) {
-    // Import the environment variables
-    const id: string = process.env[`B2_${bucketName}_BUCKET_ID`] || "";
-    const name: string = process.env[`B2_${bucketName}_BUCKET_NAME`] || "";
-    const region: string = process.env[`B2_${bucketName}_BUCKET_REGION`] || "";
-    const endpoint: string =
-      process.env[`B2_${bucketName}_BUCKET_ENDPOINT`] || "";
-
-    if (!id || !name || !region || !endpoint) {
-      // Logger.error(
-      //   `Missing required environment variables: B2_${name}_BUCKET_ID, B2_${name}_BUCKET_NAME, B2_${name}_BUCKET_REGION or B2_${name}_BUCKET_ENDPOINT.`
-      // );
-      return;
-    }
-
-    // Add key and values to bucket map
-    bucketMap.set(bucketName, {
-      id,
-      name,
-      region,
-      endpoint,
-    });
+  const filePath = `${process.cwd()}/src/utils/buckets-config.json`;
+  if (!existsSync(filePath)) {
+    logger.error("Missing the buckets configution file.");
+    process.exit(-1);
   }
 
-  return bucketMap;
+  const fileContent = readFileSync(filePath, { encoding: "utf-8" });
+  const parsedConfig = JSON.parse(fileContent);
+
+  if (!parsedConfig[stage]) {
+    logger.error(`Stage "${stage}" not found in buckets configuration.`);
+    process.exit(-1);
+  }
+
+  const fileConfig = parsedConfig[stage];
+
+  baseBuckets = Object.fromEntries(
+    Object.entries(fileConfig).map(([key, value]) => {
+      const bucketInstance = plainToInstance(Bucket, value);
+      return [key, bucketInstance];
+    })
+  );
+
+  return baseBuckets;
 };
 
-const getAccountAuthorization = async function (): Promise<
-  AccountAuthorizationUrlResponse | null | undefined
-> {
-  // Check whether an authResponse is already defined
-  if (globalAuthResponse) {
-    const expirationSeconds =
-      globalAuthResponse.applicationKeyExpirationTimestamp;
-    const expirationDate =
-      expirationSeconds != null
-        ? new Date(expirationSeconds * 1000)
-        : new Date("5000-01-01T00:00:00Z");
-    if (Date.now() < expirationDate.getTime()) {
-      return globalAuthResponse;
-    }
-  }
+export const findBucket = function (bucketKey: string) {
+  const buckets = getBuckets();
 
-  // Import the environment variables
-  const applicationKeyId: string = process.env.B2_KEY_ID || "";
-  const applicationKey: string = process.env.B2_APPLICATION_KEY || "";
-  const baseUrl: string = process.env.B2_BASE_URL || "";
+  try {
+    const bucket = buckets[bucketKey];
+    return bucket;
+  } catch (error) {
+    logger.error(error);
+    process.exit(-1);
+  }
+};
+
+const hasNonExperiredApplicationKey = function () {
+  if (!globalAuthResponse) return false;
+
+  const expirationSeconds =
+    globalAuthResponse.applicationKeyExpirationTimestamp;
+  const expirationDate =
+    expirationSeconds != null
+      ? new Date(expirationSeconds * 1000)
+      : new Date("5000-01-01T00:00:00Z");
+
+  return Date.now() < expirationDate.getTime();
+};
+
+const getAccountAuthorization = async function () {
+  if (hasNonExperiredApplicationKey()) return globalAuthResponse!;
+
+  const applicationKeyId = process.env.B2_KEY_ID;
+  const applicationKey = process.env.B2_APPLICATION_KEY;
+  const baseUrl = process.env.B2_BASE_URL;
   if (!applicationKeyId || !applicationKey || !baseUrl) {
-    // Logger.error(
-    //   "Missing required environment variables: B2_KEY_ID, B2_APPLICATION_KEY, or B2_BASE_URL."
-    // );
+    logger.error(
+      "Missing required environment variables: B2_KEY_ID, B2_APPLICATION_KEY, or B2_BASE_URL."
+    );
     return;
   }
 
-  // Perform the b2_authorize_account request
   try {
     const url: string = `${baseUrl}/b2api/v4/b2_authorize_account`;
     const headers = {
@@ -215,42 +257,50 @@ const getAccountAuthorization = async function (): Promise<
     });
 
     if (!response.ok) {
-      // Logger.error(
-      //   `Failed b2_authorize_account: HTTP ${response.status} ${response.statusText}`
-      // );
+      logger.error(
+        `Failed b2_authorize_account: HTTP ${response.status} ${response.statusText}`
+      );
       return;
     }
 
     globalAuthResponse = await response.json();
-    // Logger.info(`Succeeded b2_authorize_account request.`);
+    logger.info(`b2_authorize_account request.`);
 
     return globalAuthResponse;
   } catch (error) {
-    // Logger.error(`Failed b2_authorize_account request: ${error}.`);
+    logger.error(error);
     return;
   }
 };
 
+const hasNonExpiredAuthorizationToken = function (bucket: Bucket) {
+  if (!globalUploadUrlResponses || !(bucket.id in globalUploadUrlResponses))
+    return false;
+  const globalUploadUrlResponse: UploadUrlResponse =
+    globalUploadUrlResponses[bucket.id];
+
+  const expirationSeconds =
+    globalUploadUrlResponse.authorizationTokenExpirationTimestamp!;
+  const expirationDate =
+    expirationSeconds != null
+      ? new Date(expirationSeconds * 1000)
+      : new Date("2000-01-01T00:00:00Z");
+
+  return Date.now() < expirationDate.getTime();
+};
+
 const getUploadUrl = async function (
-  bucketObject: Bucket
+  bucket: Bucket
 ): Promise<UploadUrlResponse | undefined | null> {
-  // Check whether an authResponse is already defined
-  if (globalUploadUrlResponse) {
-    const expirationSeconds =
-      globalUploadUrlResponse.authorizationTokenExpirationTimestamp!;
-    const expirationDate =
-      expirationSeconds != null
-        ? new Date(expirationSeconds * 1000)
-        : new Date("2000-01-01T00:00:00Z");
-    if (Date.now() < expirationDate.getTime()) {
-      return globalUploadUrlResponse;
-    }
+  if (hasNonExpiredAuthorizationToken(bucket)) {
+    const globalUploadUrlResponse: UploadUrlResponse =
+      globalUploadUrlResponses![bucket.id];
+    return globalUploadUrlResponse;
   }
 
-  // Import the environment variables
-  const baseUrl: string = process.env.B2_BASE_URL || "";
+  const baseUrl = process.env.B2_BASE_URL;
   if (!baseUrl) {
-    // Logger.error("Missing required environment variables: B2_BASE_URL.");
+    logger.error("Missing required environment variables: B2_BASE_URL.");
     return;
   }
 
@@ -260,11 +310,10 @@ const getUploadUrl = async function (
     throw Error("Unable to retrieve account authorization.");
   }
 
-  // Peform b2_get_upload_url request
   try {
     const now: number = Date.now() / 1000;
 
-    const url: string = `${baseUrl}/b2api/v4/b2_get_upload_url?bucketId=${bucketObject.id}`;
+    const url: string = `${baseUrl}/b2api/v4/b2_get_upload_url?bucketId=${bucket.id}`;
     const headers = {
       Authorization: authResponse.authorizationToken,
     };
@@ -275,43 +324,32 @@ const getUploadUrl = async function (
     });
 
     if (!response.ok) {
-      // Logger.error(
-      //   `Failed b2_get_upload_url: HTTP ${response.status} ${response.statusText}`
-      // );
+      logger.error(
+        `Failed b2_get_upload_url: HTTP ${response.status} ${response.statusText}`
+      );
       return;
     }
 
-    globalUploadUrlResponse = await response.json();
-    globalUploadUrlResponse!["authorizationTokenExpirationTimestamp"] = now;
-    // Logger.info(`Succeeded b2_get_upload_url request.`);
+    const uploadUrlResponse: UploadUrlResponse = await response.json();
+    uploadUrlResponse["authorizationTokenExpirationTimestamp"] = now;
+    globalUploadUrlResponses = globalUploadUrlResponses ?? {};
+    globalUploadUrlResponses[bucket.id] = uploadUrlResponse;
+    logger.info(`b2_get_upload_url request.`);
 
-    return globalUploadUrlResponse;
+    return uploadUrlResponse;
   } catch (error) {
-    // Logger.error(`Failed b2_get_upload_url request: ${error}.`);
+    logger.error(error);
     return;
   }
 };
 
-export const uploadFile = async function (file: File): Promise<void> {
-  // Retrieve the bucket instance
-  const bucketMap = getBucketMap();
-  if (bucketMap === undefined || bucketMap.size === 0) {
-    // Logger.error(`Unable to parse retrieve any storage bucket.`);
-    return;
-  }
-  const bucketObject = bucketMap.get(file.bucket.toUpperCase());
-  if (!bucketObject) {
-    // Logger.error(`Unable to retrieve bucket object for: ${file.bucket}.`);
-    return;
-  }
-
+export const uploadFile = async function (file: File) {
   // Retrieve the upload url response
-  const uploadUrlResponse = await getUploadUrl(bucketObject);
+  const uploadUrlResponse = await getUploadUrl(file.bucket);
   if (!uploadUrlResponse) {
     throw Error("Unable to retrieve the upload url.");
   }
 
-  // Peform the b2_upload_file request
   try {
     const sha1 = crypto.createHash("sha1").update(file.content).digest("hex");
     const stream = Readable.from(file.content);
@@ -319,7 +357,7 @@ export const uploadFile = async function (file: File): Promise<void> {
     const url: string = uploadUrlResponse.uploadUrl;
     const headers = {
       Authorization: uploadUrlResponse.authorizationToken,
-      "X-Bz-File-Name": encodeURIComponent(file.name),
+      "X-Bz-File-Name": encodeURIComponent(file.key),
       "Content-Type": file.contentType,
       "Content-Length": file.content.length.toString(),
       "X-Bz-Content-Sha1": sha1,
@@ -335,23 +373,24 @@ export const uploadFile = async function (file: File): Promise<void> {
     });
 
     if (!response.ok) {
-      // Logger.error(
-      //   `Failed b2_upload_file: HTTP ${response.status} ${response.statusText}`
-      // );
+      logger.error(
+        `Failed b2_upload_file: HTTP ${response.status} ${response.statusText}`
+      );
       return;
     }
 
     const uploadFileResponse: UploadFileResponse = await response.json();
+    logger.info("b2_upload_file request.");
 
     const publicUrl: string = `https://f${
-      bucketObject.region.match(/\d{3}/)![0]
-    }.backblazeb2.com/file/${file.bucket}/${file.name}`;
+      file.bucket.region.match(/\d{3}/)![0]
+    }.backblazeb2.com/file/${file.bucket.name}/${file.key}`;
     file["publicUrl"] = publicUrl;
     file["id"] = uploadFileResponse.fileId;
 
     return;
   } catch (error) {
-    // Logger.error(`Failed b2_upload_file request: ${error}.`);
+    logger.error(`Failed b2_upload_file request: ${error}.`);
     return;
   }
 };
@@ -466,76 +505,76 @@ export const deleteFile = async function (file: File): Promise<void> {
   }
 };
 
-export const listFileNames = async function (
-  bucket: string,
-  prefix: string = ""
-): Promise<string[] | undefined> {
-  // Import the environment variables
-  const baseUrl: string = process.env.B2_BASE_URL || "url";
-  if (!baseUrl) {
-    // Logger.error("Missing required environment variables: B2_BASE_URL.");
-    return;
-  }
+// export const listFileNames = async function (
+//   bucket: string,
+//   prefix: string = ""
+// ): Promise<string[] | undefined> {
+//   // Import the environment variables
+//   const baseUrl: string = process.env.B2_BASE_URL || "url";
+//   if (!baseUrl) {
+//     // Logger.error("Missing required environment variables: B2_BASE_URL.");
+//     return;
+//   }
 
-  // Retrieve the bucket instance
-  const bucketMap = getBucketMap();
-  if (bucketMap === undefined || bucketMap.size === 0) {
-    // Logger.error(`Unable to parse retrieve any storage bucket.`);
-    return;
-  }
-  const bucketObject = bucketMap.get(bucket.toUpperCase());
-  if (!bucketObject) {
-    // Logger.error(`Unable to retrieve bucket object for: ${bucket}.`);
-    return;
-  }
+//   // Retrieve the bucket instance
+//   const bucketMap = getBucketMap();
+//   if (bucketMap === undefined || bucketMap.size === 0) {
+//     // Logger.error(`Unable to parse retrieve any storage bucket.`);
+//     return;
+//   }
+//   const bucketObject = bucketMap.get(bucket.toUpperCase());
+//   if (!bucketObject) {
+//     // Logger.error(`Unable to retrieve bucket object for: ${bucket}.`);
+//     return;
+//   }
 
-  // Retrieve the account authorization response
-  const authResponse = await getAccountAuthorization();
-  if (!authResponse) {
-    throw Error("Unable to retrieve account authorization.");
-  }
+//   // Retrieve the account authorization response
+//   const authResponse = await getAccountAuthorization();
+//   if (!authResponse) {
+//     throw Error("Unable to retrieve account authorization.");
+//   }
 
-  // Perform the b2_list_file_names request
-  try {
-    let startFileName: string | null = "";
-    let fileNames: string[] = [];
+//   // Perform the b2_list_file_names request
+//   try {
+//     let startFileName: string | null = "";
+//     let fileNames: string[] = [];
 
-    while (startFileName !== null) {
-      const url: string = `${baseUrl}/b2api/v4/b2_list_file_names?bucketId=${
-        bucketObject.id
-      }${prefix ? `&prefix=${prefix}` : ""}${
-        startFileName ? `&startFileName=${startFileName}` : ""
-      }`;
-      const headers = {
-        Authorization: authResponse.authorizationToken,
-      };
+//     while (startFileName !== null) {
+//       const url: string = `${baseUrl}/b2api/v4/b2_list_file_names?bucketId=${
+//         bucketObject.id
+//       }${prefix ? `&prefix=${prefix}` : ""}${
+//         startFileName ? `&startFileName=${startFileName}` : ""
+//       }`;
+//       const headers = {
+//         Authorization: authResponse.authorizationToken,
+//       };
 
-      const response = await fetch(url, {
-        method: "GET",
-        headers: headers,
-      });
+//       const response = await fetch(url, {
+//         method: "GET",
+//         headers: headers,
+//       });
 
-      if (!response.ok) {
-        // Logger.error(
-        //   `Failed b2_list_file_names: HTTP ${response.status} ${response.statusText}`
-        // );
-        return;
-      }
+//       if (!response.ok) {
+//         // Logger.error(
+//         //   `Failed b2_list_file_names: HTTP ${response.status} ${response.statusText}`
+//         // );
+//         return;
+//       }
 
-      const listFileNamesResponse: ListFileNamesResponse =
-        await response.json();
-      for (let i: number = 0; i < listFileNamesResponse.files.length; i++) {
-        const file: GetFileInfoResponse = listFileNamesResponse.files[i];
-        fileNames.push(file.fileName);
-      }
-      startFileName = listFileNamesResponse.nextFileName;
-    }
+//       const listFileNamesResponse: ListFileNamesResponse =
+//         await response.json();
+//       for (let i: number = 0; i < listFileNamesResponse.files.length; i++) {
+//         const file: GetFileInfoResponse = listFileNamesResponse.files[i];
+//         fileNames.push(file.fileName);
+//       }
+//       startFileName = listFileNamesResponse.nextFileName;
+//     }
 
-    // Logger.info("Succeeded b2_list_file_names request.");
+//     // Logger.info("Succeeded b2_list_file_names request.");
 
-    return fileNames;
-  } catch (error) {
-    // Logger.error(`Failed b2_list_file_names request: ${error}.`);
-    return;
-  }
-};
+//     return fileNames;
+//   } catch (error) {
+//     // Logger.error(`Failed b2_list_file_names request: ${error}.`);
+//     return;
+//   }
+// };
