@@ -510,6 +510,10 @@ export const deleteFile = async function (file: File): Promise<void> {
   }
 };
 
+/**
+ *
+ * @description Returns list of files in bucket starting with input prefix.
+ */
 export const listFileNames = async function (
   bucket: Bucket,
   prefix: string = ""
