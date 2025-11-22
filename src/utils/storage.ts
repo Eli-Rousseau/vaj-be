@@ -5,7 +5,6 @@ import { Readable } from "stream";
 
 import getLogger from "./logger";
 import { S3ContentType } from "./enums";
-import { Expose, plainToInstance } from "class-transformer";
 
 type Allowed = {
   buckets: any[];
@@ -120,14 +119,22 @@ type ListFileNamesResponse = {
 };
 
 class Bucket {
-  @Expose()
   id!: string;
-  @Expose()
   name!: string;
-  @Expose()
   region!: string;
-  @Expose()
   endpoint!: string;
+
+  constructor(init: {
+    id: string,
+    name: string,
+    region: string,
+    endpoint: string
+  }) {
+    this.id = init.id;
+    this.name = init.name;
+    this.region = init.region;
+    this.endpoint = init.endpoint
+  }
 }
 
 export { S3ContentType };
@@ -168,6 +175,37 @@ export class File {
       id: this.id,
     };
   }
+
+  static fromPlain(plain: {
+    key: string,
+    name: string,
+    bucket: string,
+    content: Buffer,
+    contentType: string,
+    publicUrl: string,
+    id: string
+  }) {
+    try {
+      const bucket = getBuckets()[plain.bucket];
+
+      if (!Object.values(S3ContentType).includes(plain.contentType as S3ContentType)) {
+        throw new Error('Unrecognized S3ContentType.');
+      }
+      const contentType = plain.contentType as S3ContentType;
+
+      return new File({
+        key: plain.key,
+        bucket: bucket,
+        content: plain.content,
+        contentType: contentType,
+        publicUrl: plain.publicUrl,
+        id: plain.id
+      });
+    } catch (error) {
+      logger.error(`Failed to create File instance: ${error}`);
+      return null;
+    }
+  }
 }
 
 // Define global variables
@@ -204,12 +242,23 @@ const getBuckets = function () {
     process.exit(-1);
   }
 
-  const fileConfig = parsedConfig[stage];
+  const fileConfig: Record<string, any> = parsedConfig[stage];
 
   baseBuckets = Object.fromEntries(
     Object.entries(fileConfig).map(([key, value]) => {
-      const bucketInstance = plainToInstance(Bucket, value);
-      return [key, bucketInstance];
+      // const bucketInstance = plainToInstance(Bucket, value);
+      try {
+        const bucketInstance = new Bucket({
+          id: value?.id,
+          name: value?.name,
+          region: value?.region,
+          endpoint: value?.endpoint
+        })
+        return [key, bucketInstance];
+      } catch (error) {
+        logger.error(`Unable to transform input into Bucket instance: ${value}`);
+        throw error;
+      }
     })
   );
 

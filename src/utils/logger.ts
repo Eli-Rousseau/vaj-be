@@ -21,7 +21,7 @@ const loggerFormats: Record<LogFormat, winston.Logform.Format> = {
 let baseLogger: winston.Logger | null = null;
 
 /**
- * Creates and caches a Winston base logger.
+ * @description Creates and caches a Winston base logger.
  */
 function createBaseLogger(replace: boolean = false): winston.Logger {
   if (baseLogger && !replace) return baseLogger;
