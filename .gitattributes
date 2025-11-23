@@ -1,0 +1,3 @@
+# Git crypt protected files
+.env.* filter=git-crypt diff=git-crypt
+src/utils/buckets-config.json filter=git-crypt diff=git-crypt
