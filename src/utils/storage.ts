@@ -118,6 +118,27 @@ type ListFileNamesResponse = {
   nextFileName: string;
 };
 
+type DownloadFileHeadersResponse = {
+  "Content-Length": number;
+  "Content-Type": string;
+  "X-Bz-File-Id": string;
+  "X-Bz-File-Name": string;
+  "X-Bz-Content-Sha1": string;
+  "X-Bz-Upload-Timestamp": number;
+  "Content-Disposition": string;
+  "Content-Language": string;
+  Expires: number;
+  "Cache-Control": string;
+  "Content-Encoding": string;
+  "X-Bz-Server-Side-Encryption": string;
+  "X-Bz-Server-Side-Encryption-Customer-Algorithm": string;
+  "X-Bz-Server-Side-Encryption-Customer-Key-Md5": string;
+  "X-Bz-File-Retention-Mode": string;
+  "X-Bz-File-Retention-Retain-Until-Timestamp": number;
+  "X-Bz-File-Legal-Hold": string;
+  "X-Bz-Client-Unauthorized-To-Read": string;
+}
+
 class Bucket {
   id!: string;
   name!: string;
@@ -626,4 +647,43 @@ export const listFileNames = async function (
  * @description Downloads file content from the cloud.
  * @todo Implement
  */
-export const downloadFile = function () {};
+export const downloadFile = async function (file: File) {
+  const baseUrl = process.env.B2_BASE_URL;
+  if (!baseUrl) {
+    logger.error("Missing required environment variables: B2_BASE_URL.");
+    return;
+  }
+
+  // Retrieve the account authorization response
+  const authResponse = await getAccountAuthorization();
+  if (!authResponse) {
+    throw Error("Unable to retrieve account authorization.");
+  }
+
+  try {
+    const url = `${baseUrl}/b2api/v4/b2_download_file_by_id?${file.id}`;
+    const headers = {
+      Authorization: authResponse.authorizationToken
+    };
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: headers
+    });
+
+    if (!response.ok) {
+      logger.error(
+        `Failed b2_download_file_by_id: HTTP ${response.status} ${response.statusText}`
+      );
+      return;
+    }
+
+    const content = await response.blob();
+    console.log(content);
+
+
+  } catch (error) {
+    logger.error(`Failed b2_upload_file request: ${error}.`);
+    return;
+  }
+};
