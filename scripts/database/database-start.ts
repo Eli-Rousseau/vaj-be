@@ -1,8 +1,8 @@
 import path from "path";
 
-import { loadStage } from "../src/utils/stage";
-import getLogger from "../src/utils/logger";
-import * as docker from "../src/utils/docker";
+import { loadStage } from "../../src/utils/stage";
+import getLogger from "../../src/utils/logger";
+import * as docker from "../../src/utils/docker";
 
 const logger = getLogger({
   source: "scripts",
