@@ -146,6 +146,29 @@ export const runDockerContainer = function (
     logger.info("Docker container running.");
   } catch (error) {
     logger.error(error);
-    process.exit(-1);
+    process.exit(1);
   }
 };
+
+const stopContainer = function (container: string) {
+  try {
+    execSync(`docker stop ${container}`, { stdio: "ignore" });
+    logger.info("Closed the running container.")
+  } catch (error) {
+    logger.error(error);
+    process.exit(1);
+  }
+}
+
+export const terminateDocker = function (container: string, status: { value: boolean }) {
+  process.on("SIGINT", () => {
+    if (status.value) stopContainer(container);
+    logger.info("Shutdown process.");
+    process.exit(0);
+  });
+  process.on("SIGTERM", () => {
+    if (status.value) stopContainer(container);
+    logger.info("Shutdown process.");
+    process.exit(0);
+  });
+}

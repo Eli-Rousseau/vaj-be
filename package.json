@@ -10,7 +10,7 @@
     "generate-transformer-classes": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/generate-transformer-classes.js",
     "server": "nodemon --watch api --ext ts,tsx --exec ts-node ./src/api/server.ts",
     "generate-api-key": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/generate-api-key.js",
-    "test": "vitest"
+    "database-start": "tsc -p tsconfig.json && node ./dist/scripts/database/database-start.js"
   },
   "author": "",
   "license": "ISC",
