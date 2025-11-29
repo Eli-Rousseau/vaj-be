@@ -28,7 +28,11 @@ const runDatabaseContainer = function () {
 
   docker.runDockerContainer({
     "--name": CONTAINER_NAME,
-    args: [{ "-e": `POSTGRES_PASSWORD=${password}` }, "postgres"]
+    args: [
+      { "-e": `POSTGRES_PASSWORD=${password}` }, 
+      { "-p": `${port}:${port}` },
+      "postgres"
+    ]
   });
 
   logger.info(`PostgreSQL container "${CONTAINER_NAME}" is running on ${host}:${port}.`);

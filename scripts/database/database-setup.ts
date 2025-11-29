@@ -1,0 +1,77 @@
+import { cwd } from "process";
+import path from "path";
+
+import { runSqlScript } from "../../src/utils/sql";
+import { loadStage } from "../../src/utils/stage";
+import getLogger from "../../src/utils/logger";
+
+const logger = getLogger({
+    source: "scripts",
+    module: path.basename(__filename)
+});
+
+async function createDatabase(args: {
+    defaultDatabase: string,
+    defaultUserName: string,
+    defaultUserPassword: string,
+    host: string,
+    port: string
+}) {
+    const {defaultDatabase, defaultUserName, defaultUserPassword, host, port} = args;
+    const dbScript = `${cwd()}/src/database/setup/add_database.sql`;
+    const dbCommand = `export PGPASSWORD='${defaultUserPassword}'; psql -h ${host} -p ${port} -U ${defaultUserName} -d ${defaultDatabase} -f "${dbScript}"; unset PGPASSWORD`;
+    await runSqlScript(dbCommand, "Database creation");
+}
+
+async function createSchema(args: {
+    database: string,
+    defaultUserName: string,
+    defaultUserPassword: string,
+    host: string,
+    port: string
+}) {
+    const {database, defaultUserName, defaultUserPassword, host, port} = args;
+    const schemaScript = `${cwd()}/src/database/setup/add_schema.sql`;
+    const schemaCommand = `export PGPASSWORD='${defaultUserPassword}'; psql -h ${host} -p ${port} -U ${defaultUserName} -d ${database} -f "${schemaScript}"; unset PGPASSWORD`;
+    await runSqlScript(schemaCommand, "Schema creation");
+}
+
+async function createMigrationTable(args: {
+    database: string,
+    defaultUserName: string,
+    defaultUserPassword: string,
+    host: string,
+    port: string
+}) {
+    const {database, defaultUserName, defaultUserPassword, host, port} = args;
+    const schemaScript = `${cwd()}/src/database/setup/add_migration_table.sql`;
+    const schemaCommand = `export PGPASSWORD='${defaultUserPassword}'; psql -h ${host} -p ${port} -U ${defaultUserName} -d ${database} -f "${schemaScript}"; unset PGPASSWORD`;
+    await runSqlScript(schemaCommand, "Migration table creation");
+}
+
+
+async function main() {
+    await loadStage();
+
+    const host = process.env.DATABASE_HOST;
+    const port = process.env.DATABASE_PORT;
+    
+    const defaultDatabase = process.env.DATABASE_DEFAULT;
+    const defaultUserName = process.env.DATABASE_DEFAULT_USER_NAME;
+    const defaultUserPassword = process.env.DATABASE_DEFAULT_USER_PASSWORD;
+
+    const database = process.env.DATABASE_VAJ;
+
+    if (!host || !port || !defaultUserPassword || !defaultUserName || !defaultDatabase || !database) {
+        logger.error("Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_DEFAULT_USER_NAME, DATABASE_DEFAULT, DATABASE_HOST, DATBASE_PORT, or DATABASE_VAJ.");
+        process.exit(1);
+    }
+
+    await createDatabase({ defaultDatabase, defaultUserName, defaultUserPassword, host, port });
+    await createSchema({ database, defaultUserName, defaultUserPassword, host, port });
+    await createMigrationTable({ database, defaultUserName, defaultUserPassword, host, port });
+
+    logger.info("Finished database setup.")
+}
+
+main();
