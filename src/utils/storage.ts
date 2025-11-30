@@ -574,10 +574,14 @@ export const listFileNames = async function (
         throw Error(`Failed b2_list_file_names: HTTP ${response.status} ${response.statusText}`);
       }
 
-      const listFileNamesResponse: ListFileNamesResponse =
-        await response.json();
+      const listFileNamesResponse: ListFileNamesResponse = await response.json();
+
+      const path = prefix.substring(0, prefix.lastIndexOf("/") + 1);
       for (const file of listFileNamesResponse.files) {
-        fileNames.push(file.fileName);
+        const fileName = file.fileName.replace(path, "");
+        const isFile = !/\//.test(fileName);
+
+        if (isFile) fileNames.push(fileName);
       }
       startFileName = listFileNamesResponse.nextFileName;
     }

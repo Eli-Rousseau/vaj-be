@@ -4,7 +4,7 @@ import { readFile, rm } from "fs/promises";
 
 import { loadStage } from "../../src/utils/stage";
 import getLogger from "../../src/utils/logger";
-import { runSqlScript } from "../../src/utils/sql";
+import { runCommand } from "../../src/utils/process";
 import { File, findBucket, uploadFile, S3ContentType } from "../../src/utils/storage";
 
 const logger = getLogger({
@@ -13,6 +13,7 @@ const logger = getLogger({
 });
 
 const tmp = `${cwd()}/src/database/.backup.tar`;
+const directory = "database/backups/"
 
 async function makeDatabaseBackup(args: {
     database: string,
@@ -23,7 +24,7 @@ async function makeDatabaseBackup(args: {
 }) {
     const {database, defaultUserName, defaultUserPassword, host, port} = args;
     const backupCommand = `export PGPASSWORD='${defaultUserPassword}'; pg_dump -d ${database} -h ${host} -p ${port} -U ${defaultUserName} -F tar -f ${tmp}; unset PGPASSWORD`;
-    await runSqlScript(backupCommand, "Database backup");
+    await runCommand(backupCommand, "Database backup");
 }
 
 async function storeBackup() {
@@ -36,7 +37,7 @@ async function storeBackup() {
     }
 
     const bucket = findBucket("private");
-    const key = `database/backups/${Date.now().toString()}.tar`
+    const key = `${directory}${Date.now().toString()}.tar`
     const file = new File({
         key,
         bucket,

@@ -4,13 +4,13 @@
   "description": "vintage archive jungle - backend project",
   "main": "index.js",
   "scripts": {
-    "database-restore": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/database-restore.js",
     "generate-transformer-classes": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/generate-transformer-classes.js",
     "server": "nodemon --watch api --ext ts,tsx --exec ts-node ./src/api/server.ts",
     "generate-api-key": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/generate-api-key.js",
     "postgres": "tsc -p tsconfig.json && node ./dist/scripts/database/server-start.js",
-    "database-setup": "tsc -p tsconfig.scripts.json && node ./dist/scripts/database/database-setup.js",
-    "database-backup": "tsc -p tsconfig.scripts.json && node ./dist/scripts/database/database-backup.js"
+    "database-setup": "tsc -p tsconfig.json && node ./dist/scripts/database/database-setup.js",
+    "database-backup": "tsc -p tsconfig.json && node ./dist/scripts/database/database-backup.js",
+    "database-restore": "tsc -p tsconfig.json && node ./dist/scripts/database/database-restore.js"
   },
   "author": "",
   "license": "ISC",

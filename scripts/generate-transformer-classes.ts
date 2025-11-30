@@ -2,7 +2,7 @@ import { readFile, writeFile, unlink } from "fs/promises";
 import * as path from "path";
 
 import { loadStage } from "../src/utils/stage";
-import { runSqlScript } from "../src/utils/sql";
+import { runCommand } from "../src/utils/process";
 
 const INDENT: string = " ".repeat(2);
 
@@ -230,7 +230,7 @@ async function main() {
   const tableNamesCommand: string = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseVAJ} -v file="'${outputTableNames}'" -f "${tableNamesScript}"; unset PGPASSWORD`;
 
   // Running the table names selection process
-  await runSqlScript(tableNamesCommand, "Table names selection");
+  await runCommand(tableNamesCommand, "Table names selection");
 
   // Reading the content of the tables file
   let tableNamesFileContent: string;
@@ -263,7 +263,7 @@ async function main() {
     const tableDefinitionCommand: string = `export PGPASSWORD='${databaseDefaultUserPassword}'; psql -h ${databaseHost} -p ${databasePort} -U ${databaseDefaultUserName} -d ${databaseVAJ} -v table="'${table}'" -v file="'${outputTableDefinition}'" -f "${tableDefinitionScript}"; unset PGPASSWORD`;
 
     // Running the table definition selection process
-    await runSqlScript(
+    await runCommand(
       tableDefinitionCommand,
       `${
         table.charAt(0).toUpperCase() + table.slice(1)

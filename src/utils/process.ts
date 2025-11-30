@@ -11,7 +11,7 @@ const logger = getLogger({
 
 const execAsync = promisify(exec);
 
-export async function runSqlScript(command: string, processName: string) {
+export async function runCommand(command: string, processName: string) {
   try {
     const { stdout, stderr } = await execAsync(command);
     if (stderr) logger.warn(stderr);
