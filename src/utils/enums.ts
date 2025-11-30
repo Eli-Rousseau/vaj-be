@@ -69,3 +69,13 @@ export enum S3ContentType {
   KML = "application/vnd.google-earth.kml+xml",
   SHELL = "application/x-sh",
 }
+
+export function findEnumsValue<E extends Record<string, string>>(
+  value: string,
+  enums: E
+): E[keyof E] | null {
+  const enumValues = Object.values(enums) as E[keyof E][];
+  const found = enumValues.find(v => v === value);
+  return found ?? null;
+}
+

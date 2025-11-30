@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "fs";
 import { Readable } from "stream";
 
 import getLogger from "./logger";
-import { S3ContentType } from "./enums";
+import { findEnumsValue, S3ContentType } from "./enums";
 
 type Allowed = {
   buckets: any[];
@@ -119,17 +119,20 @@ type ListFileNamesResponse = {
 };
 
 class Bucket {
+  key!: string;
   id!: string;
   name!: string;
   region!: string;
   endpoint!: string;
 
   constructor(init: {
+    key: string,
     id: string,
     name: string,
     region: string,
     endpoint: string
   }) {
+    this.key = init.key;
     this.id = init.id;
     this.name = init.name;
     this.region = init.region;
@@ -169,7 +172,7 @@ export class File {
     return {
       key: this.key,
       name: this.name,
-      bucket: this.bucket,
+      bucket: this.bucket.key,
       contentType: this.contentType,
       publicUrl: this.publicUrl,
       id: this.id,
@@ -182,23 +185,23 @@ export class File {
     bucket: string,
     content?: Buffer,
     contentType: string,
-    publicUrl: string,
+    publicUrl?: string,
     id: string
   }) {
     try {
-      const bucket = getBuckets()[plain.bucket];
+      const bucket = findBucket(plain.bucket);
+
+      const contentType = findEnumsValue(plain.contentType, S3ContentType);
       
-      if (!(plain.contentType in S3ContentType)) {
+      if (!contentType) {
         throw new Error(`Unrecognized S3ContentType: ${plain.contentType}`);
       }
 
-      const contentType = S3ContentType[plain.contentType as keyof typeof S3ContentType];
-
       return new File({
         key: plain.key,
-        bucket: bucket,
+        bucket,
         content: plain.content,
-        contentType: contentType,
+        contentType,
         publicUrl: plain.publicUrl,
         id: plain.id
       });
@@ -246,6 +249,7 @@ const getBuckets = function () {
       // const bucketInstance = plainToInstance(Bucket, value);
       try {
         const bucketInstance = new Bucket({
+          key: value?.key,
           id: value?.id,
           name: value?.name,
           region: value?.region,
@@ -536,7 +540,7 @@ export const deleteFile = async function (file: File): Promise<void> {
  *
  * @description Returns list of files in bucket starting with input prefix.
  */
-export const listFileNames = async function (
+export const listFiles = async function (
   bucket: Bucket,
   prefix: string = ""
 ) {
@@ -553,7 +557,7 @@ export const listFileNames = async function (
 
   try {
     let startFileName: string | null = "";
-    let fileNames: string[] = [];
+    let files: File[] = [];
 
     while (startFileName !== null) {
       const url: string = `${baseUrl}/b2api/v4/b2_list_file_names?bucketId=${
@@ -577,18 +581,32 @@ export const listFileNames = async function (
       const listFileNamesResponse: ListFileNamesResponse = await response.json();
 
       const path = prefix.substring(0, prefix.lastIndexOf("/") + 1);
-      for (const file of listFileNamesResponse.files) {
-        const fileName = file.fileName.replace(path, "");
+      for (const fileResponse of listFileNamesResponse.files) {
+        const key = fileResponse.fileName;
+        const fileName = key.replace(path, "");
+
         const isFile = !/\//.test(fileName);
 
-        if (isFile) fileNames.push(fileName);
+        const contentType = fileResponse.contentType as S3ContentType;
+
+        if (isFile) {
+          const file = File.fromPlain({
+            key,
+            name: fileName,
+            bucket: bucket.key,
+            id: fileResponse.fileId,
+            contentType
+          });
+
+          files.push(file);
+        }
       }
       startFileName = listFileNamesResponse.nextFileName;
     }
 
     logger.info("b2_list_file_names request.");
 
-    return fileNames;
+    return files;
   } catch (error) {
     throw Error(`Failed b2_list_file_names reques: ${error}`);
   }

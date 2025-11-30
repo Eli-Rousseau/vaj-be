@@ -4,7 +4,7 @@ import { rm, writeFile } from "fs/promises";
 
 import { loadStage } from "../../src/utils/stage";
 import { runCommand } from "../../src/utils/process";
-import { downloadFile, File, findBucket, listFileNames, S3ContentType } from "../../src/utils/storage";
+import { downloadFile, findBucket, listFiles } from "../../src/utils/storage";
 import getLogger from "../../src/utils/logger";
 
 const logger = getLogger({
@@ -43,24 +43,19 @@ async function createDatabase(args: {
 async function retrieveBackup() {
 
   const bucket = findBucket("private");
-  let backups = await listFileNames(bucket, directory);
+  let backups = await listFiles(bucket, directory);
   if (backups.length === 0) {
     logger.error("No backup file retrived.");
     process.exit(1);
   }
 
   backups = backups.sort((fileA, fileB) => {
-    const timeStampA = Number(fileA.replace(".tar", ""));
-    const timeStampB = Number(fileB.replace(".tar", ""));
+    const timeStampA = Number(fileA.name.replace(".tar", ""));
+    const timeStampB = Number(fileB.name.replace(".tar", ""));
     return timeStampB - timeStampA;
   });
-  const backup = backups[0];
+  const file = backups[0];
 
-  const file = new File({
-    key: `${directory}${backup}`,
-    bucket: bucket,
-    contentType: S3ContentType.TAR
-  });
   await downloadFile(file);
 
   try {
