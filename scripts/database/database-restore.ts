@@ -27,25 +27,12 @@ async function dropDatabase(args: {
     await runCommand(dropCommand, "Database drop");
 }
 
-async function createDatabase(args: {
-    defaultDatabase: string,
-    defaultUserName: string,
-    defaultUserPassword: string,
-    host: string,
-    port: string
-}) {
-    const {defaultDatabase, defaultUserName, defaultUserPassword, host, port} = args;
-    const dbScript = `${cwd()}/src/database/setup/add_database.sql`;
-    const dbCommand = `export PGPASSWORD='${defaultUserPassword}'; psql -h ${host} -p ${port} -U ${defaultUserName} -d ${defaultDatabase} -f "${dbScript}"; unset PGPASSWORD`;
-    await runCommand(dbCommand, "Database creation");
-}
-
 async function retrieveBackup() {
 
   const bucket = findBucket("private");
   let backups = await listFiles(bucket, directory);
   if (backups.length === 0) {
-    logger.error("No backup file retrived.");
+    logger.error("No backup file retrieved.");
     process.exit(1);
   }
 
@@ -67,14 +54,14 @@ async function retrieveBackup() {
 }
 
 async function restoreDatabase(args: {
-    database: string,
+    defaultDatabase: string,
     defaultUserName: string,
     defaultUserPassword: string,
     host: string,
     port: string
 }) {
-  const {database, defaultUserName, defaultUserPassword, host, port} = args;
-  const restoreCommand: string = `export PGPASSWORD='${defaultUserPassword}'; pg_restore -h ${host} -p ${port} -U ${defaultUserName} -C -c --if-exists -d ${database} ${tmp}; unset PGPASSWORD`;
+  const {defaultDatabase, defaultUserName, defaultUserPassword, host, port} = args;
+  const restoreCommand: string = `export PGPASSWORD='${defaultUserPassword}'; pg_restore -h ${host} -p ${port} -U ${defaultUserName} -C -c --if-exists -d ${defaultDatabase} ${tmp}; unset PGPASSWORD`;
   await runCommand(restoreCommand, "Database backup");
 
   try {
@@ -103,9 +90,8 @@ async function main() {
   }
 
   await dropDatabase({ database, defaultUserName, defaultUserPassword, host, port });
-  await createDatabase({ defaultDatabase, defaultUserName, defaultUserPassword, host, port });
   await retrieveBackup();
-  await restoreDatabase({ database, defaultUserName, defaultUserPassword, host, port });
+  await restoreDatabase({ defaultDatabase, defaultUserName, defaultUserPassword, host, port });
 }
 
 main();

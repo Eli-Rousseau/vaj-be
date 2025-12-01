@@ -15,6 +15,7 @@ type Allowed = {
 type StorageApi = {
   absoluteMinimumPartSize: number;
   apiUrl: string;
+  downloadUrl: string;
   allowed: Allowed;
   recommendedPartSize: number;
   s3ApiUrl: string;
@@ -283,14 +284,11 @@ export const findBucket = function (bucketKey: string) {
 const hasNonExpiredApplicationKey = function () {
   if (!globalAuthResponse) return false;
 
-  const expirationSeconds =
-    globalAuthResponse.applicationKeyExpirationTimestamp;
-  const expirationDate =
-    expirationSeconds != null
-      ? new Date(expirationSeconds * 1000)
-      : new Date("5000-01-01T00:00:00Z");
+  const expirationSeconds = globalAuthResponse.applicationKeyExpirationTimestamp;
+  const expirationDate = expirationSeconds != null
+  ? new Date(expirationSeconds * 1000) : new Date("5000-01-01T00:00:00Z");
 
-  return Date.now() < expirationDate.getTime();
+  return Date.now() < expirationDate.getTime() - 10_000; // 10 seconds buffer
 };
 
 const getAccountAuthorization = async function () {
@@ -332,31 +330,21 @@ const getAccountAuthorization = async function () {
 const hasNonExpiredAuthorizationToken = function (bucket: Bucket) {
   if (!globalUploadUrlResponses || !(bucket.id in globalUploadUrlResponses))
     return false;
-  const globalUploadUrlResponse: UploadUrlResponse =
-    globalUploadUrlResponses[bucket.id];
+  const globalUploadUrlResponse: UploadUrlResponse = globalUploadUrlResponses[bucket.id];
 
-  const expirationSeconds =
-    globalUploadUrlResponse.authorizationTokenExpirationTimestamp!;
-  const expirationDate =
-    expirationSeconds != null
-      ? new Date(expirationSeconds * 1000)
-      : new Date("2000-01-01T00:00:00Z");
+  const expirationSeconds = globalUploadUrlResponse.authorizationTokenExpirationTimestamp!;
+  const expirationDate = expirationSeconds != null
+  ? new Date(expirationSeconds * 1000) : new Date("2000-01-01T00:00:00Z");
 
-  return Date.now() < expirationDate.getTime();
+  return Date.now() < expirationDate.getTime() - 10_000; // 10 seconds buffer 
 };
 
 const getUploadUrl = async function (
   bucket: Bucket
 ): Promise<UploadUrlResponse | undefined | null> {
   if (hasNonExpiredAuthorizationToken(bucket)) {
-    const globalUploadUrlResponse: UploadUrlResponse =
-      globalUploadUrlResponses![bucket.id];
+    const globalUploadUrlResponse: UploadUrlResponse = globalUploadUrlResponses![bucket.id];
     return globalUploadUrlResponse;
-  }
-
-  const baseUrl = process.env.B2_BASE_URL;
-  if (!baseUrl) {
-    throw Error("Missing required environment variables: B2_BASE_URL.");
   }
 
   // Retrieve the account authorization response
@@ -368,7 +356,7 @@ const getUploadUrl = async function (
   try {
     const now: number = Date.now() / 1000;
 
-    const url: string = `${baseUrl}/b2api/v4/b2_get_upload_url?bucketId=${bucket.id}`;
+    const url: string = `${authResponse.apiInfo.storageApi.apiUrl}/b2api/v4/b2_get_upload_url?bucketId=${bucket.id}`;
     const headers = {
       Authorization: authResponse.authorizationToken,
     };
@@ -454,11 +442,6 @@ export const uploadFile = async function (file: File) {
  * @description Checks whether file exists on cloud.
  */
 export const fileExists = async function (file: File) {
-  const baseUrl = process.env.B2_BASE_URL;
-  if (!baseUrl) {
-    throw Error("Missing required environment variables: B2_BASE_URL.");
-  }
-
   // Retrieve the account authorization response
   const authResponse = await getAccountAuthorization();
   if (!authResponse) {
@@ -466,7 +449,7 @@ export const fileExists = async function (file: File) {
   }
 
   try {
-    const url: string = `${baseUrl}/b2api/v4/b2_get_file_info?fileId=${file.id}`;
+    const url: string = `${authResponse.apiInfo.storageApi.apiUrl}/b2api/v4/b2_get_file_info?fileId=${file.id}`;
     const headers = {
       Authorization: authResponse.authorizationToken,
     };
@@ -493,11 +476,6 @@ export const fileExists = async function (file: File) {
  * @description Deletes the input file from the cloud.
  */
 export const deleteFile = async function (file: File): Promise<void> {
-  const baseUrl = process.env.B2_BASE_URL;
-  if (!baseUrl) {
-    throw Error("Missing required environment variables: B2_BASE_URL.");
-  }
-
   // Retrieve the account authorization response
   const authResponse = await getAccountAuthorization();
   if (!authResponse) {
@@ -505,7 +483,7 @@ export const deleteFile = async function (file: File): Promise<void> {
   }
 
   try {
-    const url: string = `${baseUrl}/b2api/v2/b2_delete_file_version`;
+    const url: string = `${authResponse.apiInfo.storageApi.apiUrl}/b2api/v2/b2_delete_file_version`;
     const headers = {
       Authorization: authResponse.authorizationToken,
       "Content-Type": "application/json",
@@ -544,11 +522,6 @@ export const listFiles = async function (
   bucket: Bucket,
   prefix: string = ""
 ) {
-  const baseUrl = process.env.B2_BASE_URL;
-  if (!baseUrl) {
-    throw Error("Missing required environment variables: B2_BASE_URL.");
-  }
-
   // Retrieve the account authorization response
   const authResponse = await getAccountAuthorization();
   if (!authResponse) {
@@ -560,7 +533,7 @@ export const listFiles = async function (
     let files: File[] = [];
 
     while (startFileName !== null) {
-      const url: string = `${baseUrl}/b2api/v4/b2_list_file_names?bucketId=${
+      const url: string = `${authResponse.apiInfo.storageApi.apiUrl}/b2api/v4/b2_list_file_names?bucketId=${
         bucket.id
       }${prefix ? `&prefix=${prefix}` : ""}${
         startFileName ? `&startFileName=${startFileName}` : ""
@@ -614,14 +587,8 @@ export const listFiles = async function (
 
 /**
  * @description Downloads file content from the cloud.
- * @todo Implement
  */
 export const downloadFile = async function (file: File) {
-  const baseUrl = process.env.B2_BASE_URL;
-  if (!baseUrl) {
-    throw Error("Missing required environment variables: B2_BASE_URL.");
-  }
-
   // Retrieve the account authorization response
   const authResponse = await getAccountAuthorization();
   if (!authResponse) {
@@ -629,7 +596,7 @@ export const downloadFile = async function (file: File) {
   }
 
   try {
-    const url = `${baseUrl}/b2api/v4/b2_download_file_by_id?fileId=${file.id}`;
+    const url = `${authResponse.apiInfo.storageApi.downloadUrl}/b2api/v4/b2_download_file_by_id?fileId=${file.id}`;
     const headers = {
       Authorization: authResponse.authorizationToken
     };
