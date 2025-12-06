@@ -1,6 +1,0 @@
-import { Router } from "express";
-import initializeDatabaseRouter from "../../database-router";
-
-import { Season } from "../../../classes/transformer-classes";
-
-export const season: Router = initializeDatabaseRouter("season", Season);

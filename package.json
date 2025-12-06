@@ -10,7 +10,8 @@
     "postgres": "tsc -p tsconfig.json && node ./dist/scripts/database/server-start.js",
     "database-setup": "tsc -p tsconfig.json && node ./dist/scripts/database/database-setup.js",
     "database-backup": "tsc -p tsconfig.json && node ./dist/scripts/database/database-backup.js",
-    "database-restore": "tsc -p tsconfig.json && node ./dist/scripts/database/database-restore.js"
+    "database-restore": "tsc -p tsconfig.json && node ./dist/scripts/database/database-restore.js",
+    "database-migrate": "tsc -p tsconfig.json && node ./dist/scripts/database/database-migrate.js"
   },
   "author": "",
   "license": "ISC",

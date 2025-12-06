@@ -1,10 +1,5 @@
 import * as readline from "readline";
 
-export const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
 /**
  * @description Prompts a question to the console.
  */
@@ -13,12 +8,24 @@ export function askQuestion(
   defaultValue?: string
 ): Promise<string> {
   return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
     if (defaultValue) {
       question += ` (default: ${defaultValue})`;
     }
 
     question += ": ";
-    rl.question(question, resolve);
+
+    rl.question(question, (answer) => {
+      const value =
+        answer.trim() === "" && defaultValue ? defaultValue : answer;
+
+      rl.close();
+      resolve(value);
+    });
   });
 }
 
@@ -30,6 +37,11 @@ export function askQuestionWithHiddenInput(
   defaultValue?: string
 ): Promise<string> {
   return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
     const stdin: NodeJS.ReadStream = process.stdin;
     const onData = (char: Buffer) => {
       const key: string = char.toString();
@@ -48,7 +60,13 @@ export function askQuestionWithHiddenInput(
     }
 
     question += ": ";
-    rl.question(question, resolve);
+    rl.question(question, (answer) => {
+      const value =
+        answer.trim() === "" && defaultValue ? defaultValue : answer;
+
+      rl.close();
+      resolve(value);
+    });
   });
 }
 
