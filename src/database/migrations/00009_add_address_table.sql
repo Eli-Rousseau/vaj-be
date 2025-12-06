@@ -1,7 +1,9 @@
 CREATE TABLE shop.address (
-    reference SERIAL PRIMARY KEY,
-    "user" INT,
-    CONSTRAINT fk_user FOREIGN KEY ("user") REFERENCES shop.user(reference)
+    reference UUID PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
+    "user" UUID,
+    CONSTRAINT fk_user 
+        FOREIGN KEY ("user") 
+        REFERENCES shop.user(reference)
         ON UPDATE CASCADE
         ON DELETE SET NULL,
     country VARCHAR(255) NOT NULL,

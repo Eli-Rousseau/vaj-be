@@ -20,15 +20,43 @@ type Migration = {
     run_on: string;
 }
 
+function checkMigrationSequence(migrations: string[]) {
+    migrations.sort((mgr1, mgr2) => {
+        const index1 = Number(mgr1.match('^\d+'));
+        const index2 = Number(mgr2.match('^\d+'));
+        return index1 < index2 ? 1 : -1;
+    });
+
+    let validSequence = true;
+    for (let i = 0; i < migrations.length; i++) {
+        const migration = migrations[i];
+        const number = Number(migration.match(/^\d+/)![0]);
+        if (number -1 !== i) {
+            logger.error(`Incorrect migration sequence number: ${migration}`);
+            validSequence = false;
+            break;
+        }
+    }
+
+    return validSequence;
+}
+
 async function getCurrentMigrations() {
     const query = "SELECT * FROM meta.migration;"
     try {
         const migrations: Migration[] = (await psqlClient!.query(query)).rows;
         migrations.sort((migr1, migr2) => {
-            const index1 = Number(migr1.name.match('^\d+'));
-            const index2 = Number(migr2.name.match('^\d+'));
+            const index1 = Number(migr1.name.match(/^\d+/)![0]);
+            const index2 = Number(migr2.name.match(/^\d+/)![0]);
             return index1 < index2 ? 1 : -1;
         });
+
+        const validSequence = checkMigrationSequence(migrations.map(mgr => mgr.name));
+        if (!validSequence) {
+            logger.error("Invalid sequence detected in the database migrations. Shutting down ...");
+            process.exit(1);
+        }
+
         return migrations;
     } catch (error) {
         logger.error(`Failed to fetch the migrations: ${error}`);
@@ -41,10 +69,17 @@ async function getMigrationScripts() {
     try {
         const scripts = await readdir(migrationsDir);
         scripts.sort((scr1, scr2) => {
-            const index1 = Number(scr1.match('^\d+'));
-            const index2 = Number(scr2.match('^\d+'));
+            const index1 = Number(scr1.match(/^\d+/)![0]);
+            const index2 = Number(scr2.match(/^\d+/)![0]);
             return index1 < index2 ? 1 : -1;
         });
+
+        const validSequence = checkMigrationSequence(scripts.map(scr => scr));
+        if (!validSequence) {
+            logger.error("Invalid sequence detected in the migration scripts. Shutting down ...");
+            process.exit(1);
+        }
+
         return scripts;
     } catch (error) {
         logger.error(`Failed to read the migrations directory: ${error}`);
@@ -123,6 +158,7 @@ async function main() {
 
     await applyMigrations(diffs);
     logger.info("All migrations applied.");
+    process.exit(0);
 }
 
 main()
