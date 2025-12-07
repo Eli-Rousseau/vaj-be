@@ -1,0 +1,15 @@
+INSERT INTO shop.order_status_enum (order_status) VALUES
+('PENDING'),
+('CONFIRMED'),
+('PROCESSING'),
+('AWAITING_PAYMENT'),
+('PAID'),
+('SHIPPED'),
+('IN_TRANSIT'),
+('DELIVERED'),
+('COMPLETED'),
+('CANCELLED'),
+('RETURNED'),
+('REFUNDED'),
+('FAILED'),
+('ON_HOLD');

@@ -1,1 +1,0 @@
-CREATE TYPE shop.operation_type AS ENUM ('VIEW', 'CREATE', 'UPDATE', 'DELETE');

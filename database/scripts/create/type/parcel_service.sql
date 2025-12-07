@@ -1,1 +1,0 @@
-CREATE TYPE shop.parcel_service AS ENUM ('bpost', 'PostNL', 'Mondial Relay', 'GLS', 'Homer', 'DHL', 'UPS');

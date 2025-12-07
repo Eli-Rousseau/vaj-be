@@ -1,10 +1,10 @@
 import path from "path";
+import { cwd } from "process";
+import { readdir, readFile } from "fs/promises";
 
 import { loadStage } from "../../src/utils/stage"
 import getLogger from "../../src/utils/logger";
 import { getPgClient, pgClient } from "../../src/utils/database";
-import { cwd } from "process";
-import { readdir, readFile } from "fs/promises";
 import { askQuestion } from "../../src/utils/prompt";
 
 const logger = getLogger({
