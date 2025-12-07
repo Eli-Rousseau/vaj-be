@@ -11,13 +11,37 @@ const logger = getLogger({
     source: "scripts",
     module: path.basename(__filename)
 });
+
 let psqlClient: pgClient | null = null;
+
 const migrationsDir = `${cwd()}/src/database/migrations`;
 
 type Migration = {
     id: number;
     name: string;
     run_on: string;
+}
+
+async function definePsqlClient() {
+    const database = process.env.DATABASE_VAJ;
+    const host = process.env.DATABASE_HOST;
+    const port = process.env.DATABASE_PORT;
+    const user = process.env.DATABASE_DEFAULT_USER_NAME;
+    const password = process.env.DATABASE_DEFAULT_USER_PASSWORD;
+
+    if (!database || !host || !port || !user || !password) {
+        throw Error("Missing required environment variables: DATABASE_VAJ, DATABASE_HOST, DATABASE_PORT, DATABASE_DEFAULT_USER_NAME, or DATABASE_DEFAULT_USER_PASSWORD.");
+    }
+
+    const pgConfig = {
+      user,
+      database,
+      host,
+      port: Number(port),
+      password,
+    }
+
+    psqlClient = await getPgClient(pgConfig);
 }
 
 function checkMigrationSequence(migrations: string[]) {
@@ -137,7 +161,7 @@ async function applyMigrations(scripts: string[]) {
 async function main() {
     await loadStage();
 
-    psqlClient = await getPgClient();
+    await definePsqlClient();
 
     const appliedMigrations = await getCurrentMigrations();
     const migrationScripts = await getMigrationScripts();
