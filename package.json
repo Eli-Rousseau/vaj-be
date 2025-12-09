@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "generate-transformer-classes": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/generate-transformer-classes.js",
-    "server": "nodemon --watch api --ext ts,tsx --exec ts-node ./src/api/server.ts",
+    "server": "tsc -p tsconfig.json && node ./dist/src/api/server.js",
     "generate-api-key": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/generate-api-key.js",
     "postgres": "tsc -p tsconfig.json && node ./dist/scripts/database/server-start.js",
     "database-setup": "tsc -p tsconfig.json && node ./dist/scripts/database/database-setup.js",
@@ -32,7 +32,6 @@
     "@types/node": "^24.0.15",
     "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.15.4",
-    "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
