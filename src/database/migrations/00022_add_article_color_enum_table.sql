@@ -1,3 +1,26 @@
-CREATE TABLE shop.article_color_enum (
-	article_color TEXT PRIMARY KEY
-);
+INSERT INTO shop.article_color_enum (article_color) VALUES
+('BEIGE'),
+('BLACK'),
+('BLUE'),
+('BROWN'),
+('BURGUNDY'),
+('CREAM'),
+('GOLD'),
+('GRAY'),
+('GREEN'),
+('KHAKI'),
+('LAVENDER'),
+('LIGHT BLUE'),
+('MAROON'),
+('MULTICOLOR'),
+('NAVY'),
+('OLIVE'),
+('ORANGE'),
+('PINK'),
+('PURPLE'),
+('RED'),
+('SILVER'),
+('TAN'),
+('TEAL'),
+('WHITE'),
+('YELLOW');

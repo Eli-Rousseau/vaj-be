@@ -13,6 +13,8 @@ CREATE TABLE shop.address (
     street VARCHAR(255) NOT NULL,
     street_number VARCHAR(255) NOT NULL,
     box VARCHAR(255) DEFAULT NULL,
+    shipping BOOL DEFAULT false,
+    billing BOOL DEFAULT false,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, 
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -4,8 +4,6 @@ CREATE TABLE shop.user (
     birthday TEXT DEFAULT NULL,
     email TEXT NOT NULL UNIQUE,
     phone_number TEXT DEFAULT NULL,
-    shipping_address UUID,
-    billing_address UUID,
     password TEXT DEFAULT NULL,
     salt TEXT DEFAULT NULL,
     system_authentication TEXT,
