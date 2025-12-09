@@ -102,6 +102,7 @@ export async function buildSchema() {
                 classicIds: true,
                 dynamicJson: true,
                 setofFunctionsContainNulls: false,
+                // appendPlugins: [FancyMutationsPlugin]
             }
         )
         logger.info("Postgraphile schema created successfully.");
