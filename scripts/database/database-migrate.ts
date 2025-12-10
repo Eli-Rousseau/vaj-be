@@ -139,8 +139,6 @@ async function applyMigrations(scripts: string[]) {
             process.exit(1);
         }
 
-        logger.info(`Applying migration ${script} ...`);
-
         try {
             await psqlClient!.query("BEGIN");
             await psqlClient!.query(content);
