@@ -1,7 +1,6 @@
 import path from "path";
 
-import { Client, ClientConfig, Pool } from "pg";
-import { createPostGraphileSchema } from "postgraphile";
+import { Client, ClientConfig } from "pg";
 
 import getLogger from "./logger";
 
@@ -73,42 +72,4 @@ function setupPgShutdownHook(client: Client) {
   process.on("SIGTERM", shutdown);
   process.on("beforeExit", shutdown);
   process.on("exit", shutdown);
-}
-
-export async function buildSchema() {
-    const database = process.env.DATABASE_VAJ;
-    const host = process.env.DATABASE_HOST;
-    const port = process.env.DATABASE_PORT;
-    const user = process.env.DATABASE_DEFAULT_USER_NAME;
-    const password = process.env.DATABASE_DEFAULT_USER_PASSWORD;
-
-    if (!database || !host || !port || !user || !password) {
-      throw Error("Missing required environment variables: DATABASE_VAJ, DATABASE_HOST, DATABASE_PORT, DATABASE_DEFAULT_USER_NAME, or DATABASE_DEFAULT_USER_PASSWORD.");
-    }
-
-    const pool = new Pool({
-        user,
-        database,
-        host,
-        port: Number(port),
-        password,
-    });
-
-    try {
-        const schema = await createPostGraphileSchema(
-            pool,
-            ["shop"],
-            {
-                classicIds: true,
-                dynamicJson: true,
-                setofFunctionsContainNulls: false,
-                // appendPlugins: [FancyMutationsPlugin]
-            }
-        )
-        logger.info("Postgraphile schema created successfully.");
-
-        return schema;
-    } catch (error) {
-        throw Error(`Failed to create Postgraphile schema: ${error}`);
-    }
 }

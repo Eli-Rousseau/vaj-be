@@ -6,7 +6,9 @@ import { Express } from "express";
 import { loadStage } from "../utils/stage";
 import { rateLimiter, unhandeledRoutes } from "./middlewares";
 import getLogger from "../utils/logger";
-import * as graphql from "./routes/graphql";
+// import * as graphql from "./routes/graphql";
+import { constructSchema } from "../database/schema";
+
 
 const logger = getLogger({
     source: "api",
@@ -37,7 +39,9 @@ async function startServer() {
   app.use(express.json());
 
   // Adding the routers
-  app.use("/graphql", await graphql.default());
+  // app.use("/graphql", await graphql.default());
+
+  app.use('/graphql', await constructSchema());
 
   app.use(unhandeledRoutes);
 

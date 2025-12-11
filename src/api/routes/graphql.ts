@@ -1,17 +1,17 @@
-import { Router } from "express";
-import { createYoga } from "graphql-yoga";
+// import { Router } from "express";
+// import { createYoga } from "graphql-yoga";
 
-import { buildSchema } from "../../utils/database";
+// import { buildSchema } from "../../utils/database";
 
-async function setupRouter() {
-    const router = Router();
+// async function setupRouter() {
+//     const router = Router();
 
-    const schema = await buildSchema();
-    const yoga = createYoga({ schema });
+//     const schema = await buildSchema();
+//     const yoga = createYoga({ schema });
 
-    router.use('/', yoga);
+//     router.use('/', yoga);
 
-    return router
-}
+//     return router
+// }
 
-export default setupRouter;
+// export default setupRouter;
