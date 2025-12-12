@@ -1,17 +1,21 @@
-// import { Router } from "express";
-// import { createYoga } from "graphql-yoga";
+import { Router } from "express";
+import { ruruHTML } from "ruru/server";
+import { serveStatic } from "ruru/static";
+import { buildSchema } from "../../database/schema";
+import { createHandler } from 'graphql-http/lib/use/express';
 
-// import { buildSchema } from "../../utils/database";
+async function getGraphQlRouter() {
+    const schema = await buildSchema();
+    const router = Router();
 
-// async function setupRouter() {
-//     const router = Router();
+    router.post("/", createHandler({ schema }));
 
-//     const schema = await buildSchema();
-//     const yoga = createYoga({ schema });
+    router.get('/', (_req, res) => {
+        res.type('html')
+        res.end(ruruHTML({ endpoint: '/graphql' }))
+    })
 
-//     router.use('/', yoga);
+    return router;
+}
 
-//     return router
-// }
-
-// export default setupRouter;
+export default getGraphQlRouter;

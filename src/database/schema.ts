@@ -2,7 +2,7 @@
 // import { getPgClient, pgClient } from "../utils/database";
 // import getLogger from "../utils/logger";
 
-import { buildSchema } from "graphql";
+import { GraphQLObjectType, GraphQLSchema, GraphQLString } from "graphql";
 import { getPgClient } from "../utils/database";
 import { graphqlHTTP } from "express-graphql";
 
@@ -241,7 +241,7 @@ import { graphqlHTTP } from "express-graphql";
 // }
 
 
-export async function constructSchema() {
+export async function buildSchema() {
     const client = await getPgClient({
         database: process.env.DATABASE_VAJ!,
         host: process.env.DATABASE_HOST!,
@@ -250,31 +250,24 @@ export async function constructSchema() {
         password: process.env.DATABASE_DEFAULT_USER_PASSWORD!
     });
 
-    const schema = buildSchema(`
-        type ArticleBrandEnum {
-            articleBrand: String
-        }
+    const schema = new GraphQLSchema({
+        query: new GraphQLObjectType(
+            {
+                name: "getArticleBrandEnums",
+                fields: {
+                    articleBrand: {
+                        type: GraphQLString,
+                        resolve: async () => {
+                            const res = await client.query(
+                                "SELECT article_brand FROM shop.article_brand_enum;"
+                            );
+                            return res.rows.map(row => { return {"articleBrand": row?.article_brand} });
+                        }
+                    }
+                }
+            }
+        )
+    });
 
-        type Query {
-            getArticleBrandEnums: [ArticleBrandEnum]
-        }
-    `);
-
-    const root = {
-        async getArticleBrandEnums() {
-            const res = await client.query(
-                "SELECT * FROM shop.article_brand_enum;"
-            );
-            return res.rows.map(row => { return {"articleBrand": row?.article_brand} });
-        }
-    };
-
-    // Build GraphQL-Yoga handler once
-    return graphqlHTTP(
-        {
-            schema,
-            rootValue: root,
-            graphiql: true
-        }
-    )
+    return schema;
 }

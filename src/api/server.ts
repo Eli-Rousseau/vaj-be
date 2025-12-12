@@ -6,8 +6,8 @@ import { Express } from "express";
 import { loadStage } from "../utils/stage";
 import { rateLimiter, unhandeledRoutes } from "./middlewares";
 import getLogger from "../utils/logger";
-// import * as graphql from "./routes/graphql";
-import { constructSchema } from "../database/schema";
+import getGraphQlRouter from "./routes/graphql";
+import { ruruHTML } from "ruru/server";
 
 
 const logger = getLogger({
@@ -39,19 +39,21 @@ async function startServer() {
   app.use(express.json());
 
   // Adding the routers
-  // app.use("/graphql", await graphql.default());
-
-  app.use('/graphql', await constructSchema());
+  app.get('/', (_req, res) => {
+    res.type('html')
+    res.end(ruruHTML({ endpoint: '/graphql' }))
+  })
+  app.use("/graphql", await getGraphQlRouter());
 
   app.use(unhandeledRoutes);
 
-  app!.listen(port, () => {
+  app.listen(port, () => {
     logger.info(`Server listening at http://${host}:${port}`);
   });
 }
 
 startServer().catch(err => {
-  console.error(err);
+  logger.error(err);
   process.exit(1);
 });
 
