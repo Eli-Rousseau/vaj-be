@@ -44,8 +44,6 @@ export const graphql = async function(query: string, variables?: any) {
         }
 
     const body = await response.json();
-
-    
     logger.info(`Suceeded graphql request.`);
 
     return body;

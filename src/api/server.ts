@@ -6,8 +6,7 @@ import { Express } from "express";
 import { loadStage } from "../utils/stage";
 import { rateLimiter, unhandeledRoutes } from "./middlewares";
 import getLogger from "../utils/logger";
-import getGraphQlRouter from "./routes/graphql";
-import { ruruHTML } from "ruru/server";
+import * as routers from "./routes/index";
 
 
 const logger = getLogger({
@@ -39,11 +38,7 @@ async function startServer() {
   app.use(express.json());
 
   // Adding the routers
-  app.get('/', (_req, res) => {
-    res.type('html')
-    res.end(ruruHTML({ endpoint: '/graphql' }))
-  })
-  app.use("/graphql", await getGraphQlRouter());
+  app.use("/graphql", await routers.getGraphQlRouter());
 
   app.use(unhandeledRoutes);
 

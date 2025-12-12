@@ -1,10 +1,5 @@
-// import path from "path";
-// import { getPgClient, pgClient } from "../utils/database";
-// import getLogger from "../utils/logger";
-
-import { GraphQLObjectType, GraphQLSchema, GraphQLString } from "graphql";
 import { getPgClient } from "../utils/database";
-import { graphqlHTTP } from "express-graphql";
+import { createSchema } from "graphql-yoga";
 
 // let psqlClient: pgClient | null = null;
 
@@ -242,32 +237,117 @@ import { graphqlHTTP } from "express-graphql";
 
 
 export async function buildSchema() {
-    const client = await getPgClient({
-        database: process.env.DATABASE_VAJ!,
-        host: process.env.DATABASE_HOST!,
-        port: Number(process.env.DATABASE_PORT!),
-        user: process.env.DATABASE_DEFAULT_USER_NAME!,
-        password: process.env.DATABASE_DEFAULT_USER_PASSWORD!
-    });
+    const database = process.env.DATABASE_VAJ;
+    const host = process.env.DATABASE_HOST;
+    const port = process.env.DATABASE_PORT;
+    const user = process.env.DATABASE_DEFAULT_USER_NAME;
+    const password = process.env.DATABASE_DEFAULT_USER_PASSWORD;
 
-    const schema = new GraphQLSchema({
-        query: new GraphQLObjectType(
-            {
-                name: "getArticleBrandEnums",
-                fields: {
-                    articleBrand: {
-                        type: GraphQLString,
-                        resolve: async () => {
-                            const res = await client.query(
-                                "SELECT article_brand FROM shop.article_brand_enum;"
-                            );
-                            return res.rows.map(row => { return {"articleBrand": row?.article_brand} });
-                        }
-                    }
-                }
+    if (!database || !host || !port || !user || !password) {
+        throw Error("Missing required environment variables: DATABASE_VAJ, DATABASE_HOST, DATABASE_PORT, DATABASE_DEFAULT_USER_NAME, or DATABASE_DEFAULT_USER_PASSWORD.");
+    }
+
+    const pgClient = await getPgClient({
+        database,
+        host,
+        port: Number(port),
+        user,
+        password
+    })
+
+    const schema = createSchema({
+        typeDefs: `
+            type User {
+            reference: ID!
+            name: String!
+            birthday: String!
+            email: String!
+            phone_number: String!
+            system_authentication: String!
+            system_role: String!
+            addresses: [Address!]!   # related addresses
             }
-        )
-    });
+
+            type Address {
+            reference: ID!
+            user: User
+            country: String!
+            state_or_province: String
+            city: String!
+            zip_code: String!
+            street: String!
+            street_number: String!
+            box: String
+            shipping: Boolean!
+            billing: Boolean!
+            created_at: String!
+            updated_at: String!
+            }
+
+            type Query {
+            getUsers: [User!]!
+            getAddresses: [Address!]!
+            getUserById(id: ID!): User
+            getAddressById(id: ID!): Address
+            }
+        `,
+
+        resolvers: {
+            Query: {
+            getUsers: async () => {
+                const res = await pgClient.query(
+                `SELECT * FROM shop.user ORDER BY name ASC;`
+                );
+                return res.rows;
+            },
+
+            getAddresses: async () => {
+                const res = await pgClient.query(
+                `SELECT * FROM shop.address ORDER BY created_at DESC;`
+                );
+                return res.rows;
+            },
+
+            getUserById: async (_, { id }) => {
+                const res = await pgClient.query(
+                `SELECT * FROM shop.user WHERE reference = $1;`,
+                [id]
+                );
+                return res.rows[0] || null;
+            },
+
+            getAddressById: async (_, { id }) => {
+                const res = await pgClient.query(
+                `SELECT * FROM shop.address WHERE reference = $1;`,
+                [id]
+                );
+                return res.rows[0] || null;
+            }
+            },
+
+            User: {
+            addresses: async (parent) => {
+                const res = await pgClient.query(
+                `SELECT * FROM shop.address WHERE "user" = $1;`,
+                [parent.reference]
+                );
+                return res.rows;
+            }
+            },
+
+            Address: {
+            user: async (parent) => {
+                if (!parent.user) return null;
+                const res = await pgClient.query(
+                `SELECT * FROM shop.user WHERE reference = $1;`,
+                [parent.user]
+                );
+                return res.rows[0] || null;
+            }
+            }
+        }
+        }
+    );
 
     return schema;
 }
