@@ -40,7 +40,7 @@ import { createSchema } from "graphql-yoga";
 
 // async function getTables(): Promise<string[]> {
 //   const res = await psqlClient!.query(`
-//     SELECT table_name 
+//     SELECT table_name
 //     FROM information_schema.tables
 //     WHERE table_schema = 'shop';
 //   `);
@@ -60,7 +60,7 @@ import { createSchema } from "graphql-yoga";
 //   const res = await psqlClient!.query(`
 //     SELECT kcu.column_name
 //     FROM information_schema.table_constraints tc
-//     JOIN information_schema.key_column_usage kcu 
+//     JOIN information_schema.key_column_usage kcu
 //       ON tc.constraint_name = kcu.constraint_name
 //     WHERE tc.table_schema = 'shop'
 //       AND tc.table_name = $1
@@ -236,22 +236,21 @@ import { createSchema } from "graphql-yoga";
 // }
 
 function constructLimitClause(limit?: number) {
-    let limitClause = "";
-    if (Number.isInteger(limit) && limit! > 0) {
-        limitClause = `LIMIT ${limit}`;
-    }
+  let limitClause = "";
+  if (Number.isInteger(limit) && limit! > 0) {
+    limitClause = `LIMIT ${limit}`;
+  }
 
-    return limitClause;
+  return limitClause;
 }
 
 function constructOffsetClause(offset?: number) {
-    let offsetClause = ""
-    if (Number.isInteger(offset) && offset! > 0) {
-        offsetClause = `OFFSET ${offset}`;
-    }
+  let offsetClause = "";
+  if (Number.isInteger(offset) && offset! > 0) {
+    offsetClause = `OFFSET ${offset}`;
+  }
 
-    return offsetClause;
-
+  return offsetClause;
 }
 
 function toSnakeCase(name: string): string {
@@ -264,7 +263,7 @@ function toSnakeCase(name: string): string {
 }
 
 function constructOrderByClause(
-  alias: string,
+  table: string,
   orderBy?: Record<string, "ASC" | "DESC">[]
 ): string {
   if (!orderBy || !Array.isArray(orderBy) || orderBy.length === 0) {
@@ -283,9 +282,7 @@ function constructOrderByClause(
 
     if (!["ASC", "DESC"].includes(upperDirection)) continue;
 
-    clauses.push(
-      `${alias}.${toSnakeCase(field)} ${upperDirection}`
-    );
+    clauses.push(`"${table}".${toSnakeCase(field)} ${upperDirection}`);
   }
 
   if (clauses.length === 0) return "";
@@ -293,32 +290,154 @@ function constructOrderByClause(
   return `ORDER BY ${clauses.join(", ")}`;
 }
 
+/**
+ * eq, neq, gt, st, gte, ste
+ * in, nin
+ * contains, ncontains
+ * and, not, or
+ * by Reference
+ *
+ */
+type Operator =
+  | "_eq"
+  | "_neq"
+  | "_gt"
+  | "_gte"
+  | "_lt"
+  | "_lte"
+  | "_in"
+  | "_nin"
+  | "_contains"
+  | "_ncontains"
+  | "where";
 
-function constructWhereClause() {
+type WhereInput = Record<string, Partial<Record<Operator, any>>>;
 
+function escapeLiteral(value: any): string {
+  if (value === null || value === undefined) return "NULL";
+  if (typeof value === "number" || typeof value === "boolean")
+    return value.toString();
+  return `'${String(value).replace(/'/g, "''")}'`;
+}
+
+function jsonPathFromDot(path: string): string {
+  return "$." + path.split(".").join(".");
+}
+
+type NestedWhereResult = {
+  nestedJoins: string[];
+  nestedWheres: string[];
+};
+
+function nestedWhereClauseConstructor(
+  table: string,
+  where: WhereInput
+): NestedWhereResult {
+  let joins: string[] = [];
+  let wheres: string[] = [];
+
+  for (const [column, expression] of Object.entries(where)) {
+    if (!expression) continue;
+
+    if (/ByReference/.test(column)) {
+        const relation = toSnakeCase(column.replace("ByReference", ""));
+        if (!(typeof expression === "object" && Object.keys(expression).includes("where"))) {
+            continue;
+        }
+        const nestedWhere = expression["where"];
+        joins.push(
+          `JOIN shop.${relation} ON "${relation}".reference = "${table}".${relation}`
+        );
+
+        const {nestedJoins, nestedWheres} = nestedWhereClauseConstructor(relation, nestedWhere);
+        joins = joins.concat(nestedJoins);
+        wheres = wheres.concat(nestedWheres);
+        continue;
+    }
+
+    for (const [operator, value] of Object.entries(expression)) {
+      const col = `"${table}".${column}`;
+
+      if (operator === "_eq") {
+        wheres.push(
+          value == null ? `${col} IS NULL` : `${col} = ${escapeLiteral(value)}`
+        );
+      } else if (operator === "_neq") {
+        wheres.push(
+          value == null
+            ? `${col} IS NOT NULL`
+            : `${col} <> ${escapeLiteral(value)}`
+        );
+      } else if (operator === "_gt") {
+        wheres.push(`${col} > ${escapeLiteral(value)}`);
+      } else if (operator === "_gte") {
+        wheres.push(`${col} >= ${escapeLiteral(value)}`);
+      } else if (operator === "_lt") {
+        wheres.push(`${col} < ${escapeLiteral(value)}`);
+      } else if (operator === "_lte") {
+        wheres.push(`${col} <= ${escapeLiteral(value)}`);
+      } else if (operator === "_in") {
+        if (Array.isArray(value) && value.length) {
+          wheres.push(`${col} IN (${value.map(escapeLiteral).join(", ")})`);
+        }
+      } else if (operator === "_nin") {
+        if (Array.isArray(value) && value.length) {
+          wheres.push(`${col} NOT IN (${value.map(escapeLiteral).join(", ")})`);
+        }
+      } else if (operator === "_contains") {
+        if (typeof value === "string") {
+          wheres.push(`jsonb_path_exists(${col}, '${jsonPathFromDot(value)}')`);
+        }
+      } else if (operator === "_ncontains") {
+        if (typeof value === "string") {
+          wheres.push(
+            `NOT jsonb_path_exists(${col}, '${jsonPathFromDot(value)}')`
+          );
+        }
+      }
+    }
+  }
+
+  return {
+    nestedJoins: joins,
+    nestedWheres: wheres,
+  };
+}
+
+export function constructWhereClause(table: string, where?: WhereInput): string {
+  if (!where || Object.keys(where).length === 0) return "";
+
+  const {nestedJoins: joins, nestedWheres: wheres} = nestedWhereClauseConstructor(table, where);
+
+  if (!wheres) return "";
+  return `${joins.join(" ")} WHERE ${wheres.join(" AND ")}`;
 }
 
 export async function buildSchema() {
-    const database = process.env.DATABASE_VAJ;
-    const host = process.env.DATABASE_HOST;
-    const port = process.env.DATABASE_PORT;
-    const user = process.env.DATABASE_DEFAULT_USER_NAME;
-    const password = process.env.DATABASE_DEFAULT_USER_PASSWORD;
+  const database = process.env.DATABASE_VAJ;
+  const host = process.env.DATABASE_HOST;
+  const port = process.env.DATABASE_PORT;
+  const user = process.env.DATABASE_DEFAULT_USER_NAME;
+  const password = process.env.DATABASE_DEFAULT_USER_PASSWORD;
 
-    if (!database || !host || !port || !user || !password) {
-        throw Error("Missing required environment variables: DATABASE_VAJ, DATABASE_HOST, DATABASE_PORT, DATABASE_DEFAULT_USER_NAME, or DATABASE_DEFAULT_USER_PASSWORD.");
-    }
+  if (!database || !host || !port || !user || !password) {
+    throw Error(
+      "Missing required environment variables: DATABASE_VAJ, DATABASE_HOST, DATABASE_PORT, DATABASE_DEFAULT_USER_NAME, or DATABASE_DEFAULT_USER_PASSWORD."
+    );
+  }
 
-    const pgClient = await getPgClient({
-        database,
-        host,
-        port: Number(port),
-        user,
-        password
-    })
+  const pgClient = await getPgClient({
+    database,
+    host,
+    port: Number(port),
+    user,
+    password,
+  });
 
-    const schema = createSchema({
-        typeDefs: `
+  const schema = createSchema({
+    typeDefs: `
+            scalar JSON
+
             type User {
                 reference: ID!
                 name: String!
@@ -328,6 +447,8 @@ export async function buildSchema() {
                 system_authentication: String!
                 system_role: String!
                 addresses: [Address!]!
+                created_at: String!
+                updated_at: String!
             }
 
             type Address {
@@ -351,6 +472,55 @@ export async function buildSchema() {
                 DESC
             }
 
+            input ComparisonExp {
+                _eq: JSON
+                _neq: JSON
+                _gt: JSON
+                _gte: JSON
+                _lt: JSON
+                _lte: JSON
+                _in: [JSON!]
+                _nin: [JSON!]
+                _contains: String
+                _ncontains: String
+            }
+
+            input UserWhere {
+                reference: ComparisonExp
+                name: ComparisonExp
+                birthday: ComparisonExp
+                email: ComparisonExp
+                phone_number: ComparisonExp
+                system_authentication: ComparisonExp
+                system_role: ComparisonExp
+                created_at: ComparisonExp
+                updated_at: ComparisonExp
+            }
+
+            input UserInput {
+                where: UserWhere
+                orderBy: UserOrderBy
+                limit: Int
+                offset: Int
+            }
+
+            input AddressWhere {
+                reference: ComparisonExp
+                user: ComparisonExp
+                userByReference: UserInput
+                country: ComparisonExp
+                state_or_province: ComparisonExp
+                city: ComparisonExp
+                zip_code: ComparisonExp
+                street: ComparisonExp
+                street_number: ComparisonExp
+                box: ComparisonExp
+                shipping: ComparisonExp
+                billing: ComparisonExp
+                created_at: ComparisonExp
+                updated_at: ComparisonExp
+            }
+
             input UserOrderBy {
                 reference: OrderDirection
                 name: OrderDirection
@@ -359,88 +529,126 @@ export async function buildSchema() {
                 phone_number: OrderDirection
                 system_authentication: OrderDirection
                 system_role: OrderDirection
+                created_at: OrderDirection
+                updated_at: OrderDirection
+            }
+
+            input AddressOrderBy {
+                reference: OrderDirection
+                user: OrderDirection
+                country: OrderDirection
+                state_or_province: OrderDirection
+                city: OrderDirection
+                zip_code: OrderDirection
+                street: OrderDirection
+                street_number: OrderDirection
+                box: OrderDirection
+                shipping: OrderDirection
+                billing: OrderDirection
+                created_at: OrderDirection
+                updated_at: OrderDirection
             }
 
             type Query {
-                getUsers(orderBy: [UserOrderBy!], limit: Int, offset: Int): [User!]!
-                getAddresses: [Address!]!
+                getUsers(where: UserWhere, orderBy: [UserOrderBy!], limit: Int, offset: Int): [User!]!
+                getAddresses(where: AddressWhere, orderBy: [AddressOrderBy!], limit: Int, offset: Int): [Address!]!
                 getUserByReference(reference: ID!): User
                 getAddressByReference(reference: ID!): Address
             }
         `,
 
-        resolvers: {
-            Query: {
-            getUsers: async (_, { orderBy, limit, offset }) => {
-                const alias = "_user";
-                const orderByClause = constructOrderByClause(alias, orderBy);
-                const limitClause = constructLimitClause(limit);
-                const offsetClause = constructOffsetClause(offset);
+    resolvers: {
+      Query: {
+        getUsers: async (_, { where, orderBy, limit, offset }) => {
+          const table = "user";
+          const whereClause = constructWhereClause(table, where);
+          const orderByClause = constructOrderByClause(table, orderBy);
+          const limitClause = constructLimitClause(limit);
+          const offsetClause = constructOffsetClause(offset);
 
-                const res = await pgClient.query(
-                `
+          const res = await pgClient.query(
+            `
                 SELECT * 
-                FROM shop.user AS ${alias}
+                FROM shop.${table}
+                ${whereClause}
                 ${orderByClause}
                 ${limitClause}
                 ${offsetClause}
-                ;`
-                );
-                return res.rows;
-            },
-
-            getAddresses: async (limit?: number) => {
-                const res = await pgClient.query(
-                `
-                SELECT * FROM 
-                shop.address
-                ORDER BY ad.created_at DESC
                 ;
-                `
-                );
-                return res.rows;
-            },
+            `
+          );
+          return res.rows;
+        },
 
-            getUserByReference: async (_, { reference }) => {
-                const res = await pgClient.query(
-                `SELECT * FROM shop.user WHERE reference = $1;`,
-                [reference]
-                );
-                return res.rows[0] || null;
-            },
+        getAddresses: async (_, { where, orderBy, limit, offset }) => {
+          const table = "address";
+          const whereClause = constructWhereClause(table, where);
+          const orderByClause = constructOrderByClause(table, orderBy);
+          const limitClause = constructLimitClause(limit);
+          const offsetClause = constructOffsetClause(offset);
+          const query = `
+                SELECT * 
+                FROM shop.${table}
+                ${whereClause}
+                ${orderByClause}
+                ${limitClause}
+                ${offsetClause}
+                ;
+            `
+          console.log(query);
+          const res = await pgClient.query(
+            `
+                SELECT * 
+                FROM shop.${table}
+                ${whereClause}
+                ${orderByClause}
+                ${limitClause}
+                ${offsetClause}
+                ;
+            `
+          );
+          return res.rows;
+        },
 
-            getAddressByReference: async (_, { reference }) => {
-                const res = await pgClient.query(
-                `SELECT * FROM shop.address WHERE reference = $1;`,
-                [reference]
-                );
-                return res.rows[0] || null;
-            }
-            },
+        getUserByReference: async (_, { reference }) => {
+          const res = await pgClient.query(
+            `SELECT * FROM shop.user WHERE reference = $1;`,
+            [reference]
+          );
+          return res.rows[0] || null;
+        },
 
-            User: {
-            addresses: async (parent) => {
-                const res = await pgClient.query(
-                `SELECT * FROM shop.address WHERE "user" = $1;`,
-                [parent.reference]
-                );
-                return res.rows;
-            }
-            },
+        getAddressByReference: async (_, { reference }) => {
+          const res = await pgClient.query(
+            `SELECT * FROM shop.address WHERE reference = $1;`,
+            [reference]
+          );
+          return res.rows[0] || null;
+        },
+      },
 
-            Address: {
-            user: async (parent) => {
-                if (!parent.user) return null;
-                const res = await pgClient.query(
-                `SELECT * FROM shop.user WHERE reference = $1;`,
-                [parent.user]
-                );
-                return res.rows[0] || null;
-            }
-            }
-        }
-        }
-    );
+      User: {
+        addresses: async (parent) => {
+          const res = await pgClient.query(
+            `SELECT * FROM shop.address WHERE "user" = $1;`,
+            [parent.reference]
+          );
+          return res.rows;
+        },
+      },
 
-    return schema;
+      Address: {
+        user: async (parent) => {
+          if (!parent.user) return null;
+          const res = await pgClient.query(
+            `SELECT * FROM shop.user WHERE reference = $1;`,
+            [parent.user]
+          );
+          return res.rows[0] || null;
+        },
+      },
+    },
+  });
+
+  return schema;
 }
