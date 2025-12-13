@@ -5,7 +5,7 @@ import { buildSchema } from "../../database/schema";
 
 async function getGraphQlRouter() {
     const schema = await buildSchema();
-    const yoga = createYoga({ schema })
+    const yoga = createYoga({ schema });
 
     const router = Router();
     router.use(yoga);

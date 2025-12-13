@@ -235,6 +235,68 @@ import { createSchema } from "graphql-yoga";
 //   return { typeDefs, resolvers };
 // }
 
+function constructLimitClause(limit?: number) {
+    let limitClause = "";
+    if (Number.isInteger(limit) && limit! > 0) {
+        limitClause = `LIMIT ${limit}`;
+    }
+
+    return limitClause;
+}
+
+function constructOffsetClause(offset?: number) {
+    let offsetClause = ""
+    if (Number.isInteger(offset) && offset! > 0) {
+        offsetClause = `OFFSET ${offset}`;
+    }
+
+    return offsetClause;
+
+}
+
+function toSnakeCase(name: string): string {
+  if (!name) return "";
+
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1_$2")
+    .toLowerCase();
+}
+
+function constructOrderByClause(
+  alias: string,
+  orderBy?: Record<string, "ASC" | "DESC">[]
+): string {
+  if (!orderBy || !Array.isArray(orderBy) || orderBy.length === 0) {
+    return "";
+  }
+
+  const clauses: string[] = [];
+
+  for (const record of orderBy) {
+    const entries = Object.entries(record);
+
+    if (entries.length !== 1) continue;
+
+    const [field, direction] = entries[0];
+    const upperDirection = direction.toUpperCase();
+
+    if (!["ASC", "DESC"].includes(upperDirection)) continue;
+
+    clauses.push(
+      `${alias}.${toSnakeCase(field)} ${upperDirection}`
+    );
+  }
+
+  if (clauses.length === 0) return "";
+
+  return `ORDER BY ${clauses.join(", ")}`;
+}
+
+
+function constructWhereClause() {
+
+}
 
 export async function buildSchema() {
     const database = process.env.DATABASE_VAJ;
@@ -258,68 +320,99 @@ export async function buildSchema() {
     const schema = createSchema({
         typeDefs: `
             type User {
-            reference: ID!
-            name: String!
-            birthday: String!
-            email: String!
-            phone_number: String!
-            system_authentication: String!
-            system_role: String!
-            addresses: [Address!]!   # related addresses
+                reference: ID!
+                name: String!
+                birthday: String!
+                email: String!
+                phone_number: String!
+                system_authentication: String!
+                system_role: String!
+                addresses: [Address!]!
             }
 
             type Address {
-            reference: ID!
-            user: User
-            country: String!
-            state_or_province: String
-            city: String!
-            zip_code: String!
-            street: String!
-            street_number: String!
-            box: String
-            shipping: Boolean!
-            billing: Boolean!
-            created_at: String!
-            updated_at: String!
+                reference: ID!
+                user: User
+                country: String!
+                state_or_province: String
+                city: String!
+                zip_code: String!
+                street: String!
+                street_number: String!
+                box: String
+                shipping: Boolean!
+                billing: Boolean!
+                created_at: String!
+                updated_at: String!
+            }
+            
+            enum OrderDirection {
+                ASC
+                DESC
+            }
+
+            input UserOrderBy {
+                reference: OrderDirection
+                name: OrderDirection
+                birthday: OrderDirection
+                email: OrderDirection
+                phone_number: OrderDirection
+                system_authentication: OrderDirection
+                system_role: OrderDirection
             }
 
             type Query {
-            getUsers: [User!]!
-            getAddresses: [Address!]!
-            getUserById(id: ID!): User
-            getAddressById(id: ID!): Address
+                getUsers(orderBy: [UserOrderBy!], limit: Int, offset: Int): [User!]!
+                getAddresses: [Address!]!
+                getUserByReference(reference: ID!): User
+                getAddressByReference(reference: ID!): Address
             }
         `,
 
         resolvers: {
             Query: {
-            getUsers: async () => {
+            getUsers: async (_, { orderBy, limit, offset }) => {
+                const alias = "_user";
+                const orderByClause = constructOrderByClause(alias, orderBy);
+                const limitClause = constructLimitClause(limit);
+                const offsetClause = constructOffsetClause(offset);
+
                 const res = await pgClient.query(
-                `SELECT * FROM shop.user ORDER BY name ASC;`
+                `
+                SELECT * 
+                FROM shop.user AS ${alias}
+                ${orderByClause}
+                ${limitClause}
+                ${offsetClause}
+                ;`
                 );
                 return res.rows;
             },
 
-            getAddresses: async () => {
+            getAddresses: async (limit?: number) => {
                 const res = await pgClient.query(
-                `SELECT * FROM shop.address ORDER BY created_at DESC;`
+                `
+                SELECT * FROM 
+                shop.address
+                ORDER BY ad.created_at DESC
+                ;
+                `
                 );
                 return res.rows;
             },
 
-            getUserById: async (_, { id }) => {
+            getUserByReference: async (_, { reference }) => {
                 const res = await pgClient.query(
                 `SELECT * FROM shop.user WHERE reference = $1;`,
-                [id]
+                [reference]
                 );
                 return res.rows[0] || null;
             },
 
-            getAddressById: async (_, { id }) => {
+            getAddressByReference: async (_, { reference }) => {
                 const res = await pgClient.query(
                 `SELECT * FROM shop.address WHERE reference = $1;`,
-                [id]
+                [reference]
                 );
                 return res.rows[0] || null;
             }
