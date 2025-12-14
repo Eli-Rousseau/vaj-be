@@ -1,2 +1,2 @@
-INSERT INTO shop.article_gender_enum (article_gender) VALUES
+INSERT INTO shop."articleGenderEnum" ("articleGender") VALUES
 ('MENSWEAR'), ('WOMENSWEAR'), ('UNISEX');

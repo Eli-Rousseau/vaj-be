@@ -1,7 +1,7 @@
 -- ===========================================
 --  Insert Users
 -- ===========================================
-INSERT INTO shop.user (name, birthday, email, phone_number, password, salt, system_authentication, system_role)
+INSERT INTO shop.user (name, birthday, email, "phoneNumber", password, salt, "systemAuthentication", "systemRole")
 VALUES 
 ('Eli',   '2000-01-01', 'eli@mail.com',    '04567890', 'secret', 'sugar', 'GOOGLE', 'SYSTEM DEVELOPER'),
 ('Natan', '1988-02-21', 'nathan@mail.com', '09876789', 'very',   'sweet', 'INTERN', 'USER'),
@@ -19,11 +19,11 @@ WITH users AS (
 INSERT INTO shop.address (
     "user",
     country,
-    state_or_province,
+    "stateOrProvince",
     city,
-    zip_code,
+    "zipCode",
     street,
-    street_number,
+    "streetNumber",
     box,
     shipping,
     billing
@@ -40,7 +40,7 @@ SELECT
         WHEN 'Eli'   THEN 'Flanders'
         WHEN 'Natan' THEN 'Brussels'
         WHEN 'Ester' THEN 'North Holland'
-    END AS state_or_province,
+    END AS stateOrProvince,
 
     CASE name
         WHEN 'Eli'   THEN 'Antwerp'
@@ -52,7 +52,7 @@ SELECT
         WHEN 'Eli'   THEN '2000'
         WHEN 'Natan' THEN '1000'
         WHEN 'Ester' THEN '1012'
-    END AS zip_code,
+    END AS zipCode,
 
     CASE name
         WHEN 'Eli'   THEN 'Meir'
@@ -64,7 +64,7 @@ SELECT
         WHEN 'Eli'   THEN '15'
         WHEN 'Natan' THEN '22'
         WHEN 'Ester' THEN '8'
-    END AS street_number,
+    END AS streetNumber,
 
     NULL AS box,
 

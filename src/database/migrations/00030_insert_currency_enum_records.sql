@@ -1,2 +1,2 @@
-INSERT INTO shop.currency_enum (currency) VALUES
+INSERT INTO shop."currencyEnum" (currency) VALUES
 ('EUR');

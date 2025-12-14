@@ -1,3 +1,3 @@
-CREATE TABLE shop.article_brand_enum (
-	article_brand TEXT PRIMARY KEY
+CREATE TABLE shop."articleBrandEnum" (
+	"articleBrand" TEXT PRIMARY KEY
 );

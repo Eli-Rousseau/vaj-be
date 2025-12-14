@@ -1,3 +1,3 @@
-CREATE TABLE shop.article_size_enum (
-	article_size TEXT PRIMARY KEY
+CREATE TABLE shop."articleSizeEnum" (
+	"articleSize" TEXT PRIMARY KEY
 );

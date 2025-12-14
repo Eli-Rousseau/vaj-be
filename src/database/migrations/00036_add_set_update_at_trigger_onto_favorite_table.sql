@@ -1,3 +1,3 @@
-CREATE TRIGGER trigger_set_updated_at
+CREATE TRIGGER "triggerSetUpdatedAt"
     BEFORE UPDATE ON shop.favorite
-    FOR EACH ROW EXECUTE FUNCTION shop.set_updated_at();
+    FOR EACH ROW EXECUTE FUNCTION shop."setUpdatedAt"();

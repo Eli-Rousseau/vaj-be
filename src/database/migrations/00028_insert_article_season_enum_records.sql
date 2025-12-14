@@ -1,4 +1,4 @@
-INSERT INTO shop.article_season_enum (article_season) VALUES
+INSERT INTO shop."articleSeasonEnum" ("articleSeason") VALUES
 ('SUMMER'),
 ('SPRING'),
 ('AUTUMN'),

@@ -1,4 +1,4 @@
-INSERT INTO shop.article_brand_enum (article_brand) VALUES
+INSERT INTO shop."articleBrandEnum" ("articleBrand") VALUES
 ('Alexander McQueen'),
 ('Betsey Johnson'),
 ('Blumarine'),

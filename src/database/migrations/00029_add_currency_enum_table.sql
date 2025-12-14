@@ -1,3 +1,3 @@
-CREATE TABLE shop.currency_enum (
+CREATE TABLE shop."currencyEnum" (
 	currency TEXT PRIMARY KEY
 );

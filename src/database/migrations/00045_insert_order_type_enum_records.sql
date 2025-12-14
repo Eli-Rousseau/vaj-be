@@ -1,4 +1,4 @@
-INSERT INTO shop.order_type_enum (order_type) VALUES
+INSERT INTO shop."orderTypeEnum" ("orderType") VALUES
 ('PURCHASE'),
 ('RENTAL'),
 ('PREORDER'),

@@ -1,1 +1,1 @@
-CREATE DATABASE vintage_archive_jungle;
+CREATE DATABASE "vintageArchiveJungle";

@@ -1,4 +1,4 @@
-INSERT INTO shop.article_parent_category_enum (article_parent_category) VALUES
+INSERT INTO shop."articleParentCategoryEnum" ("articleParentCategory") VALUES
 ('TOPS'), 
 ('BOTTOMS'), 
 ('OUTERWEAR'), 

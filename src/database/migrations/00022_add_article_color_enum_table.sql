@@ -1,4 +1,4 @@
-INSERT INTO shop.article_color_enum (article_color) VALUES
+INSERT INTO shop."articleColorEnum" ("articleColor") VALUES
 ('BEIGE'),
 ('BLACK'),
 ('BLUE'),

@@ -1,2 +1,2 @@
-INSERT INTO shop.article_size_enum (article_size) VALUES
+INSERT INTO shop."articleSizeEnum" ("articleSize") VALUES
 ('XS'), ('S'), ('M'), ('L'), ('XL');

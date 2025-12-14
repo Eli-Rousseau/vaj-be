@@ -4,62 +4,62 @@ CREATE TABLE shop.article(
 	title TEXT NOT NULL,
 	description TEXT DEFAULT NULL,
 	brand TEXT,
-	CONSTRAINT fk_brand 
+	CONSTRAINT "fkBrand" 
         FOREIGN KEY (brand) 
-        REFERENCES shop.article_brand_enum(article_brand)
+        REFERENCES shop."articleBrandEnum"("articleBrand")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
 	release TIMESTAMP DEFAULT NULL,
-	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	"createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	"updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
 	-- Product Attributes
-	parent_category TEXT,
-	CONSTRAINT fk_article_parent_category 
-        FOREIGN KEY (parent_category) 
-        REFERENCES shop.article_parent_category_enum(article_parent_category)
+	"parentCategory" TEXT,
+	CONSTRAINT "fkArticleParentCategory"
+        FOREIGN KEY ("parentCategory") 
+        REFERENCES shop."articleParentCategoryEnum"("articleParentCategory")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
-	sub_category TEXT,
-	CONSTRAINT fk_article_sub_category 
-        FOREIGN KEY (sub_category) 
-        REFERENCES shop.article_sub_category_enum(article_sub_category)
+	"subCategory" TEXT,
+	CONSTRAINT "fkArticleSubCategory"
+        FOREIGN KEY ("subCategory") 
+        REFERENCES shop."articleSubCategoryEnum"("articleSubCategory")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
 	gender TEXT,
-	CONSTRAINT fk_gender 
+	CONSTRAINT "fkGender"
         FOREIGN KEY (gender) 
-        REFERENCES shop.article_gender_enum(article_gender)
+        REFERENCES shop."articleGenderEnum"("articleGender")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
 	size TEXT,
-	CONSTRAINT fk_size 
+	CONSTRAINT "fkSize"
         FOREIGN KEY ("size") 
-        REFERENCES shop.article_size_enum(article_size)
+        REFERENCES shop."articleSizeEnum"("articleSize")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
 	color TEXT,
-	CONSTRAINT fk_color 
+	CONSTRAINT "fkColor"
         FOREIGN KEY (color) 
-        REFERENCES shop.article_color_enum(article_color)
+        REFERENCES shop."articleColorEnum"("articleColor")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
 	material TEXT,
-	CONSTRAINT fk_material 
+	CONSTRAINT "fkMaterial"
         FOREIGN KEY (material) 
-        REFERENCES shop.article_material_enum(article_material)
+        REFERENCES shop."articleMaterialEnum"("articleMaterial")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
 	condition TEXT,
-	CONSTRAINT fk_condition 
+	CONSTRAINT "fkCondition"
         FOREIGN KEY (condition) 
-        REFERENCES shop.article_condition_enum(article_condition)
+        REFERENCES shop."articleConditionEnum"("articleCondition")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
 	season TEXT,
-	CONSTRAINT fk_season 
+	CONSTRAINT "fkSeason"
         FOREIGN KEY (season) 
-        REFERENCES shop.article_season_enum(article_season)
+        REFERENCES shop."articleSeasonEnum"("articleSeason")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
 
@@ -67,21 +67,20 @@ CREATE TABLE shop.article(
 	quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
 	price FLOAT NOT NULL,
 	currency TEXT DEFAULT 'EUR',
-	CONSTRAINT fk_currency 
+	CONSTRAINT "fkCurrency"
         FOREIGN KEY (currency) 
-        REFERENCES shop.currency_enum(currency)
+        REFERENCES shop."currencyEnum"(currency)
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
 	discount FLOAT NOT NULL DEFAULT 0 CHECK (discount >= 0 AND discount <= 100),
 	availability TEXT,
-	CONSTRAINT fk_availibility 
+	CONSTRAINT "fkAvailibility"
         FOREIGN KEY (availability) 
-        REFERENCES shop.article_availability_enum(article_availability)
+        REFERENCES shop."articleAvailabilityEnum"("articleAvailability")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
-	for_sale BOOLEAN NOT NULL,
-	for_rent BOOLEAN NOT NULL,
-	rental_price FLOAT DEFAULT NULL,
-	thumbnail JSONB DEFAULT NULL,
+	"forSale" BOOLEAN NOT NULL,
+	"forRent" BOOLEAN NOT NULL,
+	"rentalPrice" FLOAT DEFAULT NULL,
 	media JSONB DEFAULT NULL
 );

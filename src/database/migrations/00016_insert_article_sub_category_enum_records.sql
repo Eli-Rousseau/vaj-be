@@ -1,4 +1,4 @@
-INSERT INTO shop.article_sub_category_enum (article_sub_category) VALUES
+INSERT INTO shop."articleSubCategoryEnum" ("articleSubCategory") VALUES
 ('T-SHIRT'),
 ('SHIRT'),
 ('BLOUSE'),

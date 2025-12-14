@@ -1,3 +1,3 @@
-CREATE TABLE shop.article_color_enum (
-	article_color TEXT PRIMARY KEY
+CREATE TABLE shop."articleColorEnum" (
+	"articleColor" TEXT PRIMARY KEY
 );

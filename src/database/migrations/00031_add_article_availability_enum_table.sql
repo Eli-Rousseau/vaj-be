@@ -1,3 +1,3 @@
-CREATE TABLE shop.article_availability_enum (
-	article_availability TEXT PRIMARY KEY
+CREATE TABLE shop."articleAvailabilityEnum" (
+	"articleAvailability" TEXT PRIMARY KEY
 );

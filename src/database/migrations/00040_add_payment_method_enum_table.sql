@@ -1,3 +1,3 @@
-CREATE TABLE shop.payment_method_enum (
-	payment_method TEXT PRIMARY KEY
+CREATE TABLE shop."paymentMethodEnum" (
+	"paymentMethod" TEXT PRIMARY KEY
 );

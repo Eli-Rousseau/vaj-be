@@ -1,2 +1,2 @@
-INSERT INTO shop.system_authentication_enum (system_authentication)
+INSERT INTO shop."systemAuthenticationEnum" ("systemAuthentication")
 VALUES ('INTERN'), ('GOOGLE'), ('APPLE');

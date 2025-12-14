@@ -1,4 +1,4 @@
-INSERT INTO shop.article_condition_enum (article_condition) VALUES 
+INSERT INTO shop."articleConditionEnum" ("articleCondition") VALUES 
 ('NEW'),
 ('GREAT'),
 ('MODERATE'),

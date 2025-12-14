@@ -1,4 +1,4 @@
-INSERT INTO shop.article_availability_enum (article_availability) VALUES
+INSERT INTO shop."articleAvailabilityEnum" ("articleAvailability") VALUES
 ('AVAILABLE'),
 ('UNAVAILABLE'),
 ('DAMAGED'),

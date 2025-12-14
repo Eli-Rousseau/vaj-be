@@ -1,4 +1,4 @@
-INSERT INTO shop.order_status_enum (order_status) VALUES
+INSERT INTO shop."orderStatusEnum" ("orderStatus") VALUES
 ('PENDING'),
 ('CONFIRMED'),
 ('PROCESSING'),

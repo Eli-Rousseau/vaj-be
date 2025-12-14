@@ -1,17 +1,17 @@
-CREATE TABLE shop.discount_coupon (
+CREATE TABLE shop."discountCoupon" (
     reference UUID PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
     code TEXT UNIQUE NOT NULL,
     description TEXT DEFAULT NULL,
-    discount_type TEXT NOT NULL,
-    discount_value FLOAT NOT NULL,
-    max_uses INT NOT NULL DEFAULT 1,
+    "discountType" TEXT NOT NULL,
+    "discountValue" FLOAT NOT NULL,
+    "maxUses" INT NOT NULL DEFAULT 1,
     uses INT NOT NULL DEFAULT 0,
-    min_order_value FLOAT DEFAULT NULL,
-    valid_from TIMESTAMP NOT NULL,
-    valid_until TIMESTAMP NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT true,
-    user_limit INT DEFAULT NULL,
-    is_stackable BOOLEAN NOT NULL DEFAULT false,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "minOrderValue" FLOAT DEFAULT NULL,
+    "validFrom" TIMESTAMP NOT NULL,
+    "validUntil" TIMESTAMP NOT NULL,
+    "isAactive" BOOLEAN NOT NULL DEFAULT true,
+    "userLimit" INT DEFAULT NULL,
+    "isStackable" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

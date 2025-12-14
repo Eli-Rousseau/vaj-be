@@ -282,7 +282,7 @@ function constructOrderByClause(
 
     if (!["ASC", "DESC"].includes(upperDirection)) continue;
 
-    clauses.push(`"${table}".${toSnakeCase(field)} ${upperDirection}`);
+    clauses.push(`"${table}".${field} ${upperDirection}`);
   }
 
   if (clauses.length === 0) return "";
@@ -290,14 +290,6 @@ function constructOrderByClause(
   return `ORDER BY ${clauses.join(", ")}`;
 }
 
-/**
- * eq, neq, gt, st, gte, ste
- * in, nin
- * contains, ncontains
- * and, not, or
- * by Reference
- *
- */
 type Operator =
   | "_eq"
   | "_neq"
@@ -307,8 +299,12 @@ type Operator =
   | "_lte"
   | "_in"
   | "_nin"
+  | "_parse"
+  | "_hasKey"
   | "_contains"
-  | "_ncontains"
+  | "_and"
+  | "_or"
+  | "_not"
   | "where";
 
 type WhereInput = Record<string, Partial<Record<Operator, any>>>;
@@ -325,11 +321,27 @@ function jsonPathFromDot(path: string): string {
 }
 
 type NestedWhereResult = {
-  nestedJoins: string[];
-  nestedWheres: string[];
+  nestedJoins: string;
+  nestedWheres: string;
 };
 
-function nestedWhereClauseConstructor(
+function constructJSONPath(contains: object, path: string) {
+  const entries = Object.entries(contains);
+  if (entries.length !== 1) return "";
+
+  const [key, value] = entries[0];
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean" || value === undefined || value === null) {
+    path = path + ` ->> '${key}' = ${escapeLiteral(value)}`
+    return path;
+  } else if (typeof value === "object") {
+    path = path + ` ${key} ->`;
+    return constructJSONPath(value, path);
+  } else {
+    return "";
+  }
+}
+
+function constructNestedWhereClause(
   table: string,
   where: WhereInput
 ): NestedWhereResult {
@@ -340,77 +352,133 @@ function nestedWhereClauseConstructor(
     if (!expression) continue;
 
     if (/ByReference/.test(column)) {
-        const relation = toSnakeCase(column.replace("ByReference", ""));
-        if (!(typeof expression === "object" && Object.keys(expression).includes("where"))) {
-            continue;
-        }
-        const nestedWhere = expression["where"];
-        joins.push(
-          `JOIN shop.${relation} ON "${relation}".reference = "${table}".${relation}`
-        );
-
-        const {nestedJoins, nestedWheres} = nestedWhereClauseConstructor(relation, nestedWhere);
-        joins = joins.concat(nestedJoins);
-        wheres = wheres.concat(nestedWheres);
+      const relation = column.replace("ByReference", "");
+      if (
+        !(
+          typeof expression === "object" &&
+          Object.keys(expression).includes("where")
+        )
+      ) {
         continue;
-    }
+      }
+      const nestedWhere = expression["where"];
+      joins.push(
+        `JOIN shop.${relation} ON "${relation}".reference = "${table}".${relation}`
+      );
 
-    for (const [operator, value] of Object.entries(expression)) {
-      const col = `"${table}".${column}`;
-
-      if (operator === "_eq") {
-        wheres.push(
-          value == null ? `${col} IS NULL` : `${col} = ${escapeLiteral(value)}`
-        );
-      } else if (operator === "_neq") {
-        wheres.push(
-          value == null
-            ? `${col} IS NOT NULL`
-            : `${col} <> ${escapeLiteral(value)}`
-        );
-      } else if (operator === "_gt") {
-        wheres.push(`${col} > ${escapeLiteral(value)}`);
-      } else if (operator === "_gte") {
-        wheres.push(`${col} >= ${escapeLiteral(value)}`);
-      } else if (operator === "_lt") {
-        wheres.push(`${col} < ${escapeLiteral(value)}`);
-      } else if (operator === "_lte") {
-        wheres.push(`${col} <= ${escapeLiteral(value)}`);
-      } else if (operator === "_in") {
-        if (Array.isArray(value) && value.length) {
-          wheres.push(`${col} IN (${value.map(escapeLiteral).join(", ")})`);
-        }
-      } else if (operator === "_nin") {
-        if (Array.isArray(value) && value.length) {
-          wheres.push(`${col} NOT IN (${value.map(escapeLiteral).join(", ")})`);
-        }
-      } else if (operator === "_contains") {
-        if (typeof value === "string") {
-          wheres.push(`jsonb_path_exists(${col}, '${jsonPathFromDot(value)}')`);
-        }
-      } else if (operator === "_ncontains") {
-        if (typeof value === "string") {
-          wheres.push(
-            `NOT jsonb_path_exists(${col}, '${jsonPathFromDot(value)}')`
+      const { nestedJoins, nestedWheres } = constructNestedWhereClause(
+        relation,
+        nestedWhere
+      );
+      joins = joins.concat(nestedJoins);
+      wheres = wheres.concat(nestedWheres);
+      continue;
+    } else if (column === "_and") {
+      const conditionalWheres: string[] = [];
+      if (Array.isArray(expression)) {
+        for (const nestedWhere of expression) {
+          const nestedWhereResult = constructNestedWhereClause(
+            table,
+            nestedWhere
           );
+          conditionalWheres.push(nestedWhereResult["nestedWheres"]);
+          joins.push(nestedWhereResult["nestedJoins"]);
+        }
+      }
+      wheres.push(`(${conditionalWheres.join(" AND ")})`);
+    } else if (column === "_or") {
+      const conditionalWheres: string[] = [];
+      if (Array.isArray(expression)) {
+        for (const nestedWhere of expression) {
+          const nestedWhereResult = constructNestedWhereClause(
+            table,
+            nestedWhere
+          );
+          conditionalWheres.push(nestedWhereResult["nestedWheres"]);
+          joins.push(nestedWhereResult["nestedJoins"]);
+        }
+      }
+      wheres.push(`(${conditionalWheres.join(" OR ")})`);
+    } else if (column === "_not") {
+      const conditionalWheres: string[] = [];
+      if (Array.isArray(expression)) {
+        for (const nestedWhere of expression) {
+          const nestedWhereResult = constructNestedWhereClause(
+            table,
+            nestedWhere
+          );
+          conditionalWheres.push(nestedWhereResult["nestedWheres"]);
+          joins.push(nestedWhereResult["nestedJoins"]);
+        }
+      }
+      wheres.push(`NOT (${conditionalWheres.join(" AND ")})`);
+    } else {
+      for (const [operator, value] of Object.entries(expression)) {
+        const col = `"${table}".${column}`;
+
+        if (operator === "_eq") {
+          wheres.push(
+            value == null
+              ? `${col} IS NULL`
+              : `${col} = ${escapeLiteral(value)}`
+          );
+        } else if (operator === "_neq") {
+          wheres.push(
+            value == null
+              ? `${col} IS NOT NULL`
+              : `${col} <> ${escapeLiteral(value)}`
+          );
+        } else if (operator === "_gt") {
+          wheres.push(`${col} > ${escapeLiteral(value)}`);
+        } else if (operator === "_gte") {
+          wheres.push(`${col} >= ${escapeLiteral(value)}`);
+        } else if (operator === "_lt") {
+          wheres.push(`${col} < ${escapeLiteral(value)}`);
+        } else if (operator === "_lte") {
+          wheres.push(`${col} <= ${escapeLiteral(value)}`);
+        } else if (operator === "_in") {
+          if (Array.isArray(value) && value.length) {
+            wheres.push(`${col} IN (${value.map(escapeLiteral).join(", ")})`);
+          }
+        } else if (operator === "_nin") {
+          if (Array.isArray(value) && value.length) {
+            wheres.push(
+              `${col} NOT IN (${value.map(escapeLiteral).join(", ")})`
+            );
+          }
+        } else if (operator === "_hasKey") {
+          if (typeof value === "string") {
+            wheres.push(
+              `jsonb_path_exists(${col}, '${jsonPathFromDot(value)}')`
+            );
+          }
+        } else if(operator === "_contains") {
+          if (typeof value === "object") {
+            const path = constructJSONPath(value, "");
+            if (path) wheres.push(`${col}${path}`);
+          }
         }
       }
     }
   }
 
   return {
-    nestedJoins: joins,
-    nestedWheres: wheres,
+    nestedJoins: joins.join(" "),
+    nestedWheres: wheres.join(" AND "),
   };
 }
 
-export function constructWhereClause(table: string, where?: WhereInput): string {
+export function constructWhereClause(
+  table: string,
+  where?: WhereInput
+): string {
   if (!where || Object.keys(where).length === 0) return "";
 
-  const {nestedJoins: joins, nestedWheres: wheres} = nestedWhereClauseConstructor(table, where);
+  const { nestedJoins: joins, nestedWheres: wheres } =
+    constructNestedWhereClause(table, where);
 
   if (!wheres) return "";
-  return `${joins.join(" ")} WHERE ${wheres.join(" AND ")}`;
+  return `${joins} WHERE ${wheres}`;
 }
 
 export async function buildSchema() {
@@ -443,28 +511,28 @@ export async function buildSchema() {
                 name: String!
                 birthday: String!
                 email: String!
-                phone_number: String!
-                system_authentication: String!
-                system_role: String!
+                phoneNumber: String!
+                systemAuthentication: String!
+                systemRole: String!
                 addresses: [Address!]!
-                created_at: String!
-                updated_at: String!
+                createdAt: String!
+                updatedAt: String!
             }
 
             type Address {
                 reference: ID!
                 user: User
                 country: String!
-                state_or_province: String
+                stateOrProvince: String
                 city: String!
-                zip_code: String!
+                zipCode: String!
                 street: String!
-                street_number: String!
+                streetNumber: String!
                 box: String
                 shipping: Boolean!
                 billing: Boolean!
-                created_at: String!
-                updated_at: String!
+                createdAt: String!
+                updatedAt: String!
             }
             
             enum OrderDirection {
@@ -481,8 +549,8 @@ export async function buildSchema() {
                 _lte: JSON
                 _in: [JSON!]
                 _nin: [JSON!]
-                _contains: String
-                _ncontains: String
+                _hasKey: String
+                _contains: JSON
             }
 
             input UserWhere {
@@ -490,11 +558,14 @@ export async function buildSchema() {
                 name: ComparisonExp
                 birthday: ComparisonExp
                 email: ComparisonExp
-                phone_number: ComparisonExp
-                system_authentication: ComparisonExp
-                system_role: ComparisonExp
-                created_at: ComparisonExp
-                updated_at: ComparisonExp
+                phoneNumber: ComparisonExp
+                systemAuthentication: ComparisonExp
+                systemRole: ComparisonExp
+                createdAt: ComparisonExp
+                updatedAt: ComparisonExp
+                _and: [UserWhere!]
+                _or: [UserWhere!]
+                _not: [UserWhere!]
             }
 
             input UserInput {
@@ -509,16 +580,19 @@ export async function buildSchema() {
                 user: ComparisonExp
                 userByReference: UserInput
                 country: ComparisonExp
-                state_or_province: ComparisonExp
+                stateOrProvince: ComparisonExp
                 city: ComparisonExp
-                zip_code: ComparisonExp
+                zipCode: ComparisonExp
                 street: ComparisonExp
-                street_number: ComparisonExp
+                streetNumber: ComparisonExp
                 box: ComparisonExp
                 shipping: ComparisonExp
                 billing: ComparisonExp
-                created_at: ComparisonExp
-                updated_at: ComparisonExp
+                createdAt: ComparisonExp
+                updatedAt: ComparisonExp
+                _and: [AddressWhere!]
+                _or: [AddressWhere!]
+                _not: [AddressWhere!]
             }
 
             input UserOrderBy {
@@ -526,27 +600,27 @@ export async function buildSchema() {
                 name: OrderDirection
                 birthday: OrderDirection
                 email: OrderDirection
-                phone_number: OrderDirection
-                system_authentication: OrderDirection
-                system_role: OrderDirection
-                created_at: OrderDirection
-                updated_at: OrderDirection
+                phoneNumber: OrderDirection
+                systemAuthentication: OrderDirection
+                systemRole: OrderDirection
+                createdAt: OrderDirection
+                updatedAt: OrderDirection
             }
 
             input AddressOrderBy {
                 reference: OrderDirection
                 user: OrderDirection
                 country: OrderDirection
-                state_or_province: OrderDirection
+                stateOrProvince: OrderDirection
                 city: OrderDirection
-                zip_code: OrderDirection
+                zipCode: OrderDirection
                 street: OrderDirection
-                street_number: OrderDirection
+                streetNumber: OrderDirection
                 box: OrderDirection
                 shipping: OrderDirection
                 billing: OrderDirection
-                created_at: OrderDirection
-                updated_at: OrderDirection
+                createdAt: OrderDirection
+                updatedAt: OrderDirection
             }
 
             type Query {
@@ -566,9 +640,20 @@ export async function buildSchema() {
           const limitClause = constructLimitClause(limit);
           const offsetClause = constructOffsetClause(offset);
 
+          const query = `
+                SELECT *
+                FROM shop.${table}
+                ${whereClause}
+                ${orderByClause}
+                ${limitClause}
+                ${offsetClause}
+                ;
+            `
+          console.log(query);
+
           const res = await pgClient.query(
             `
-                SELECT * 
+                SELECT *
                 FROM shop.${table}
                 ${whereClause}
                 ${orderByClause}
@@ -586,16 +671,7 @@ export async function buildSchema() {
           const orderByClause = constructOrderByClause(table, orderBy);
           const limitClause = constructLimitClause(limit);
           const offsetClause = constructOffsetClause(offset);
-          const query = `
-                SELECT * 
-                FROM shop.${table}
-                ${whereClause}
-                ${orderByClause}
-                ${limitClause}
-                ${offsetClause}
-                ;
-            `
-          console.log(query);
+          
           const res = await pgClient.query(
             `
                 SELECT * 

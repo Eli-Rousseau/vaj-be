@@ -1,4 +1,4 @@
-INSERT INTO shop.article_material_enum (article_material) VALUES
+INSERT INTO shop."articleMaterialEnum" ("articleMaterial") VALUES
 ('ACRYLIC'),
 ('ALPACA'),
 ('BAMBOO'),

@@ -1,3 +1,3 @@
-CREATE TABLE shop.article_season_enum (
-	article_season TEXT PRIMARY KEY
+CREATE TABLE shop."articleSeasonEnum" (
+	"articleSeason" TEXT PRIMARY KEY
 );

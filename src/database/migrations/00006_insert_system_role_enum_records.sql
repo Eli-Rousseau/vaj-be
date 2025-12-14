@@ -1,2 +1,2 @@
-INSERT INTO shop.system_role_enum (system_role)
+INSERT INTO shop."systemRoleEnum" ("systemRole")
 VALUES ('SYSTEM DEVELOPER'), ('ADMINISTRATOR'), ('SUPERUSER'), ('USER');

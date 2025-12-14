@@ -1,3 +1,3 @@
-CREATE TRIGGER trigger_set_updated_at
-    BEFORE UPDATE ON shop.system_role_permission
-    FOR EACH ROW EXECUTE FUNCTION shop.set_updated_at();
+CREATE TRIGGER "triggerSetUpdatedAt"
+    BEFORE UPDATE ON shop."systemRolePermission"
+    FOR EACH ROW EXECUTE FUNCTION shop."setUpdatedAt"();

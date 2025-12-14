@@ -1,3 +1,3 @@
-CREATE TABLE shop.article_material_enum (
-	article_material TEXT PRIMARY KEY
+CREATE TABLE shop."articleMaterialEnum" (
+	"articleMaterial" TEXT PRIMARY KEY
 );
