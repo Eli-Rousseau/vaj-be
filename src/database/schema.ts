@@ -508,6 +508,8 @@ export async function buildSchema() {
                 addresses: [Address!]!
                 createdAt: String!
                 updatedAt: String!
+                billingAddress: JSON
+                shippingAddress: JSON
             }
 
             type Address {
@@ -631,17 +633,6 @@ export async function buildSchema() {
           const limitClause = constructLimitClause(limit);
           const offsetClause = constructOffsetClause(offset);
 
-          const query = `
-                SELECT *
-                FROM shop.${table}
-                ${whereClause}
-                ${orderByClause}
-                ${limitClause}
-                ${offsetClause}
-                ;
-            `
-          console.log(query);
-
           const res = await pgClient.query(
             `
                 SELECT *
@@ -682,7 +673,7 @@ export async function buildSchema() {
             `SELECT * FROM shop.user WHERE reference = $1;`,
             [reference]
           );
-          return res.rows[0] || null;
+          return res.rows[0];
         },
 
         getAddressByReference: async (_, { reference }) => {
@@ -697,11 +688,42 @@ export async function buildSchema() {
       User: {
         addresses: async (parent) => {
           const res = await pgClient.query(
-            `SELECT * FROM shop.address WHERE "user" = $1;`,
+            `
+            SELECT * 
+            FROM shop.address
+            WHERE "user" = $1
+            ;
+            `,
             [parent.reference]
           );
           return res.rows;
         },
+        billingAddress: async (parent) => {
+          const res = await pgClient.query(
+            `
+            SELECT (shop."userBillingAddress"("user")).*
+            FROM shop."user"
+            WHERE "user".reference = $1;
+            ;
+            `,
+            [parent.reference]
+          )
+
+          return res.rows[0] ?? null;
+        },
+        shippingAddress: async (parent) => {
+          const res = await pgClient.query(
+            `
+            SELECT (shop."userShippingAddress"("user")).*
+            FROM shop."user"
+            WHERE "user".reference = $1;
+            ;
+            `,
+            [parent.reference]
+          )
+
+          return res.rows[0] ?? null;
+        }
       },
 
       Address: {
