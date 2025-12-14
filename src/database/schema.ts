@@ -253,15 +253,6 @@ function constructOffsetClause(offset?: number) {
   return offsetClause;
 }
 
-function toSnakeCase(name: string): string {
-  if (!name) return "";
-
-  return name
-    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
-    .replace(/([A-Z])([A-Z][a-z])/g, "$1_$2")
-    .toLowerCase();
-}
-
 function constructOrderByClause(
   table: string,
   orderBy?: Record<string, "ASC" | "DESC">[]
