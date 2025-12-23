@@ -273,7 +273,7 @@ function constructOrderByClause(
 
     if (!["ASC", "DESC"].includes(upperDirection)) continue;
 
-    clauses.push(`"${table}".${field} ${upperDirection}`);
+    clauses.push(`"${table}"."${field}" ${upperDirection}`);
   }
 
   if (clauses.length === 0) return "";
@@ -405,7 +405,7 @@ function constructNestedWhereClause(
       wheres.push(`NOT (${conditionalWheres.join(" AND ")})`);
     } else {
       for (const [operator, value] of Object.entries(expression)) {
-        const col = `"${table}".${column}`;
+        const col = `"${table}"."${column}"`;
 
         if (operator === "_eq") {
           wheres.push(
@@ -465,11 +465,59 @@ export function constructWhereClause(
 ): string {
   if (!where || Object.keys(where).length === 0) return "";
 
-  const { nestedJoins: joins, nestedWheres: wheres } =
-    constructNestedWhereClause(table, where);
+  const { nestedJoins: joins, nestedWheres: wheres } = constructNestedWhereClause(table, where);
 
   if (!wheres) return "";
   return `${joins} WHERE ${wheres}`;
+}
+
+const TableValuesMap = new Map([
+  ["user", ["name", "birthday", "email", "phoneNumber", "password", "salt", "systemAuthentication", "systemRole"]],
+  ["address", ["user", "country", "stateOrProvince", "city", "zipCode", "street", "streetNumber", "box", "shipping", "billing"]]
+]);
+
+function constructNestedInsertClause(
+  table: string,
+  inputs: Array<Record<string, unknown>>
+): string {
+  const tableValues = TableValuesMap.get(table);
+  if (!tableValues) {
+    throw new Error(`No table values found for table: ${table}`);
+  }
+
+  const records: string[] = [];
+
+  for (const input of inputs) {
+    const record: string[] = [];
+
+    for (const tableValue of tableValues) {
+      if (tableValue in input) {
+        record.push(escapeLiteral(input[tableValue]));
+      } else {
+        record.push(escapeLiteral(null));
+      }
+    }
+
+    records.push(`(${record.join(", ")})`);
+  }
+
+  const keys = `(${tableValues.map(value => `"${value}"`).join(", ")})`;
+  const values = records.join(", ");
+
+  return `INSERT INTO 
+  shop."${table}" ${keys} 
+  VALUES ${values} 
+  RETURNING *;`;
+}
+
+function constructInsertClause(
+  table: string, 
+  inputs: Array<Record<string, unknown>>
+): string {
+  if (!inputs || !Array.isArray(inputs)) return "";
+
+  const insertClause = constructNestedInsertClause(table, inputs);
+  return insertClause;
 }
 
 export async function buildSchema() {
@@ -512,9 +560,39 @@ export async function buildSchema() {
                 shippingAddress: JSON
             }
 
+            input UserMutationType {
+                reference: ID
+                name: String!
+                birthday: String!
+                email: String!
+                phoneNumber: String!
+                systemAuthentication: String!
+                systemRole: String!
+                createdAt: String
+                updatedAt: String
+                billingAddress: JSON
+                shippingAddress: JSON
+            }
+
             type Address {
                 reference: ID!
                 user: User
+                country: String!
+                stateOrProvince: String
+                city: String!
+                zipCode: String!
+                street: String!
+                streetNumber: String!
+                box: String
+                shipping: Boolean!
+                billing: Boolean!
+                createdAt: String!
+                updatedAt: String!
+            }
+
+            input AddressMutationType {
+                reference: ID!
+                user: UserMutationType!
                 country: String!
                 stateOrProvince: String
                 city: String!
@@ -622,6 +700,11 @@ export async function buildSchema() {
                 getUserByReference(reference: ID!): User
                 getAddressByReference(reference: ID!): Address
             }
+
+            type Mutation {
+                insertUsers(users: [UserMutationType!]!): [User!]!
+                insertAddresses(addresses: [AddressMutationType!]!): [Address!]!
+            }
         `,
 
     resolvers: {
@@ -683,6 +766,22 @@ export async function buildSchema() {
           );
           return res.rows[0] || null;
         },
+      },
+
+      Mutation: {
+        insertUsers: async (_, {users, onConflict}) => {
+            const table = "user";
+            const insertClause = constructInsertClause(table, users);
+            console.log(insertClause);
+            const res = await pgClient.query(insertClause);
+            return res.rows;
+        },
+        insertAddresses: async (_, {addresses}) => {
+            const table = "address";
+            const insertClause = constructInsertClause(table, addresses);
+            const res = await pgClient.query(insertClause);
+            return res.rows;
+        }
       },
 
       User: {
