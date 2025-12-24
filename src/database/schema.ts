@@ -497,10 +497,16 @@ function constructConflictClause(
   return conflictClause;
 }
 
+type nestedInsertResult = {
+  lastInsert: string,
+  nesteds: string[]
+}
+
 function constructNestedInsertClause(
-  table: string,
-  inputs: Record<string, any>
-): string {
+  table: string, 
+  inputs: Record<string, any>,
+  parentId: string
+): nestedInsertResult {
   const tableValues = TableValuesMap.get(table);
   if (!tableValues) {
     throw new Error(`No table values found for table: ${table}`);
@@ -509,18 +515,37 @@ function constructNestedInsertClause(
   const onConflict = Object.keys(inputs).includes("onConflict") ? inputs["onConflict"] : null;
   const conflictClause = constructConflictClause(onConflict);
 
-  inputs = inputs[plural(table)];
+  inputs = inputs["data"];
 
-  if (!Array.isArray(inputs)) return "";
+  if (!Array.isArray(inputs)) {
+    inputs = [inputs]
+  }
 
   const records: string[] = [];
+  const nestedInserts: string[] = [];
 
-  for (const input of inputs) {
+  for (const input of inputs as Array<Record<string, any>>) {
     const record: string[] = [];
 
-    for (const tableValue of tableValues) {
+    for (let i = 0; i < tableValues.length; i++) {
+      const tableValue = tableValues[i];
+
       if (tableValue in input) {
-        record.push(escapeLiteral(input[tableValue]));
+        const value = input[tableValue];
+
+        if (typeof value === "object") {
+          const id = parentId.toString() + i.toString();
+          const alias = "new" + tableValue.charAt(0).toUpperCase() + tableValue.slice(1) + id;
+          let { lastInsert, nesteds } = constructNestedInsertClause(tableValue, value, id);
+          lastInsert = `"${alias}" AS (${lastInsert})`;
+          nestedInserts.concat(nesteds);
+          nestedInserts.push(lastInsert);
+
+          record.push(`(SELECT reference FROM "${alias}")`);
+
+        } else {
+          record.push(escapeLiteral(value));
+        }
       } else {
         record.push(escapeLiteral(null));
       }
@@ -531,19 +556,19 @@ function constructNestedInsertClause(
 
   const keys = `(${tableValues.map(value => `"${value}"`).join(", ")})`;
   const values = records.join(", ");
+  const lastInsert = `INSERT INTO shop."${table}" ${keys} VALUES ${values} ${conflictClause} RETURNING *`
 
-  return `INSERT INTO shop."${table}" ${keys} 
-  VALUES ${values} 
-  ${conflictClause}
-  RETURNING *;`;
+  return { lastInsert, nesteds: nestedInserts };
 }
 
-export function constructInsertClause(
+export function constructInsertQuery(
   table: string, 
   inputs: Record<string, any>
 ): string {
-  const insertClause = constructNestedInsertClause(table, inputs);
-  return insertClause;
+  const {lastInsert, nesteds} = constructNestedInsertClause(table, inputs, "0");
+  const nestedInserts = nesteds ? `WITH ${nesteds.join(", ")}` : "";
+
+  return `${nestedInserts} ${lastInsert};`;
 }
 
 export async function buildSchema() {
@@ -612,12 +637,12 @@ export async function buildSchema() {
                 box: String
                 shipping: Boolean!
                 billing: Boolean!
-                createdAt: String!
-                updatedAt: String!
+                createdAt: String
+                updatedAt: String
             }
 
             input AddressMutationType {
-                reference: ID!
+                reference: ID
                 user: AddressUserInputType!
                 country: String!
                 stateOrProvince: String
@@ -628,12 +653,12 @@ export async function buildSchema() {
                 box: String
                 shipping: Boolean!
                 billing: Boolean!
-                createdAt: String!
-                updatedAt: String!
+                createdAt: String
+                updatedAt: String
             }
 
             input AddressUserInputType {
-                user: UserMutationType!
+                data: UserMutationType!
                 onConflict: onConflictInput
             }
             
@@ -738,8 +763,8 @@ export async function buildSchema() {
             }
 
             type Mutation {
-                insertUsers(users: [UserMutationType!]!, onConflict: onConflictInput): [User!]!
-                insertAddresses(addresses: [AddressMutationType!]!, onConflict: onConflictInput): [Address!]!
+                insertUsers(data: [UserMutationType!]!, onConflict: onConflictInput): [User!]!
+                insertAddresses(data: [AddressMutationType!]!, onConflict: onConflictInput): [Address!]!
             }
         `,
 
@@ -805,21 +830,18 @@ export async function buildSchema() {
       },
 
       Mutation: {
-        insertUsers: async (_, {users, onConflict}) => {
+        insertUsers: async (_, {data, onConflict}) => {
             const table = "user";
-            const inputs = {
-              [plural(table)]: users,
-              onConflict
-            };
-            const insertClause = constructInsertClause(table, inputs);
-            console.log(insertClause);
-            const res = await pgClient.query(insertClause);
+            const inputs = { data, onConflict };
+            const insertQuery = constructInsertQuery(table, inputs);
+            const res = await pgClient.query(insertQuery);
             return res.rows;
         },
-        insertAddresses: async (_, {addresses, onConflict}) => {
+        insertAddresses: async (_, {data, onConflict}) => {
             const table = "address";
-            const insertClause = constructInsertClause(table, addresses);
-            const res = await pgClient.query(insertClause);
+            const inputs = {data, onConflict}
+            const insertQuery = constructInsertQuery(table, inputs);
+            const res = await pgClient.query(insertQuery);
             return res.rows;
         }
       },
