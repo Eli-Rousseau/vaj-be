@@ -298,7 +298,7 @@ type Operator =
   | "_not"
   | "where";
 
-type WhereInput = Record<string, Partial<Record<Operator, any>>>;
+type WhereInput = Record<string, Partial<Record<Operator | string, any>>>;
 
 function escapeLiteral(value: any): string {
   if (value === null || value === undefined) return "NULL";
@@ -333,6 +333,7 @@ function constructJSONPath(contains: object, path: string) {
 }
 
 function constructNestedWhereClause(
+  schema: string,
   table: string,
   where: WhereInput
 ): NestedWhereResult {
@@ -354,24 +355,17 @@ function constructNestedWhereClause(
       }
       const nestedWhere = expression["where"];
       joins.push(
-        `JOIN shop.${relation} ON "${relation}".reference = "${table}".${relation}`
+        `JOIN "${schema}".${relation} ON "${relation}".reference = "${table}"."${relation}"`
       );
 
-      const { nestedJoins, nestedWheres } = constructNestedWhereClause(
-        relation,
-        nestedWhere
-      );
+      const { nestedJoins, nestedWheres } = constructNestedWhereClause(schema, relation, nestedWhere);
       joins = joins.concat(nestedJoins);
       wheres = wheres.concat(nestedWheres);
-      continue;
     } else if (column === "_and") {
       const conditionalWheres: string[] = [];
       if (Array.isArray(expression)) {
         for (const nestedWhere of expression) {
-          const nestedWhereResult = constructNestedWhereClause(
-            table,
-            nestedWhere
-          );
+          const nestedWhereResult = constructNestedWhereClause(schema, table, nestedWhere);
           conditionalWheres.push(nestedWhereResult["nestedWheres"]);
           joins.push(nestedWhereResult["nestedJoins"]);
         }
@@ -381,10 +375,7 @@ function constructNestedWhereClause(
       const conditionalWheres: string[] = [];
       if (Array.isArray(expression)) {
         for (const nestedWhere of expression) {
-          const nestedWhereResult = constructNestedWhereClause(
-            table,
-            nestedWhere
-          );
+          const nestedWhereResult = constructNestedWhereClause(schema, table, nestedWhere);
           conditionalWheres.push(nestedWhereResult["nestedWheres"]);
           joins.push(nestedWhereResult["nestedJoins"]);
         }
@@ -394,10 +385,7 @@ function constructNestedWhereClause(
       const conditionalWheres: string[] = [];
       if (Array.isArray(expression)) {
         for (const nestedWhere of expression) {
-          const nestedWhereResult = constructNestedWhereClause(
-            table,
-            nestedWhere
-          );
+          const nestedWhereResult = constructNestedWhereClause(schema, table, nestedWhere);
           conditionalWheres.push(nestedWhereResult["nestedWheres"]);
           joins.push(nestedWhereResult["nestedJoins"]);
         }
@@ -460,12 +448,13 @@ function constructNestedWhereClause(
 }
 
 export function constructWhereClause(
+  schema: string,
   table: string,
   where?: WhereInput
 ): string {
   if (!where || Object.keys(where).length === 0) return "";
 
-  const { nestedJoins: joins, nestedWheres: wheres } = constructNestedWhereClause(table, where);
+  const { nestedJoins: joins, nestedWheres: wheres } = constructNestedWhereClause(schema, table, where);
 
   if (!wheres) return "";
   return `${joins} WHERE ${wheres}`;
@@ -503,6 +492,7 @@ type nestedInsertResult = {
 }
 
 function constructNestedInsertClause(
+  schema: string,
   table: string, 
   inputs: Record<string, any>,
   parentId: string
@@ -536,7 +526,7 @@ function constructNestedInsertClause(
         if (typeof value === "object") {
           const id = parentId.toString() + i.toString();
           const alias = "new" + tableValue.charAt(0).toUpperCase() + tableValue.slice(1) + id;
-          let { lastInsert, nesteds } = constructNestedInsertClause(tableValue, value, id);
+          let { lastInsert, nesteds } = constructNestedInsertClause(schema, tableValue, value, id);
           lastInsert = `"${alias}" AS (${lastInsert})`;
           nestedInserts.concat(nesteds);
           nestedInserts.push(lastInsert);
@@ -556,16 +546,36 @@ function constructNestedInsertClause(
 
   const keys = `(${tableValues.map(value => `"${value}"`).join(", ")})`;
   const values = records.join(", ");
-  const lastInsert = `INSERT INTO shop."${table}" ${keys} VALUES ${values} ${conflictClause} RETURNING *`
+  const lastInsert = `INSERT INTO "${schema}"."${table}" ${keys} VALUES ${values} ${conflictClause} RETURNING *`
 
   return { lastInsert, nesteds: nestedInserts };
 }
 
-export function constructInsertQuery(
+export function constructSingleInsertQuery(
+  schema: string,
   table: string, 
   inputs: Record<string, any>
 ): string {
-  const {lastInsert, nesteds} = constructNestedInsertClause(table, inputs, "0");
+  if (typeof inputs !== "object" || !("data" in inputs) || typeof inputs["data"] === "object" ) {
+    throw new Error(`Bulk insertion expects data of type record, instead it received:\n${inputs}`);
+  }
+
+  const {lastInsert, nesteds} = constructNestedInsertClause(schema, table, inputs, "0");
+  const nestedInserts = nesteds ? `WITH ${nesteds.join(", ")}` : "";
+
+  return `${nestedInserts} ${lastInsert};`;
+}
+
+export function constructBulkInsertQuery(
+  schema: string,
+  table: string, 
+  inputs: Record<string, any>
+): string {
+  if (typeof inputs !== "object" || !("data" in inputs) || !Array.isArray(inputs["data"]) ) {
+    throw new Error(`Bulk insertion expects data of type array of records, instead it received:\n${inputs}`);
+  }
+
+  const {lastInsert, nesteds} = constructNestedInsertClause(schema, table, inputs, "0");
   const nestedInserts = nesteds ? `WITH ${nesteds.join(", ")}` : "";
 
   return `${nestedInserts} ${lastInsert};`;
@@ -576,7 +586,7 @@ export async function buildSchema() {
   const host = process.env.DATABASE_HOST;
   const port = process.env.DATABASE_PORT;
   const user = process.env.DATABASE_ADMINISTRATOR_USER_NAME;
-  const password = process.env.DATABASE_ADMINISTRATOR_USER_PASSWORD;
+  const password = process.env.DATABASE_DEFAULT_USER_PASSWORD;
 
   if (!database || !host || !port || !user || !password) {
     throw Error(
@@ -596,7 +606,7 @@ export async function buildSchema() {
     typeDefs: `
             scalar JSON
 
-            type User {
+            type ShopUser {
                 reference: ID!
                 name: String!
                 birthday: String!
@@ -604,14 +614,14 @@ export async function buildSchema() {
                 phoneNumber: String!
                 systemAuthentication: String!
                 systemRole: String!
-                addresses: [Address!]!
+                addresses: [ShopAddress!]!
                 createdAt: String!
                 updatedAt: String!
                 billingAddress: JSON
                 shippingAddress: JSON
             }
 
-            input UserMutationType {
+            input ShopUserMutationInput {
                 reference: ID
                 name: String!
                 birthday: String!
@@ -625,9 +635,9 @@ export async function buildSchema() {
                 shippingAddress: JSON
             }
 
-            type Address {
+            type ShopAddress {
                 reference: ID!
-                user: User
+                user: ShopUser
                 country: String!
                 stateOrProvince: String
                 city: String!
@@ -641,9 +651,9 @@ export async function buildSchema() {
                 updatedAt: String
             }
 
-            input AddressMutationType {
+            input ShopAddressMutationInput {
                 reference: ID
-                user: AddressUserInputType!
+                user: ShopAddressUserMutationInput!
                 country: String!
                 stateOrProvince: String
                 city: String!
@@ -657,9 +667,9 @@ export async function buildSchema() {
                 updatedAt: String
             }
 
-            input AddressUserInputType {
-                data: UserMutationType!
-                onConflict: onConflictInput
+            input ShopAddressUserMutationInput {
+                data: ShopUserMutationInput!
+                onConflict: OnConflictMutationInput
             }
             
             enum OrderDirection {
@@ -680,7 +690,7 @@ export async function buildSchema() {
                 _contains: JSON
             }
 
-            input UserWhere {
+            input ShopUserGetWhereClause {
                 reference: ComparisonExp
                 name: ComparisonExp
                 birthday: ComparisonExp
@@ -690,22 +700,22 @@ export async function buildSchema() {
                 systemRole: ComparisonExp
                 createdAt: ComparisonExp
                 updatedAt: ComparisonExp
-                _and: [UserWhere!]
-                _or: [UserWhere!]
-                _not: [UserWhere!]
+                _and: [ShopUserGetWhereClause!]
+                _or: [ShopUserGetWhereClause!]
+                _not: [ShopUserGetWhereClause!]
             }
 
-            input UserInput {
-                where: UserWhere
-                orderBy: UserOrderBy
+            input ShopUserGetInput {
+                where: ShopUserGetWhereClause
+                orderBy: ShopUserGetOrderByClause
                 limit: Int
                 offset: Int
             }
 
-            input AddressWhere {
+            input ShopAddressGetWhereClause {
                 reference: ComparisonExp
                 user: ComparisonExp
-                userByReference: UserInput
+                userByReference: ShopUserGetInput
                 country: ComparisonExp
                 stateOrProvince: ComparisonExp
                 city: ComparisonExp
@@ -717,12 +727,12 @@ export async function buildSchema() {
                 billing: ComparisonExp
                 createdAt: ComparisonExp
                 updatedAt: ComparisonExp
-                _and: [AddressWhere!]
-                _or: [AddressWhere!]
-                _not: [AddressWhere!]
+                _and: [ShopAddressGetWhereClause!]
+                _or: [ShopAddressGetWhereClause!]
+                _not: [ShopAddressGetWhereClause!]
             }
 
-            input UserOrderBy {
+            input ShopUserGetOrderByClause {
                 reference: OrderDirection
                 name: OrderDirection
                 birthday: OrderDirection
@@ -734,7 +744,7 @@ export async function buildSchema() {
                 updatedAt: OrderDirection
             }
 
-            input AddressOrderBy {
+            input ShopAddressGetOrderByClause {
                 reference: OrderDirection
                 user: OrderDirection
                 country: OrderDirection
@@ -750,29 +760,32 @@ export async function buildSchema() {
                 updatedAt: OrderDirection
             }
 
-            input onConflictInput {
+            input OnConflictMutationInput {
                 constraint: String!
                 columns: [String]!
             }
 
             type Query {
-                getUsers(where: UserWhere, orderBy: [UserOrderBy!], limit: Int, offset: Int): [User!]!
-                getAddresses(where: AddressWhere, orderBy: [AddressOrderBy!], limit: Int, offset: Int): [Address!]!
-                getUserByReference(reference: ID!): User
-                getAddressByReference(reference: ID!): Address
+                getShopUserByReference(reference: ID!): ShopUser
+                getShopAddressByReference(reference: ID!): ShopAddress
+                getShopUsers(where: ShopUserGetWhereClause, orderBy: [ShopUserGetOrderByClause!], limit: Int, offset: Int): [ShopUser!]!
+                getShopAddresses(where: ShopAddressGetWhereClause, orderBy: [ShopAddressGetOrderByClause!], limit: Int, offset: Int): [ShopAddress!]!
             }
 
             type Mutation {
-                insertUsers(data: [UserMutationType!]!, onConflict: onConflictInput): [User!]!
-                insertAddresses(data: [AddressMutationType!]!, onConflict: onConflictInput): [Address!]!
+                insertShopUser(data: ShopUserMutationInput!, onConflict: OnConflictMutationInput): ShopUser!
+                insertShopUsers(data: [ShopUserMutationInput!]!, onConflict: OnConflictMutationInput): [ShopUser!]!
+                insertShopAddress(data: ShopAddressMutationInput!, onConflict: OnConflictMutationInput): ShopAddress!
+                insertShopAddresses(data: [ShopAddressMutationInput!]!, onConflict: OnConflictMutationInput): [ShopAddress!]!
             }
         `,
 
     resolvers: {
       Query: {
-        getUsers: async (_, { where, orderBy, limit, offset }) => {
+        getShopUsers: async (_, { where, orderBy, limit, offset }) => {
+          const schema = "shop";
           const table = "user";
-          const whereClause = constructWhereClause(table, where);
+          const whereClause = constructWhereClause(schema, table, where);
           const orderByClause = constructOrderByClause(table, orderBy);
           const limitClause = constructLimitClause(limit);
           const offsetClause = constructOffsetClause(offset);
@@ -780,7 +793,7 @@ export async function buildSchema() {
           const res = await pgClient.query(
             `
                 SELECT *
-                FROM shop.${table}
+                FROM "${schema}"."${table}"xx
                 ${whereClause}
                 ${orderByClause}
                 ${limitClause}
@@ -791,17 +804,29 @@ export async function buildSchema() {
           return res.rows;
         },
 
-        getAddresses: async (_, { where, orderBy, limit, offset }) => {
+        getShopAddresses: async (_, { where, orderBy, limit, offset }) => {
+          const schema = "shop";
           const table = "address";
-          const whereClause = constructWhereClause(table, where);
+          const whereClause = constructWhereClause(schema, table, where);
           const orderByClause = constructOrderByClause(table, orderBy);
           const limitClause = constructLimitClause(limit);
           const offsetClause = constructOffsetClause(offset);
+          console.log(
+            `
+                SELECT * 
+                FROM "${schema}"."${table}"
+                ${whereClause}
+                ${orderByClause}
+                ${limitClause}
+                ${offsetClause}
+                ;
+            `
+          );
           
           const res = await pgClient.query(
             `
                 SELECT * 
-                FROM shop.${table}
+                FROM "${schema}"."${table}"
                 ${whereClause}
                 ${orderByClause}
                 ${limitClause}
@@ -812,17 +837,19 @@ export async function buildSchema() {
           return res.rows;
         },
 
-        getUserByReference: async (_, { reference }) => {
+        getShopUserByReference: async (_, { reference }) => {
+          const schema = "shop";
           const res = await pgClient.query(
-            `SELECT * FROM shop.user WHERE reference = $1;`,
+            `SELECT * FROM "${schema}".user WHERE reference = $1;`,
             [reference]
           );
           return res.rows[0];
         },
 
-        getAddressByReference: async (_, { reference }) => {
+        getShopAddressByReference: async (_, { reference }) => {
+          const schema = "shop";
           const res = await pgClient.query(
-            `SELECT * FROM shop.address WHERE reference = $1;`,
+            `SELECT * FROM "${schema}".address WHERE reference = $1;`,
             [reference]
           );
           return res.rows[0] || null;
@@ -830,28 +857,47 @@ export async function buildSchema() {
       },
 
       Mutation: {
-        insertUsers: async (_, {data, onConflict}) => {
+        insertShopUser: async (_, {data, onConflict}) => {
+            const schema = "shop";
             const table = "user";
             const inputs = { data, onConflict };
-            const insertQuery = constructInsertQuery(table, inputs);
+            const insertQuery = constructSingleInsertQuery(schema, table, inputs);
             const res = await pgClient.query(insertQuery);
             return res.rows;
         },
-        insertAddresses: async (_, {data, onConflict}) => {
+        insertShopUsers: async (_, {data, onConflict}) => {
+            const schema = "shop";
+            const table = "user";
+            const inputs = { data, onConflict };
+            const insertQuery = constructBulkInsertQuery(schema, table, inputs);
+            const res = await pgClient.query(insertQuery);
+            return res.rows;
+        },
+        insertShopAddress: async (_, {data, onConflict}) => {
+            const schema = "shop";
             const table = "address";
             const inputs = {data, onConflict}
-            const insertQuery = constructInsertQuery(table, inputs);
+            const insertQuery = constructSingleInsertQuery(schema, table, inputs);
+            const res = await pgClient.query(insertQuery);
+            return res.rows;
+        },
+        insertShopAddresses: async (_, {data, onConflict}) => {
+            const schema = "shop";
+            const table = "address";
+            const inputs = {data, onConflict}
+            const insertQuery = constructBulkInsertQuery(schema, table, inputs);
             const res = await pgClient.query(insertQuery);
             return res.rows;
         }
       },
 
-      User: {
+      ShopUser: {
         addresses: async (parent) => {
+          const schema = "shop";
           const res = await pgClient.query(
             `
             SELECT * 
-            FROM shop.address
+            FROM "${schema}".address
             WHERE "user" = $1
             ;
             `,
@@ -860,10 +906,11 @@ export async function buildSchema() {
           return res.rows;
         },
         billingAddress: async (parent) => {
+          const schema = "shop";
           const res = await pgClient.query(
             `
-            SELECT (shop."userBillingAddress"("user")).*
-            FROM shop."user"
+            SELECT ("${schema}"."userBillingAddress"("user")).*
+            FROM "${schema}"."user"
             WHERE "user".reference = $1;
             ;
             `,
@@ -873,10 +920,11 @@ export async function buildSchema() {
           return res.rows[0] ?? null;
         },
         shippingAddress: async (parent) => {
+          const schema = "shop";
           const res = await pgClient.query(
             `
-            SELECT (shop."userShippingAddress"("user")).*
-            FROM shop."user"
+            SELECT ("${schema}"."userShippingAddress"("user")).*
+            FROM "${schema}"."user"
             WHERE "user".reference = $1;
             ;
             `,
@@ -887,11 +935,12 @@ export async function buildSchema() {
         }
       },
 
-      Address: {
+      ShopAddress: {
         user: async (parent) => {
+          const schema = "shop";
           if (!parent.user) return null;
           const res = await pgClient.query(
-            `SELECT * FROM shop.user WHERE reference = $1;`,
+            `SELECT * FROM "${schema}".user WHERE reference = $1;`,
             [parent.user]
           );
           return res.rows[0] || null;
