@@ -575,8 +575,8 @@ export async function buildSchema() {
   const database = process.env.DATABASE_VAJ;
   const host = process.env.DATABASE_HOST;
   const port = process.env.DATABASE_PORT;
-  const user = process.env.DATABASE_DEFAULT_USER_NAME;
-  const password = process.env.DATABASE_DEFAULT_USER_PASSWORD;
+  const user = process.env.DATABASE_ADMINISTRATOR_USER_NAME;
+  const password = process.env.DATABASE_ADMINISTRATOR_USER_PASSWORD;
 
   if (!database || !host || !port || !user || !password) {
     throw Error(

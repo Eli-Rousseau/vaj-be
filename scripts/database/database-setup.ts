@@ -61,6 +61,21 @@ async function createMigrationTable(args: {
     await runCommand(tableCommand, "Migration table creation");
 }
 
+async function createUser(args: {
+    database: string,
+    defaultUserName: string,
+    defaultUserPassword: string,
+    host: string,
+    port: string,
+    newUserName: string,
+    newUserPassword: string
+}) {
+    const { database, defaultUserName, defaultUserPassword, host, port, newUserName, newUserPassword } = args;
+    const userScript = `${cwd()}/src/database/setup/add_user.sql`;
+    const tableCommand = `export PGPASSWORD='${defaultUserPassword}'; psql -h ${host} -p ${port} -U ${defaultUserName} -d ${database} -v username="${newUserName}" -v password="'${newUserPassword}'" -f "${userScript}"; unset PGPASSWORD`;
+    await runCommand(tableCommand, "New user creation");
+}
+
 
 async function main() {
     await loadStage();
@@ -73,9 +88,11 @@ async function main() {
     const defaultUserPassword = process.env.DATABASE_DEFAULT_USER_PASSWORD;
 
     const database = process.env.DATABASE_VAJ;
+    const administratorUserName = process.env.DATABASE_ADMINISTRATOR_USER_NAME;
+    const administratorUserPassword = process.env.DATABASE_ADMINISTRATOR_USER_PASSWORD;
 
-    if (!host || !port || !defaultUserPassword || !defaultUserName || !defaultDatabase || !database) {
-        logger.error("Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_DEFAULT_USER_NAME, DATABASE_DEFAULT, DATABASE_HOST, DATBASE_PORT, or DATABASE_VAJ.");
+    if (!host || !port || !defaultUserPassword || !defaultUserName || !defaultDatabase || !database || !administratorUserName || !administratorUserPassword) {
+        logger.error("Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_DEFAULT_USER_NAME, DATABASE_DEFAULT, DATABASE_HOST, DATBASE_PORT, DATABASE_VAJ, DATABASE_ADMINISTRATOR_USER_NAME, or DATABASE_ADMINISTRATOR_USER_PASSWORD.");
         process.exit(1);
     }
 
@@ -83,6 +100,7 @@ async function main() {
     await createDatabase({ defaultDatabase, defaultUserName, defaultUserPassword, host, port });
     await createSchema({ database, defaultUserName, defaultUserPassword, host, port });
     await createMigrationTable({ database, defaultUserName, defaultUserPassword, host, port });
+    await createUser({ database, defaultUserName, defaultUserPassword, host, port, newUserName: administratorUserName, newUserPassword: administratorUserPassword });
 
     logger.info("Finished database setup.")
 }
