@@ -1,3 +1,4 @@
+import { query } from "winston";
 import { getPgClient } from "../utils/database";
 import { createSchema } from "graphql-yoga";
 
@@ -460,6 +461,41 @@ export function constructWhereClause(
   return `${joins} WHERE ${wheres}`;
 }
 
+export function constructGetQuery(
+  schema: string, 
+  table: string, 
+  where?: WhereInput, 
+  orderBy?: Record<string, "ASC" | "DESC">[],
+  limit?: number,
+  offset?: number
+): string {
+  const whereClause = constructWhereClause(schema, table, where);
+  const orderByClause = constructOrderByClause(table, orderBy);
+  const limitClause = constructLimitClause(limit);
+  const offsetClause = constructOffsetClause(offset);
+
+  const query = `SELECT * FROM "${schema}"."${table}" ${whereClause} ${orderByClause} ${limitClause} ${offsetClause};`;
+  return query;
+}
+
+export function constructGetByReferenceQuery(
+  schema: string, 
+  table: string,
+  reference: string
+): string {
+  const query = `SELECT * FROM "${schema}"."${table}" WHERE reference = ${escapeLiteral(reference)};`
+  return query;
+}
+
+export function constructGetRelatedQuery(
+  schema: string, 
+  table: string,
+  reference: string
+): string {
+  const query = `SELECT * FROM "${schema}"."${table}" WHERE "user" = ${escapeLiteral(reference)}`
+  return query;
+}
+
 function plural(name: string): string {
   return !name.endsWith("s") ? name + "s" : name + "es";
 }
@@ -556,8 +592,8 @@ export function constructSingleInsertQuery(
   table: string, 
   inputs: Record<string, any>
 ): string {
-  if (typeof inputs !== "object" || !("data" in inputs) || typeof inputs["data"] === "object" ) {
-    throw new Error(`Bulk insertion expects data of type record, instead it received:\n${inputs}`);
+  if (typeof inputs !== "object" || !("data" in inputs) || typeof inputs["data"] !== "object" ) {
+    throw new Error(`Record insertion expects data of type record, instead it received:\n${inputs}`);
   }
 
   const {lastInsert, nesteds} = constructNestedInsertClause(schema, table, inputs, "0");
@@ -785,74 +821,41 @@ export async function buildSchema() {
         getShopUsers: async (_, { where, orderBy, limit, offset }) => {
           const schema = "shop";
           const table = "user";
-          const whereClause = constructWhereClause(schema, table, where);
-          const orderByClause = constructOrderByClause(table, orderBy);
-          const limitClause = constructLimitClause(limit);
-          const offsetClause = constructOffsetClause(offset);
+          
+          const query = constructGetQuery(schema, table, where, orderBy, limit, offset)
 
-          const res = await pgClient.query(
-            `
-                SELECT *
-                FROM "${schema}"."${table}"xx
-                ${whereClause}
-                ${orderByClause}
-                ${limitClause}
-                ${offsetClause}
-                ;
-            `
-          );
+          const res = await pgClient.query(query);
           return res.rows;
         },
 
         getShopAddresses: async (_, { where, orderBy, limit, offset }) => {
           const schema = "shop";
           const table = "address";
-          const whereClause = constructWhereClause(schema, table, where);
-          const orderByClause = constructOrderByClause(table, orderBy);
-          const limitClause = constructLimitClause(limit);
-          const offsetClause = constructOffsetClause(offset);
-          console.log(
-            `
-                SELECT * 
-                FROM "${schema}"."${table}"
-                ${whereClause}
-                ${orderByClause}
-                ${limitClause}
-                ${offsetClause}
-                ;
-            `
-          );
-          
-          const res = await pgClient.query(
-            `
-                SELECT * 
-                FROM "${schema}"."${table}"
-                ${whereClause}
-                ${orderByClause}
-                ${limitClause}
-                ${offsetClause}
-                ;
-            `
-          );
+
+          const query = constructGetQuery(schema, table, where, orderBy, limit, offset)
+
+          const res = await pgClient.query(query);
           return res.rows;
         },
 
         getShopUserByReference: async (_, { reference }) => {
           const schema = "shop";
-          const res = await pgClient.query(
-            `SELECT * FROM "${schema}".user WHERE reference = $1;`,
-            [reference]
-          );
+          const table = "user"
+
+          const query = constructGetByReferenceQuery(schema, table, reference)
+
+          const res = await pgClient.query(query);
           return res.rows[0];
         },
 
         getShopAddressByReference: async (_, { reference }) => {
           const schema = "shop";
-          const res = await pgClient.query(
-            `SELECT * FROM "${schema}".address WHERE reference = $1;`,
-            [reference]
-          );
-          return res.rows[0] || null;
+          const table = "address"
+
+          const query = constructGetByReferenceQuery(schema, table, reference)
+
+          const res = await pgClient.query(query);
+          return res.rows[0];
         },
       },
 
@@ -861,32 +864,40 @@ export async function buildSchema() {
             const schema = "shop";
             const table = "user";
             const inputs = { data, onConflict };
-            const insertQuery = constructSingleInsertQuery(schema, table, inputs);
-            const res = await pgClient.query(insertQuery);
-            return res.rows;
+
+            const query = constructSingleInsertQuery(schema, table, inputs);
+
+            const res = await pgClient.query(query);
+            return res.rows[0];
         },
         insertShopUsers: async (_, {data, onConflict}) => {
             const schema = "shop";
             const table = "user";
             const inputs = { data, onConflict };
-            const insertQuery = constructBulkInsertQuery(schema, table, inputs);
-            const res = await pgClient.query(insertQuery);
+
+            const query = constructBulkInsertQuery(schema, table, inputs);
+
+            const res = await pgClient.query(query);
             return res.rows;
         },
         insertShopAddress: async (_, {data, onConflict}) => {
             const schema = "shop";
             const table = "address";
             const inputs = {data, onConflict}
-            const insertQuery = constructSingleInsertQuery(schema, table, inputs);
-            const res = await pgClient.query(insertQuery);
-            return res.rows;
+
+            const query = constructSingleInsertQuery(schema, table, inputs);
+
+            const res = await pgClient.query(query);
+            return res.rows[0];
         },
         insertShopAddresses: async (_, {data, onConflict}) => {
             const schema = "shop";
             const table = "address";
             const inputs = {data, onConflict}
-            const insertQuery = constructBulkInsertQuery(schema, table, inputs);
-            const res = await pgClient.query(insertQuery);
+
+            const query = constructBulkInsertQuery(schema, table, inputs);
+
+            const res = await pgClient.query(query);
             return res.rows;
         }
       },
@@ -894,41 +905,39 @@ export async function buildSchema() {
       ShopUser: {
         addresses: async (parent) => {
           const schema = "shop";
-          const res = await pgClient.query(
-            `
-            SELECT * 
-            FROM "${schema}".address
-            WHERE "user" = $1
-            ;
-            `,
-            [parent.reference]
-          );
-          return res.rows;
+          const table = "address";
+
+          const query = constructGetRelatedQuery(schema, table, parent.reference);
+
+          const res = await pgClient.query(query)
+          return res.rows[0] ?? null;
         },
         billingAddress: async (parent) => {
           const schema = "shop";
+          const table = "user";
+
           const res = await pgClient.query(
             `
             SELECT ("${schema}"."userBillingAddress"("user")).*
-            FROM "${schema}"."user"
-            WHERE "user".reference = $1;
+            FROM "${schema}"."${table}"
+            WHERE "user".reference = ${escapeLiteral(parent.reference)};
             ;
             `,
-            [parent.reference]
           )
 
           return res.rows[0] ?? null;
         },
         shippingAddress: async (parent) => {
           const schema = "shop";
+          const table = "user";
+
           const res = await pgClient.query(
             `
             SELECT ("${schema}"."userShippingAddress"("user")).*
-            FROM "${schema}"."user"
-            WHERE "user".reference = $1;
+            FROM "${schema}"."${table}"
+            WHERE "user".reference = ${escapeLiteral(parent.reference)};
             ;
             `,
-            [parent.reference]
           )
 
           return res.rows[0] ?? null;
