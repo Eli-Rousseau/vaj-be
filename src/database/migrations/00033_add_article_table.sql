@@ -1,7 +1,7 @@
 CREATE TABLE shop.article(
 	-- Core Identifiers & Metadata
-	reference UUID CONSTRAINT "articlePk" PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
-	title TEXT NOT NULL,
+	reference UUID CONSTRAINT "articlePk" PRIMARY KEY CONSTRAINT "articleReferenceNotNull" NOT NULL DEFAULT shop.uuid_generate_v4(),
+	title TEXT CONSTRAINT "articleTitleNotNull" NOT NULL,
 	description TEXT DEFAULT NULL,
 	brand TEXT,
 	CONSTRAINT "fkBrand" 
@@ -10,8 +10,8 @@ CREATE TABLE shop.article(
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
 	release TIMESTAMP DEFAULT NULL,
-	"createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	"updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	"createdAt" TIMESTAMP CONSTRAINT "articleCreatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	"updatedAt" TIMESTAMP CONSTRAINT "articleUpdatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
 	-- Product Attributes
 	"parentCategory" TEXT,
@@ -64,23 +64,23 @@ CREATE TABLE shop.article(
 		ON DELETE SET NULL,
 
 	-- Inventory & Pricing
-	quantity INT CONSTRAINT "articleQuantityCheck" NOT NULL DEFAULT 1 CHECK (quantity > 0),
-	price FLOAT NOT NULL,
+	quantity INT CONSTRAINT "articleQuantityNotNull" NOT NULL DEFAULT 1 CONSTRAINT "ArticleQuantityCheck" CHECK (quantity > 0),
+	price FLOAT CONSTRAINT "articlePriceNotNull" NOT NULL,
 	currency TEXT DEFAULT 'EUR',
 	CONSTRAINT "fkCurrency"
         FOREIGN KEY (currency) 
         REFERENCES shop."currencyEnum"(currency)
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
-	discount FLOAT CONSTRAINT "articleDiscountCheck" NOT NULL DEFAULT 0 CHECK (discount >= 0 AND discount <= 100),
+	discount FLOAT CONSTRAINT "articleDiscountNotNull" NOT NULL DEFAULT 0 CONSTRAINT "ArticleDiscountCheck" CHECK (discount >= 0 AND discount <= 100),
 	availability TEXT,
 	CONSTRAINT "fkAvailibility"
         FOREIGN KEY (availability) 
         REFERENCES shop."articleAvailabilityEnum"("articleAvailability")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
-	"forSale" BOOLEAN NOT NULL,
-	"forRent" BOOLEAN NOT NULL,
+	"forSale" BOOLEAN CONSTRAINT "articleForSaleNotNull" NOT NULL,
+	"forRent" BOOLEAN CONSTRAINT "articleForRentNotNull" NOT NULL,
 	"rentalPrice" FLOAT DEFAULT NULL,
 	media JSONB DEFAULT NULL
 );

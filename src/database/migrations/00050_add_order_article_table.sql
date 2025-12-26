@@ -1,5 +1,5 @@
 CREATE TABLE shop."orderArticle" (
-    reference UUID CONSTRAINT "orderArticlePk" PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
+    reference UUID CONSTRAINT "orderArticlePk" PRIMARY KEY CONSTRAINT "orderArticleReferenceNotNull" NOT NULL DEFAULT shop.uuid_generate_v4(),
     "order" UUID,
     CONSTRAINT "fkOrder"
         FOREIGN KEY ("order") 
@@ -12,8 +12,8 @@ CREATE TABLE shop."orderArticle" (
         REFERENCES shop.article(reference) 
         ON UPDATE CASCADE 
         ON DELETE SET NULL,
-    quantity INT NOT NULL DEFAULT 1,
-    "articlePrice" FLOAT NOT NULL,
+    quantity INT CONSTRAINT "orderArticleQuantityNotNull" NOT NULL DEFAULT 1,
+    "articlePrice" FLOAT CONSTRAINT "orderArticleArticlePriceNotNull" NOT NULL,
     "articleDiscount" FLOAT DEFAULT NULL,
     "checkoutPrice" FLOAT DEFAULT NULL,
     "currency" TEXT DEFAULT 'EUR',
@@ -22,6 +22,6 @@ CREATE TABLE shop."orderArticle" (
         REFERENCES shop."currencyEnum"(currency)
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
-    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP CONSTRAINT "orderArticleCreatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP CONSTRAINT "orderArticleUpdatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

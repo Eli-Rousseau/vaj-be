@@ -1,5 +1,5 @@
 CREATE TABLE shop.favorite (
-    reference UUID CONSTRAINT "favoritePk" PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
+    reference UUID CONSTRAINT "favoritePk" PRIMARY KEY CONSTRAINT "favoriteReferenceNotNull" NOT NULL DEFAULT shop.uuid_generate_v4(),
     "user" UUID,
     CONSTRAINT "fkUser "
         FOREIGN KEY ("user") 

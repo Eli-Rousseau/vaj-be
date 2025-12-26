@@ -1,17 +1,16 @@
 CREATE TABLE shop."discountCoupon" (
-    reference UUID CONSTRAINT "discountCouponPk" PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
-    code TEXT CONSTRAINT "discountCouponCodeKey" UNIQUE NOT NULL,
+    reference UUID CONSTRAINT "discountCouponPk" PRIMARY KEY CONSTRAINT "discountCouponReferenceNotNull" NOT NULL DEFAULT shop.uuid_generate_v4(),
+    code TEXT CONSTRAINT "discountCouponCodeKey" UNIQUE CONSTRAINT "discountCouponCodeNotNull" NOT NULL,
     description TEXT DEFAULT NULL,
-    "discountType" TEXT NOT NULL,
-    "discountValue" FLOAT NOT NULL,
-    "maxUses" INT NOT NULL DEFAULT 1,
-    uses INT NOT NULL DEFAULT 0,
+    "discountType" TEXT CONSTRAINT "discountCouponDiscountTypeNotNull" NOT NULL,
+    "discountValue" FLOAT CONSTRAINT "discountCouponDiscountValueNotNull" NOT NULL,
+    "maxUses" INT,
     "minOrderValue" FLOAT DEFAULT NULL,
-    "validFrom" TIMESTAMP NOT NULL,
-    "validUntil" TIMESTAMP NOT NULL,
-    "isAactive" BOOLEAN NOT NULL DEFAULT true,
+    "validFrom" TIMESTAMP CONSTRAINT "discountCouponValidFromNotNull" NOT NULL,
+    "validUntil" TIMESTAMP CONSTRAINT "discountCouponValidUntilNotNull" NOT NULL,
+    "isAactive" BOOLEAN CONSTRAINT "discountCouponIsActiveNotNull" NOT NULL DEFAULT true,
     "userLimit" INT DEFAULT NULL,
-    "isStackable" BOOLEAN NOT NULL DEFAULT false,
-    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "isStackable" BOOLEAN CONSTRAINT "discountCouponIsStackableNotNull" NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP CONSTRAINT "discountCouponCreatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP CONSTRAINT "discountCouponUpdatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -1,5 +1,5 @@
 CREATE TABLE shop."systemRolePermission" (
-	reference UUID CONSTRAINT "systemRolePermissionPk" PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
+	reference UUID CONSTRAINT "systemRolePermissionPk" PRIMARY KEY CONSTRAINT "systemRolePermissionReferenceNotNull" NOT NULL DEFAULT shop.uuid_generate_v4(),
 	"systemRole" TEXT,
 	CONSTRAINT "fkSystemRole" 
         FOREIGN KEY ("systemRole") 
@@ -12,7 +12,7 @@ CREATE TABLE shop."systemRolePermission" (
         REFERENCES shop."systemPermissionEnum"("systemPermission")
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
-	"createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	"createdAt" TIMESTAMP CONSTRAINT "systemRolePermissionCreatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP CONSTRAINT "systemRolePermissionUpdatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT "uniqueSystemRoleSystemPermissionKey" UNIQUE ("systemRole", "systemPermission")
 );
