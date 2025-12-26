@@ -1,3 +1,3 @@
 CREATE TABLE shop."articleAvailabilityEnum" (
-	"articleAvailability" TEXT PRIMARY KEY
+	"articleAvailability" TEXT CONSTRAINT "articleAvailabilityEnumPk" PRIMARY KEY
 );

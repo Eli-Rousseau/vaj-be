@@ -1,3 +1,3 @@
 CREATE TABLE shop."currencyEnum" (
-	currency TEXT PRIMARY KEY
+	currency TEXT CONSTRAINT "currencyEnumPk" PRIMARY KEY
 );

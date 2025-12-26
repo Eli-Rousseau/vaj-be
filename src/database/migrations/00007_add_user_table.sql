@@ -1,8 +1,8 @@
 CREATE TABLE shop.user (
-    reference UUID PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
+    reference UUID CONSTRAINT "userPk" PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
     name TEXT NOT NULL,
     birthday TEXT DEFAULT NULL,
-    email TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL CONSTRAINT "userEmailKey" UNIQUE,
     "phoneNumber" TEXT DEFAULT NULL,
     password TEXT DEFAULT NULL,
     salt TEXT DEFAULT NULL,

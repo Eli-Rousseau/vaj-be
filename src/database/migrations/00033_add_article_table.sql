@@ -1,6 +1,6 @@
 CREATE TABLE shop.article(
 	-- Core Identifiers & Metadata
-	reference UUID PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
+	reference UUID CONSTRAINT "articlePk" PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
 	title TEXT NOT NULL,
 	description TEXT DEFAULT NULL,
 	brand TEXT,
@@ -64,7 +64,7 @@ CREATE TABLE shop.article(
 		ON DELETE SET NULL,
 
 	-- Inventory & Pricing
-	quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
+	quantity INT CONSTRAINT "articleQuantityCheck" NOT NULL DEFAULT 1 CHECK (quantity > 0),
 	price FLOAT NOT NULL,
 	currency TEXT DEFAULT 'EUR',
 	CONSTRAINT "fkCurrency"
@@ -72,7 +72,7 @@ CREATE TABLE shop.article(
         REFERENCES shop."currencyEnum"(currency)
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
-	discount FLOAT NOT NULL DEFAULT 0 CHECK (discount >= 0 AND discount <= 100),
+	discount FLOAT CONSTRAINT "articleDiscountCheck" NOT NULL DEFAULT 0 CHECK (discount >= 0 AND discount <= 100),
 	availability TEXT,
 	CONSTRAINT "fkAvailibility"
         FOREIGN KEY (availability) 

@@ -1,5 +1,5 @@
 CREATE TABLE shop.order (
-    reference UUID PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
+    reference UUID CONSTRAINT "orderPk" PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
     "user" UUID,
     CONSTRAINT "fkUser" 
         FOREIGN KEY ("user") 

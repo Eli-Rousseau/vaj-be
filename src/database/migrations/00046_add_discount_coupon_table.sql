@@ -1,6 +1,6 @@
 CREATE TABLE shop."discountCoupon" (
-    reference UUID PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
-    code TEXT UNIQUE NOT NULL,
+    reference UUID CONSTRAINT "discountCouponPk" PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
+    code TEXT CONSTRAINT "discountCouponCodeKey" UNIQUE NOT NULL,
     description TEXT DEFAULT NULL,
     "discountType" TEXT NOT NULL,
     "discountValue" FLOAT NOT NULL,

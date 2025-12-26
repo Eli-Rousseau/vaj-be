@@ -1,3 +1,3 @@
 CREATE TABLE shop."systemAuthenticationEnum" (
-	"systemAuthentication" TEXT PRIMARY KEY
+	"systemAuthentication" TEXT CONSTRAINT "systemAuthenticationEnumPk" PRIMARY KEY
 );

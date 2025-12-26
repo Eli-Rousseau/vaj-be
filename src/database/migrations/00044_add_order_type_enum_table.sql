@@ -1,3 +1,3 @@
 CREATE TABLE shop."orderTypeEnum" (
-	"orderType" TEXT PRIMARY KEY
+	"orderType" TEXT CONSTRAINT "orderTypeEnumPk" PRIMARY KEY
 );

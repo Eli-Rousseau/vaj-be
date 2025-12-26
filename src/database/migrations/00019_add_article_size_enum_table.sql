@@ -1,3 +1,3 @@
 CREATE TABLE shop."articleSizeEnum" (
-	"articleSize" TEXT PRIMARY KEY
+	"articleSize" TEXT CONSTRAINT "articleSizeEnumPk" PRIMARY KEY
 );

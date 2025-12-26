@@ -1,3 +1,3 @@
 CREATE TABLE shop."articleColorEnum" (
-	"articleColor" TEXT PRIMARY KEY
+	"articleColor" TEXT CONSTRAINT "articleColorEnumPk" PRIMARY KEY
 );

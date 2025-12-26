@@ -1,5 +1,5 @@
 CREATE TABLE shop."articleDiscountCoupon" (
-    reference UUID PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
+    reference UUID CONSTRAINT "articleDiscountCouponPk" PRIMARY KEY DEFAULT shop.uuid_generate_v4(),
     article UUID,
     CONSTRAINT "fkArticle"
         FOREIGN KEY (article)

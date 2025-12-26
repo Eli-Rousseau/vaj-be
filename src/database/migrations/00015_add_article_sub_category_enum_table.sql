@@ -1,3 +1,3 @@
 CREATE TABLE shop."articleSubCategoryEnum" (
-	"articleSubCategory" TEXT PRIMARY KEY
+	"articleSubCategory" TEXT CONSTRAINT "articleSubCategoryEnumPk" PRIMARY KEY
 );

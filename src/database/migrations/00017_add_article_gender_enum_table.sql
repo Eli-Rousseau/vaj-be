@@ -1,3 +1,3 @@
 CREATE TABLE shop."articleGenderEnum" (
-	"articleGender" TEXT PRIMARY KEY
+	"articleGender" TEXT CONSTRAINT "articleGenderEnumPk" PRIMARY KEY
 );

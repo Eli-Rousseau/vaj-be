@@ -1,3 +1,3 @@
 CREATE TABLE shop."paymentMethodEnum" (
-	"paymentMethod" TEXT PRIMARY KEY
+	"paymentMethod" TEXT CONSTRAINT "paymentMethodEnumPk" PRIMARY KEY
 );
