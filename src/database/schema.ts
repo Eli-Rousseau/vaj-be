@@ -301,11 +301,13 @@ type Operator =
 
 type WhereInput = Record<string, Partial<Record<Operator | string, any>>>;
 
-function escapeLiteral(value: any): string {
+function escapeLiteral(value: any, doubleQuote: boolean = false): string {
   if (value === null || value === undefined) return "NULL";
   if (typeof value === "number" || typeof value === "boolean")
     return value.toString();
-  return `'${String(value).replace(/'/g, "''")}'`;
+
+  const literal = String(value).replace(/'/g, "''");
+  return doubleQuote ? `''${literal}''` : `'${literal}'`;
 }
 
 function jsonPathFromDot(path: string): string {
@@ -418,12 +420,12 @@ function constructNestedWhereClause(
           wheres.push(`${col} <= ${escapeLiteral(value)}`);
         } else if (operator === "_in") {
           if (Array.isArray(value) && value.length) {
-            wheres.push(`${col} IN (${value.map(escapeLiteral).join(", ")})`);
+            wheres.push(`${col} IN (${value.map(v => escapeLiteral(v)).join(", ")})`);
           }
         } else if (operator === "_nin") {
           if (Array.isArray(value) && value.length) {
             wheres.push(
-              `${col} NOT IN (${value.map(escapeLiteral).join(", ")})`
+              `${col} NOT IN (${value.map(v => escapeLiteral(v)).join(", ")})`
             );
           }
         } else if (operator === "_hasKey") {
@@ -487,12 +489,23 @@ export function constructGetByReferenceQuery(
   return query;
 }
 
-export function constructGetRelatedQuery(
+export function constructGetRelationalQuery(
   schema: string, 
   table: string,
+  column: string,
   reference: string
 ): string {
-  const query = `SELECT * FROM "${schema}"."${table}" WHERE "user" = ${escapeLiteral(reference)}`
+  const query = `SELECT * FROM "${schema}"."${table}" WHERE "${column}" = ${escapeLiteral(reference)}`
+  return query;
+}
+
+export function constructGetComputationalFieldQuery(
+  schema: string, 
+  table: string,
+  fn: string,
+  reference: string
+): string {
+  const query = `SELECT ("${schema}"."${fn}"("${table}")).* FROM "${schema}"."${table}" WHERE "${table}"."reference" = ${escapeLiteral(reference)};`
   return query;
 }
 
@@ -615,6 +628,57 @@ export function constructBulkInsertQuery(
   const nestedInserts = nesteds ? `WITH ${nesteds.join(", ")}` : "";
 
   return `${nestedInserts} ${lastInsert};`;
+}
+
+export function constructBulkUpdateQuery(
+  schema: string,
+  table: string,
+  updates: Record<string, any>
+): string {
+  if (typeof updates !== "object" || !("data" in updates) || !Array.isArray(updates["data"])) {
+    throw new Error(`Bulk update expects data of type array of records, instead it received:\n${updates}`);
+  }
+
+  updates = updates["data"];
+
+  const tableValues = TableValuesMap.get(table);
+  if (!tableValues) {
+    throw new Error(`No table values found for table: ${table}`);
+  }
+
+  const recordsByTable = "";
+
+  const records: string[] = [];
+
+  for (const update of updates as Array<Record<string, any>>) {
+    const record: string[] = [];
+
+    for (let i = 0; i < tableValues.length; i++) {
+      const tableValue = tableValues[i];
+
+      if (tableValue in update) {
+        const value = update[tableValue];
+
+        if (typeof value === "object") {
+          continue;
+
+        } else {
+          record.push(escapeLiteral(value, true));
+        }
+      } else {
+        record.push(escapeLiteral(null, true));
+      }
+    }
+
+    records.push(`(${record.join(", ")})`);
+  }
+
+  const keys = `(${tableValues.map(value => `"${value}"`).join(", ")})`;
+  const values = records.join(", ");
+  const columns = tableValues.map(value => `"${value}" = u."${value}"`).join(", ");
+
+  const query = "";
+  return query;
 }
 
 export async function buildSchema() {
@@ -813,6 +877,7 @@ export async function buildSchema() {
                 insertShopUsers(data: [ShopUserMutationInput!]!, onConflict: OnConflictMutationInput): [ShopUser!]!
                 insertShopAddress(data: ShopAddressMutationInput!, onConflict: OnConflictMutationInput): ShopAddress!
                 insertShopAddresses(data: [ShopAddressMutationInput!]!, onConflict: OnConflictMutationInput): [ShopAddress!]!
+                updateShopUsers(data: [ShopUserMutationInput!]!): [ShopUser!]!
             }
         `,
 
@@ -899,6 +964,17 @@ export async function buildSchema() {
 
             const res = await pgClient.query(query);
             return res.rows;
+        },
+        updateShopUsers: async (_, { data }) => {
+          const schema = "shop";
+          const table = "user";
+          const updates = { data };
+
+          const query = constructBulkUpdateQuery(schema, table, updates);
+          console.log(query);
+
+          const res = await pgClient.query(query);
+          return res.rows;
         }
       },
 
@@ -906,8 +982,9 @@ export async function buildSchema() {
         addresses: async (parent) => {
           const schema = "shop";
           const table = "address";
+          const column = "user";
 
-          const query = constructGetRelatedQuery(schema, table, parent.reference);
+          const query = constructGetRelationalQuery(schema, table, column, parent.reference);
 
           const res = await pgClient.query(query)
           return res.rows[0] ?? null;
@@ -915,31 +992,21 @@ export async function buildSchema() {
         billingAddress: async (parent) => {
           const schema = "shop";
           const table = "user";
+          const fn = "userBillingAddress";
 
-          const res = await pgClient.query(
-            `
-            SELECT ("${schema}"."userBillingAddress"("user")).*
-            FROM "${schema}"."${table}"
-            WHERE "user".reference = ${escapeLiteral(parent.reference)};
-            ;
-            `,
-          )
+          const query = constructGetComputationalFieldQuery(schema, table, fn, parent.reference);
 
+          const res = await pgClient.query(query);
           return res.rows[0] ?? null;
         },
         shippingAddress: async (parent) => {
           const schema = "shop";
           const table = "user";
+          const fn = "userShippingAddress"
 
-          const res = await pgClient.query(
-            `
-            SELECT ("${schema}"."userShippingAddress"("user")).*
-            FROM "${schema}"."${table}"
-            WHERE "user".reference = ${escapeLiteral(parent.reference)};
-            ;
-            `,
-          )
+          const query = constructGetComputationalFieldQuery(schema, table, fn, parent.reference);
 
+          const res = await pgClient.query(query);
           return res.rows[0] ?? null;
         }
       },
@@ -947,11 +1014,12 @@ export async function buildSchema() {
       ShopAddress: {
         user: async (parent) => {
           const schema = "shop";
-          if (!parent.user) return null;
-          const res = await pgClient.query(
-            `SELECT * FROM "${schema}".user WHERE reference = $1;`,
-            [parent.user]
-          );
+          const table = "user";
+          const column = "reference";
+
+          const query = constructGetRelationalQuery(schema, table, column, parent.user);
+
+          const res = await pgClient.query(query);
           return res.rows[0] || null;
         },
       },
