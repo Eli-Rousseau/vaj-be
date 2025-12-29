@@ -301,14 +301,26 @@ type Operator =
 
 type WhereInput = Record<string, Partial<Record<Operator | string, any>>>;
 
-function escapeLiteral(value: any, doubleQuote: boolean = false): string {
-  if (value === null || value === undefined) return "NULL";
-  if (typeof value === "number" || typeof value === "boolean")
-    return value.toString();
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-  const literal = String(value).replace(/'/g, "''");
-  return doubleQuote ? `''${literal}''` : `'${literal}'`;
+function escapeLiteral(value: any): string {
+  if (value === null || value === undefined) {
+    return "NULL";
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  const str = String(value);
+
+  if (UUID_REGEX.test(str)) {
+    return `'${str}'::uuid`;
+  }
+
+  return `'${str.replace(/'/g, "''")}'`;
 }
+
 
 function jsonPathFromDot(path: string): string {
   return "$." + path.split(".").join(".");
@@ -557,7 +569,7 @@ function constructNestedInsertClause(
   inputs = inputs["data"];
 
   if (!Array.isArray(inputs)) {
-    inputs = [inputs]
+    inputs = [inputs];
   }
 
   const records: string[] = [];
@@ -572,7 +584,7 @@ function constructNestedInsertClause(
       if (tableValue in input) {
         const value = input[tableValue];
 
-        if (typeof value === "object") {
+        if (value !== null && typeof value === "object") {
           const id = parentId.toString() + i.toString();
           const alias = "new" + tableValue.charAt(0).toUpperCase() + tableValue.slice(1) + id;
           let { lastInsert, nesteds } = constructNestedInsertClause(schema, tableValue, value, id);
@@ -625,9 +637,90 @@ export function constructBulkInsertQuery(
   }
 
   const {lastInsert, nesteds} = constructNestedInsertClause(schema, table, inputs, "0");
-  const nestedInserts = nesteds ? `WITH ${nesteds.join(", ")}` : "";
+  const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
   return `${nestedInserts} ${lastInsert};`;
+}
+
+type nestedUpdateResult = {
+  lastUpdate: string,
+  nesteds: string[]
+}
+
+function constructNestedUpdateClause(
+  schema: string,
+  table: string, 
+  updates: Record<string, any>,
+  parentId: string
+): nestedUpdateResult {
+  let tableValues = TableValuesMap.get(table);
+  if (!tableValues) {
+    throw new Error(`No table values found for table: ${table}`);
+  }
+  tableValues = [...tableValues];
+  tableValues.unshift("reference");
+  
+  updates = updates["data"];
+
+  if (!Array.isArray(updates)) {
+    updates = [updates];
+  }
+
+  const records: string[] = [];
+  const nestedUpdates: string[] = [];
+
+  for (const update of updates as Array<Record<string, any>>) {
+    const record: string[] = [];
+
+    for (let i = 0; i < tableValues.length; i++) {
+      const tableValue = tableValues[i];
+
+      if (tableValue in update) {
+        const value = update[tableValue];
+
+        if (value !== null && typeof value === "object") {
+          const id = parentId.toString() + i.toString();
+          const alias = "new" + tableValue.charAt(0).toUpperCase() + tableValue.slice(1) + id;
+          let { lastUpdate, nesteds } = constructNestedUpdateClause(schema, tableValue, value, id);
+          lastUpdate = `"${alias}" AS (${lastUpdate})`;
+          nestedUpdates.concat(nesteds);
+          nestedUpdates.push(lastUpdate);
+
+          record.push(escapeLiteral(value["data"]["reference"]));
+
+        } else {
+          record.push(escapeLiteral(value));
+        }
+      } else {
+        record.push(escapeLiteral(null));
+      }
+    }
+
+    records.push(`(${record.join(", ")})`);
+  }
+
+  const values = `(VALUES ${records.join(", ")})`;
+  const keys = `(${tableValues.map(value => `"${value}"`).join(", ")})`;
+  const definitions = tableValues.map(value => `"${value}" = "${parentId}"."${value}"`).join(", ");
+
+  const lastUpdate = `UPDATE "${schema}"."${table}" SET ${definitions} FROM ${values} AS "${parentId}"${keys} WHERE "${table}".reference = "${parentId}".reference RETURNING *`
+
+  return { lastUpdate, nesteds: nestedUpdates };
+}
+
+export function constructSingleUpdateQuery(
+  schema: string,
+  table: string,
+  updates: Record<string, any>
+): string {
+  if (typeof updates !== "object" || !("data" in updates) || typeof updates["data"] !== "object" ) {
+    throw new Error(`Record update expects data of type record, instead it received:\n${updates}`);
+  }
+
+  const {lastUpdate, nesteds} = constructNestedUpdateClause(schema, table, updates, "0");
+  const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
+
+  return `${nestedInserts} ${lastUpdate};`;
 }
 
 export function constructBulkUpdateQuery(
@@ -639,46 +732,10 @@ export function constructBulkUpdateQuery(
     throw new Error(`Bulk update expects data of type array of records, instead it received:\n${updates}`);
   }
 
-  updates = updates["data"];
+  const {lastUpdate, nesteds} = constructNestedUpdateClause(schema, table, updates, "0");
+  const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
-  const tableValues = TableValuesMap.get(table);
-  if (!tableValues) {
-    throw new Error(`No table values found for table: ${table}`);
-  }
-
-  const recordsByTable = "";
-
-  const records: string[] = [];
-
-  for (const update of updates as Array<Record<string, any>>) {
-    const record: string[] = [];
-
-    for (let i = 0; i < tableValues.length; i++) {
-      const tableValue = tableValues[i];
-
-      if (tableValue in update) {
-        const value = update[tableValue];
-
-        if (typeof value === "object") {
-          continue;
-
-        } else {
-          record.push(escapeLiteral(value, true));
-        }
-      } else {
-        record.push(escapeLiteral(null, true));
-      }
-    }
-
-    records.push(`(${record.join(", ")})`);
-  }
-
-  const keys = `(${tableValues.map(value => `"${value}"`).join(", ")})`;
-  const values = records.join(", ");
-  const columns = tableValues.map(value => `"${value}" = u."${value}"`).join(", ");
-
-  const query = "";
-  return query;
+  return `${nestedInserts} ${lastUpdate};`;
 }
 
 export async function buildSchema() {
@@ -877,7 +934,10 @@ export async function buildSchema() {
                 insertShopUsers(data: [ShopUserMutationInput!]!, onConflict: OnConflictMutationInput): [ShopUser!]!
                 insertShopAddress(data: ShopAddressMutationInput!, onConflict: OnConflictMutationInput): ShopAddress!
                 insertShopAddresses(data: [ShopAddressMutationInput!]!, onConflict: OnConflictMutationInput): [ShopAddress!]!
+                updateShopUser(data: ShopUserMutationInput!): ShopUser!
                 updateShopUsers(data: [ShopUserMutationInput!]!): [ShopUser!]!
+                updateShopAddress(data: ShopAddressMutationInput!): ShopAddress!
+                updateShopAddresses(data: [ShopAddressMutationInput!]!): [ShopAddress!]!
             }
         `,
 
@@ -965,9 +1025,39 @@ export async function buildSchema() {
             const res = await pgClient.query(query);
             return res.rows;
         },
+        updateShopUser: async (_, { data }) => {
+          const schema = "shop";
+          const table = "user";
+          const updates = { data };
+
+          const query = constructSingleUpdateQuery(schema, table, updates);
+
+          const res = await pgClient.query(query);
+          return res.rows[0];
+        },
         updateShopUsers: async (_, { data }) => {
           const schema = "shop";
           const table = "user";
+          const updates = { data };
+
+          const query = constructBulkUpdateQuery(schema, table, updates);
+
+          const res = await pgClient.query(query);
+          return res.rows;
+        },
+        updateShopAddress: async (__dirname, { data }) => {
+          const schema = "shop";
+          const table = "address";
+          const updates = { data };
+
+          const query = constructSingleUpdateQuery(schema, table, updates);
+
+          const res = await pgClient.query(query);
+          return res.rows[0];
+        },
+        updateShopAddresses: async (__dirname, { data }) => {
+          const schema = "shop";
+          const table = "address";
           const updates = { data };
 
           const query = constructBulkUpdateQuery(schema, table, updates);
