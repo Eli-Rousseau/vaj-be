@@ -527,7 +527,7 @@ function plural(name: string): string {
 
 const TableValuesMap = new Map([
   ["user", ["name", "birthday", "email", "phoneNumber", "password", "salt", "systemAuthentication", "systemRole"]],
-  ["address", ["user", "country", "stateOrProvince", "city", "zipCode", "street", "streetNumber", "box", "shipping", "billing"]]
+  ["address", ["user", "userByReference", "country", "stateOrProvince", "city", "zipCode", "street", "streetNumber", "box", "shipping", "billing"]]
 ]);
 
 function constructConflictClause(
@@ -547,8 +547,8 @@ function constructConflictClause(
   return conflictClause;
 }
 
-type nestedInsertResult = {
-  lastInsert: string,
+type nestedResult = {
+  last: string,
   nesteds: string[]
 }
 
@@ -557,7 +557,7 @@ function constructNestedInsertClause(
   table: string, 
   inputs: Record<string, any>,
   parentId: string
-): nestedInsertResult {
+): nestedResult {
   const tableValues = TableValuesMap.get(table);
   if (!tableValues) {
     throw new Error(`No table values found for table: ${table}`);
@@ -584,18 +584,24 @@ function constructNestedInsertClause(
       if (tableValue in input) {
         const value = input[tableValue];
 
-        if (value !== null && typeof value === "object") {
+        if (/ByReference/.test(tableValue) && value !== null && typeof value === "object") {
           const id = parentId.toString() + i.toString();
-          const alias = "new" + tableValue.charAt(0).toUpperCase() + tableValue.slice(1) + id;
-          let { lastInsert, nesteds } = constructNestedInsertClause(schema, tableValue, value, id);
-          lastInsert = `"${alias}" AS (${lastInsert})`;
+          const relation = tableValue.replace("ByReference", "");
+          const alias = "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
+
+          let { last, nesteds } = constructNestedInsertClause(schema, relation, value, id);
+          last = `"${alias}" AS (${last})`;
           nestedInserts.concat(nesteds);
-          nestedInserts.push(lastInsert);
+          nestedInserts.push(last);
 
           record.push(`(SELECT reference FROM "${alias}")`);
 
+        } else if (/ByReference/.test(tableValue)) {
+          continue;
+
         } else {
           record.push(escapeLiteral(value));
+
         }
       } else {
         record.push(escapeLiteral(null));
@@ -607,9 +613,9 @@ function constructNestedInsertClause(
 
   const keys = `(${tableValues.map(value => `"${value}"`).join(", ")})`;
   const values = records.join(", ");
-  const lastInsert = `INSERT INTO "${schema}"."${table}" ${keys} VALUES ${values} ${conflictClause} RETURNING *`
+  const last = `INSERT INTO "${schema}"."${table}" ${keys} VALUES ${values} ${conflictClause} RETURNING *`
 
-  return { lastInsert, nesteds: nestedInserts };
+  return { last, nesteds: nestedInserts };
 }
 
 export function constructSingleInsertQuery(
@@ -621,10 +627,10 @@ export function constructSingleInsertQuery(
     throw new Error(`Record insertion expects data of type record, instead it received:\n${inputs}`);
   }
 
-  const {lastInsert, nesteds} = constructNestedInsertClause(schema, table, inputs, "0");
+  const {last, nesteds} = constructNestedInsertClause(schema, table, inputs, "0");
   const nestedInserts = nesteds ? `WITH ${nesteds.join(", ")}` : "";
 
-  return `${nestedInserts} ${lastInsert};`;
+  return `${nestedInserts} ${last};`;
 }
 
 export function constructBulkInsertQuery(
@@ -636,15 +642,10 @@ export function constructBulkInsertQuery(
     throw new Error(`Bulk insertion expects data of type array of records, instead it received:\n${inputs}`);
   }
 
-  const {lastInsert, nesteds} = constructNestedInsertClause(schema, table, inputs, "0");
+  const {last, nesteds} = constructNestedInsertClause(schema, table, inputs, "0");
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
-  return `${nestedInserts} ${lastInsert};`;
-}
-
-type nestedUpdateResult = {
-  lastUpdate: string,
-  nesteds: string[]
+  return `${nestedInserts} ${last};`;
 }
 
 function constructNestedUpdateClause(
@@ -652,7 +653,7 @@ function constructNestedUpdateClause(
   table: string, 
   updates: Record<string, any>,
   parentId: string
-): nestedUpdateResult {
+): nestedResult {
   let tableValues = TableValuesMap.get(table);
   if (!tableValues) {
     throw new Error(`No table values found for table: ${table}`);
@@ -678,18 +679,24 @@ function constructNestedUpdateClause(
       if (tableValue in update) {
         const value = update[tableValue];
 
-        if (value !== null && typeof value === "object") {
+        if (/ByReference/.test(tableValue) && value !== null && typeof value === "object") {
           const id = parentId.toString() + i.toString();
-          const alias = "new" + tableValue.charAt(0).toUpperCase() + tableValue.slice(1) + id;
-          let { lastUpdate, nesteds } = constructNestedUpdateClause(schema, tableValue, value, id);
-          lastUpdate = `"${alias}" AS (${lastUpdate})`;
+          const relation = tableValue.replace("ByReference", "");
+          const alias = "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
+
+          let { last, nesteds } = constructNestedUpdateClause(schema, relation, value, id);
+          last = `"${alias}" AS (${last})`;
           nestedUpdates.concat(nesteds);
-          nestedUpdates.push(lastUpdate);
+          nestedUpdates.push(last);
 
           record.push(escapeLiteral(value["data"]["reference"]));
 
+        } else if (/ByReference/.test(tableValue)) {
+          continue;
+
         } else {
           record.push(escapeLiteral(value));
+          
         }
       } else {
         record.push(escapeLiteral(null));
@@ -703,9 +710,9 @@ function constructNestedUpdateClause(
   const keys = `(${tableValues.map(value => `"${value}"`).join(", ")})`;
   const definitions = tableValues.map(value => `"${value}" = "${parentId}"."${value}"`).join(", ");
 
-  const lastUpdate = `UPDATE "${schema}"."${table}" SET ${definitions} FROM ${values} AS "${parentId}"${keys} WHERE "${table}".reference = "${parentId}".reference RETURNING *`
+  const last = `UPDATE "${schema}"."${table}" SET ${definitions} FROM ${values} AS "${parentId}"${keys} WHERE "${table}".reference = "${parentId}".reference RETURNING *`
 
-  return { lastUpdate, nesteds: nestedUpdates };
+  return { last, nesteds: nestedUpdates };
 }
 
 export function constructSingleUpdateQuery(
@@ -717,10 +724,10 @@ export function constructSingleUpdateQuery(
     throw new Error(`Record update expects data of type record, instead it received:\n${updates}`);
   }
 
-  const {lastUpdate, nesteds} = constructNestedUpdateClause(schema, table, updates, "0");
+  const {last, nesteds} = constructNestedUpdateClause(schema, table, updates, "0");
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
-  return `${nestedInserts} ${lastUpdate};`;
+  return `${nestedInserts} ${last};`;
 }
 
 export function constructBulkUpdateQuery(
@@ -732,10 +739,106 @@ export function constructBulkUpdateQuery(
     throw new Error(`Bulk update expects data of type array of records, instead it received:\n${updates}`);
   }
 
-  const {lastUpdate, nesteds} = constructNestedUpdateClause(schema, table, updates, "0");
+  const {last, nesteds} = constructNestedUpdateClause(schema, table, updates, "0");
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
-  return `${nestedInserts} ${lastUpdate};`;
+  return `${nestedInserts} ${last};`;
+}
+
+function constructNestedDeleteClause(
+  schema: string,
+  table: string, 
+  updates: Record<string, any>,
+  parentId: string
+): nestedResult {
+  let tableValues = TableValuesMap.get(table);
+  if (!tableValues) {
+    throw new Error(`No table values found for table: ${table}`);
+  }
+  tableValues = [...tableValues];
+  tableValues.unshift("reference");
+  
+  updates = updates["data"];
+
+  if (!Array.isArray(updates)) {
+    updates = [updates];
+  }
+
+  const records: string[] = [];
+  const nestedDeletes: string[] = [];
+
+  for (const update of updates as Array<Record<string, any>>) {
+    const record: string[] = [];
+
+    for (let i = 0; i < tableValues.length; i++) {
+      const tableValue = tableValues[i];
+
+      if (tableValue in update) {
+        const value = update[tableValue];
+
+        if (/ByReference/.test(tableValue) && value !== null && typeof value === "object") {
+          const id = parentId.toString() + i.toString();
+          const relation = tableValue.replace("ByReference", "");
+          const alias = "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
+
+          let { last, nesteds } = constructNestedUpdateClause(schema, relation, value, id);
+          last = `"${alias}" AS (${last})`;
+          nestedDeletes.concat(nesteds);
+          nestedDeletes.push(last);
+
+          record.push(escapeLiteral(value["data"]["reference"]));
+
+        } else if (/ByReference/.test(tableValue)) {
+          continue;
+
+        } else {
+          record.push(escapeLiteral(value));
+          
+        }
+      } else {
+        record.push(escapeLiteral(null));
+      }
+    }
+
+    records.push(`(${record.join(", ")})`);
+  }
+
+  const values = `(VALUES ${records.join(", ")})`;
+  const keys = `(${tableValues.map(value => `"${value}"`).join(", ")})`;
+
+  const last = `DELETE FROM "${schema}"."${table}" USING ${values} "${parentId}"${keys} WHERE "${table}".reference = "${parentId}".reference RETURNING *`
+
+  return { last, nesteds: nestedDeletes };
+}
+
+function constructSingleDeleteQuery(
+  schema: string,
+  table: string,
+  deletes: Record<string, any>
+): string {
+  if (typeof deletes !== "object" || !("data" in deletes) || typeof deletes["data"] !== "object" ) {
+    throw new Error(`Record deletion expects data of type record, instead it received:\n${deletes}`);
+  }
+
+  const {last, nesteds} = constructNestedDeleteClause(schema, table, deletes, "0");
+  const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
+
+  return `${nestedInserts} ${last};`;
+}
+
+function constructBulkDeleteQuery(
+  schema: string,
+  table: string,
+  deletes: Record<string, any>
+): string {
+  if (typeof deletes !== "object" || !("data" in deletes) || !Array.isArray(deletes["data"])) {
+    throw new Error(`Bulk deletion expects data of type array of records, instead it received:\n${deletes}`);
+  }
+
+  const {last, nesteds} = constructNestedDeleteClause(schema, table, deletes, "0");
+  const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
+
+  return `${nestedInserts} ${last};`;
 }
 
 export async function buildSchema() {
@@ -794,7 +897,8 @@ export async function buildSchema() {
 
             type ShopAddress {
                 reference: ID!
-                user: ShopUser
+                user: ID
+                userByReference: ShopUser
                 country: String!
                 stateOrProvince: String
                 city: String!
@@ -810,7 +914,8 @@ export async function buildSchema() {
 
             input ShopAddressMutationInput {
                 reference: ID
-                user: ShopAddressUserMutationInput!
+                user: ID!
+                userByReference: ShopAddressUserMutationInput!
                 country: String!
                 stateOrProvince: String
                 city: String!
@@ -938,6 +1043,10 @@ export async function buildSchema() {
                 updateShopUsers(data: [ShopUserMutationInput!]!): [ShopUser!]!
                 updateShopAddress(data: ShopAddressMutationInput!): ShopAddress!
                 updateShopAddresses(data: [ShopAddressMutationInput!]!): [ShopAddress!]!
+                deleteShopUser(data: ShopUserMutationInput!): ShopUser!
+                deleteShopUsers(data: [ShopUserMutationInput!]!): [ShopUser!]!
+                deleteShopAddress(data: ShopAddressMutationInput!): ShopAddress!
+                deleteShopAddresses(data: [ShopAddressMutationInput!]!): [ShopAddress!]!
             }
         `,
 
@@ -947,7 +1056,7 @@ export async function buildSchema() {
           const schema = "shop";
           const table = "user";
           
-          const query = constructGetQuery(schema, table, where, orderBy, limit, offset)
+          const query = constructGetQuery(schema, table, where, orderBy, limit, offset);
 
           const res = await pgClient.query(query);
           return res.rows;
@@ -957,7 +1066,7 @@ export async function buildSchema() {
           const schema = "shop";
           const table = "address";
 
-          const query = constructGetQuery(schema, table, where, orderBy, limit, offset)
+          const query = constructGetQuery(schema, table, where, orderBy, limit, offset);
 
           const res = await pgClient.query(query);
           return res.rows;
@@ -967,7 +1076,7 @@ export async function buildSchema() {
           const schema = "shop";
           const table = "user"
 
-          const query = constructGetByReferenceQuery(schema, table, reference)
+          const query = constructGetByReferenceQuery(schema, table, reference);
 
           const res = await pgClient.query(query);
           return res.rows[0];
@@ -977,7 +1086,7 @@ export async function buildSchema() {
           const schema = "shop";
           const table = "address"
 
-          const query = constructGetByReferenceQuery(schema, table, reference)
+          const query = constructGetByReferenceQuery(schema, table, reference);
 
           const res = await pgClient.query(query);
           return res.rows[0];
@@ -1061,11 +1170,51 @@ export async function buildSchema() {
           const updates = { data };
 
           const query = constructBulkUpdateQuery(schema, table, updates);
+
+          const res = await pgClient.query(query);
+          return res.rows;
+        },
+        deleteShopUser: async (__dirname, { data }) => {
+          const schema = "shop";
+          const table = "user";
+          const deletes = { data };
+
+          const query = constructSingleDeleteQuery(schema, table, deletes);
+
+          const res = await pgClient.query(query);
+          return res.rows[0];
+        },
+        deleteShopUsers: async (__dirname, { data }) => {
+          const schema = "shop";
+          const table = "user";
+          const deletes = { data };
+          
+          const query = constructBulkDeleteQuery(schema, table, deletes);
+
+          const res = await pgClient.query(query);
+          return res.rows;
+        },
+        deleteShopAddress: async (__dirname, { data }) => {
+          const schema = "shop";
+          const table = "address";
+          const deletes = { data };
+
+          const query = constructSingleDeleteQuery(schema, table, deletes);
+
+          const res = await pgClient.query(query);
+          return res.rows[0];
+        },
+        deleteShopAddresses: async (__dirname, { data }) => {
+          const schema = "shop";
+          const table = "address";
+          const deletes = { data };
+
+          const query = constructBulkDeleteQuery(schema, table, deletes);
           console.log(query);
 
           const res = await pgClient.query(query);
           return res.rows;
-        }
+        },
       },
 
       ShopUser: {
@@ -1102,7 +1251,7 @@ export async function buildSchema() {
       },
 
       ShopAddress: {
-        user: async (parent) => {
+        userByReference: async (parent) => {
           const schema = "shop";
           const table = "user";
           const column = "reference";
