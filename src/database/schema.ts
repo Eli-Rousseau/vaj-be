@@ -1,4 +1,3 @@
-import { query } from "winston";
 import { getPgClient } from "../utils/database";
 import { createSchema } from "graphql-yoga";
 
@@ -527,7 +526,8 @@ function plural(name: string): string {
 
 const TableValuesMap = new Map([
   ["user", ["name", "birthday", "email", "phoneNumber", "password", "salt", "systemAuthentication", "systemRole"]],
-  ["address", ["user", "userByReference", "country", "stateOrProvince", "city", "zipCode", "street", "streetNumber", "box", "shipping", "billing"]]
+  ["address", ["user", "userByReference", "country", "stateOrProvince", "city", "zipCode", "street", "streetNumber", "box", "shipping", "billing"]],
+  ["articleBrandEnum", ["articleBrand"]]
 ]);
 
 function constructConflictClause(
@@ -749,7 +749,8 @@ function constructNestedDeleteClause(
   schema: string,
   table: string, 
   updates: Record<string, any>,
-  parentId: string
+  parentId: string,
+  referenceColumn: string = "reference"
 ): nestedResult {
   let tableValues = TableValuesMap.get(table);
   if (!tableValues) {
@@ -806,7 +807,7 @@ function constructNestedDeleteClause(
   const values = `(VALUES ${records.join(", ")})`;
   const keys = `(${tableValues.map(value => `"${value}"`).join(", ")})`;
 
-  const last = `DELETE FROM "${schema}"."${table}" USING ${values} "${parentId}"${keys} WHERE "${table}".reference = "${parentId}".reference RETURNING *`
+  const last = `DELETE FROM "${schema}"."${table}" USING ${values} "${parentId}"${keys} WHERE "${table}"."${referenceColumn}" = "${parentId}"."${referenceColumn}" RETURNING *`
 
   return { last, nesteds: nestedDeletes };
 }
@@ -829,13 +830,14 @@ function constructSingleDeleteQuery(
 function constructBulkDeleteQuery(
   schema: string,
   table: string,
-  deletes: Record<string, any>
+  deletes: Record<string, any>,
+  referenceColumn: string = "reference"
 ): string {
   if (typeof deletes !== "object" || !("data" in deletes) || !Array.isArray(deletes["data"])) {
     throw new Error(`Bulk deletion expects data of type array of records, instead it received:\n${deletes}`);
   }
 
-  const {last, nesteds} = constructNestedDeleteClause(schema, table, deletes, "0");
+  const {last, nesteds} = constructNestedDeleteClause(schema, table, deletes, "0", referenceColumn);
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
   return `${nestedInserts} ${last};`;
@@ -1026,12 +1028,21 @@ export async function buildSchema() {
                 constraint: String!
                 columns: [String]!
             }
+            
+            type ShopArticleBrandEnum {
+                articleBrand: String
+            }
+
+            input ShopArticleBrandEnumMutationInput {
+                articleBrand: String
+            }
 
             type Query {
                 getShopUserByReference(reference: ID!): ShopUser
                 getShopAddressByReference(reference: ID!): ShopAddress
                 getShopUsers(where: ShopUserGetWhereClause, orderBy: [ShopUserGetOrderByClause!], limit: Int, offset: Int): [ShopUser!]!
                 getShopAddresses(where: ShopAddressGetWhereClause, orderBy: [ShopAddressGetOrderByClause!], limit: Int, offset: Int): [ShopAddress!]!
+                getShopArticleBrandEnum: [ShopArticleBrandEnum!]!
             }
 
             type Mutation {
@@ -1039,6 +1050,7 @@ export async function buildSchema() {
                 insertShopUsers(data: [ShopUserMutationInput!]!, onConflict: OnConflictMutationInput): [ShopUser!]!
                 insertShopAddress(data: ShopAddressMutationInput!, onConflict: OnConflictMutationInput): ShopAddress!
                 insertShopAddresses(data: [ShopAddressMutationInput!]!, onConflict: OnConflictMutationInput): [ShopAddress!]!
+                insertShopArticleBrandEnum(data: [ShopArticleBrandEnumMutationInput!]!): [ShopArticleBrandEnum!]!
                 updateShopUser(data: ShopUserMutationInput!): ShopUser!
                 updateShopUsers(data: [ShopUserMutationInput!]!): [ShopUser!]!
                 updateShopAddress(data: ShopAddressMutationInput!): ShopAddress!
@@ -1047,6 +1059,7 @@ export async function buildSchema() {
                 deleteShopUsers(data: [ShopUserMutationInput!]!): [ShopUser!]!
                 deleteShopAddress(data: ShopAddressMutationInput!): ShopAddress!
                 deleteShopAddresses(data: [ShopAddressMutationInput!]!): [ShopAddress!]!
+                deleteShopArticleBrandEnum(data: [ShopArticleBrandEnumMutationInput!]!): [ShopArticleBrandEnum!]!
             }
         `,
 
@@ -1071,7 +1084,15 @@ export async function buildSchema() {
           const res = await pgClient.query(query);
           return res.rows;
         },
+        getShopArticleBrandEnum: async (_) => {
+          const schema = "shop";
+          const table = "articleBrandEnum";
 
+          const query = constructGetQuery(schema, table);
+          
+          const res = await pgClient.query(query);
+          return res.rows;
+        },
         getShopUserByReference: async (_, { reference }) => {
           const schema = "shop";
           const table = "user"
@@ -1133,6 +1154,16 @@ export async function buildSchema() {
 
             const res = await pgClient.query(query);
             return res.rows;
+        },
+        insertShopArticleBrandEnum: async (__dirname, { data }) => {
+          const schema = "shop";
+          const table = "articleBrandEnum";
+          const inputs = {data};
+
+          const query = constructBulkInsertQuery(schema, table, inputs);
+
+          const res = await pgClient.query(query);
+          return res.rows;
         },
         updateShopUser: async (_, { data }) => {
           const schema = "shop";
@@ -1210,7 +1241,17 @@ export async function buildSchema() {
           const deletes = { data };
 
           const query = constructBulkDeleteQuery(schema, table, deletes);
-          console.log(query);
+
+          const res = await pgClient.query(query);
+          return res.rows;
+        },
+        deleteShopArticleBrandEnum: async (__dirname, { data }) => {
+          const schema = "shop";
+          const table = "articleBrandEnum";
+          const deletes = {data};
+          const referenceColumn = "articleBrand"
+
+          const query = constructBulkDeleteQuery(schema, table, deletes, referenceColumn);
 
           const res = await pgClient.query(query);
           return res.rows;
