@@ -12,7 +12,7 @@
     "database-backup": "tsc -p tsconfig.json && node ./dist/scripts/database/database-backup.js",
     "database-restore": "tsc -p tsconfig.json && node ./dist/scripts/database/database-restore.js",
     "database-migrate": "tsc -p tsconfig.json && node ./dist/scripts/database/database-migrate.js",
-    "test": "jest"
+    "test": "vitest"
   },
   "author": "",
   "license": "ISC",
@@ -33,6 +33,7 @@
     "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.15.4",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.0.16"
   }
 }

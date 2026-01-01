@@ -1,6 +1,3 @@
-import { getPgClient } from "../../utils/database";
-import { createSchema } from "graphql-yoga";
-
 import { TableValuesMap } from "./definitions";
 
 function escapeLiteral(value: any): string {
@@ -20,8 +17,7 @@ function escapeLiteral(value: any): string {
 
   return `'${str.replace(/'/g, "''")}'`;
 }
-
-export function constructLimitClause(limit?: number) {
+function constructLimitClause(limit?: number) {
   let limitClause = "";
   if (Number.isInteger(limit) && limit! > 0) {
     limitClause = `LIMIT ${limit}`;
@@ -30,7 +26,7 @@ export function constructLimitClause(limit?: number) {
   return limitClause;
 }
 
-export function constructOffsetClause(offset?: number) {
+function constructOffsetClause(offset?: number) {
   let offsetClause = "";
   if (Number.isInteger(offset) && offset! > 0) {
     offsetClause = `OFFSET ${offset}`;
@@ -39,9 +35,9 @@ export function constructOffsetClause(offset?: number) {
   return offsetClause;
 }
 
-export function constructOrderByClause(
+function constructOrderByClause(
   table: string,
-  orderBy?: Record<string, "ASC" | "DESC">[]
+  orderBy?: Record<string, string>[]
 ): string {
   if (!orderBy || !Array.isArray(orderBy) || orderBy.length === 0) {
     return "";
@@ -106,7 +102,7 @@ function constructJSONPath(contains: object, path: string) {
     path = path + ` ->> '${key}' = ${escapeLiteral(value)}`
     return path;
   } else if (typeof value === "object") {
-    path = path + ` ${key} ->`;
+    path = path + ` -> '${key}'`;
     return constructJSONPath(value, path);
   } else {
     return "";
@@ -228,7 +224,7 @@ function constructNestedWhereClause(
   };
 }
 
-export function constructWhereClause(
+function constructWhereClause(
   schema: string,
   table: string,
   where?: WhereInput
@@ -245,7 +241,7 @@ export function constructGetQuery(
   schema: string, 
   table: string, 
   where?: WhereInput, 
-  orderBy?: Record<string, "ASC" | "DESC">[],
+  orderBy?: Record<string, string>[],
   limit?: number,
   offset?: number
 ): string {
@@ -254,26 +250,17 @@ export function constructGetQuery(
   const limitClause = constructLimitClause(limit);
   const offsetClause = constructOffsetClause(offset);
 
-  const query = `SELECT * FROM "${schema}"."${table}" ${whereClause} ${orderByClause} ${limitClause} ${offsetClause};`;
+  const query = `SELECT * FROM "${schema}"."${table}" ${whereClause} ${orderByClause} ${limitClause} ${offsetClause} ;`;
   return query;
 }
 
-export function constructGetByReferenceQuery(
-  schema: string, 
-  table: string,
-  reference: string
-): string {
-  const query = `SELECT * FROM "${schema}"."${table}" WHERE reference = ${escapeLiteral(reference)};`
-  return query;
-}
-
-export function constructGetRelationalQuery(
+export function constructGetOnColumnQuery(
   schema: string, 
   table: string,
   column: string,
   reference: string
 ): string {
-  const query = `SELECT * FROM "${schema}"."${table}" WHERE "${column}" = ${escapeLiteral(reference)}`
+  const query = `SELECT * FROM "${schema}"."${table}" WHERE "${column}" = ${escapeLiteral(reference)} ;`
   return query;
 }
 
@@ -283,7 +270,7 @@ export function constructGetComputationalFieldQuery(
   fn: string,
   reference: string
 ): string {
-  const query = `SELECT ("${schema}"."${fn}"("${table}")).* FROM "${schema}"."${table}" WHERE "${table}"."reference" = ${escapeLiteral(reference)};`
+  const query = `SELECT ("${schema}"."${fn}"("${table}")).* FROM "${schema}"."${table}" WHERE "${table}"."reference" = ${escapeLiteral(reference)} ;`
   return query;
 }
 
@@ -332,17 +319,18 @@ function constructNestedInsertClause(
   const records: string[] = [];
   const nestedInserts: string[] = [];
 
-  for (const input of inputs as Array<Record<string, any>>) {
+  for (let i = 0; i < inputs.length; i++) {
+    const input = inputs[i];
     const record: string[] = [];
 
-    for (let i = 0; i < tableValues.length; i++) {
-      const tableValue = tableValues[i];
+    for (let j = 0; j < tableValues.length; j++) {
+      const tableValue = tableValues[j];
 
       if (tableValue in input) {
         const value = input[tableValue];
 
         if (/ByReference/.test(tableValue) && value !== null && typeof value === "object") {
-          const id = parentId.toString() + i.toString();
+          const id = parentId.toString() + i.toString() + j.toString();
           const relation = tableValue.replace("ByReference", "");
           const alias = "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
 
@@ -351,16 +339,13 @@ function constructNestedInsertClause(
           nestedInserts.concat(nesteds);
           nestedInserts.push(last);
 
-          record.push(`(SELECT reference FROM "${alias}")`);
+          record.push(`(SELECT "reference" FROM "${alias}")`);
 
-        } else if (/ByReference/.test(tableValue)) {
-          continue;
-
-        } else {
+        } else if (!/ByReference/.test(tableValue)) {
           record.push(escapeLiteral(value));
-
         }
-      } else {
+      
+      } else if (!/ByReference/.test(tableValue) && !Object.keys(input).includes((tableValue + `ByReference`))) {
         record.push(escapeLiteral(null));
       }
     }
@@ -368,8 +353,9 @@ function constructNestedInsertClause(
     records.push(`(${record.join(", ")})`);
   }
 
-  const keys = `(${tableValues.map(value => `"${value}"`).join(", ")})`;
+  const keys = `(${tableValues.filter(value => !/ByReference/.test(value)).map(value => `"${value}"`).join(", ")})`;
   const values = records.join(", ");
+
   const last = `INSERT INTO "${schema}"."${table}" ${keys} VALUES ${values} ${conflictClause} RETURNING *`
 
   return { last, nesteds: nestedInserts };
@@ -387,7 +373,7 @@ export function constructSingleInsertQuery(
   const {last, nesteds} = constructNestedInsertClause(schema, table, inputs, "0");
   const nestedInserts = nesteds ? `WITH ${nesteds.join(", ")}` : "";
 
-  return `${nestedInserts} ${last};`;
+  return `${nestedInserts} ${last} ;`;
 }
 
 export function constructBulkInsertQuery(
@@ -402,7 +388,7 @@ export function constructBulkInsertQuery(
   const {last, nesteds} = constructNestedInsertClause(schema, table, inputs, "0");
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
-  return `${nestedInserts} ${last};`;
+  return `${nestedInserts} ${last} ;`;
 }
 
 function constructNestedUpdateClause(
@@ -427,17 +413,18 @@ function constructNestedUpdateClause(
   const records: string[] = [];
   const nestedUpdates: string[] = [];
 
-  for (const update of updates as Array<Record<string, any>>) {
+  for (let i = 0; i < updates.length; i++) {
+    const update = updates[i];
     const record: string[] = [];
 
-    for (let i = 0; i < tableValues.length; i++) {
-      const tableValue = tableValues[i];
+    for (let j = 0; j < tableValues.length; j++) {
+      const tableValue = tableValues[j];
 
       if (tableValue in update) {
         const value = update[tableValue];
 
         if (/ByReference/.test(tableValue) && value !== null && typeof value === "object") {
-          const id = parentId.toString() + i.toString();
+          const id = parentId.toString() + i.toString() + j.toString();
           const relation = tableValue.replace("ByReference", "");
           const alias = "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
 
@@ -448,14 +435,11 @@ function constructNestedUpdateClause(
 
           record.push(escapeLiteral(value["data"]["reference"]));
 
-        } else if (/ByReference/.test(tableValue)) {
-          continue;
-
-        } else {
+        } else if (!/ByReference/.test(tableValue)) {
           record.push(escapeLiteral(value));
-          
         }
-      } else {
+      
+      } else if (!/ByReference/.test(tableValue) && !Object.keys(update).includes((tableValue + `ByReference`))) {
         record.push(escapeLiteral(null));
       }
     }
@@ -464,8 +448,9 @@ function constructNestedUpdateClause(
   }
 
   const values = `(VALUES ${records.join(", ")})`;
-  const keys = `(${tableValues.map(value => `"${value}"`).join(", ")})`;
-  const definitions = tableValues.map(value => `"${value}" = "${parentId}"."${value}"`).join(", ");
+  const tableValuesWithNoByReference = tableValues.filter(value => !/ByReference/.test(value));
+  const keys = `(${tableValuesWithNoByReference.map(value => `"${value}"`).join(", ")})`;
+  const definitions = tableValuesWithNoByReference.map(value => `"${value}" = "${parentId}"."${value}"`).join(", ");
 
   const last = `UPDATE "${schema}"."${table}" SET ${definitions} FROM ${values} AS "${parentId}"${keys} WHERE "${table}".reference = "${parentId}".reference RETURNING *`
 
@@ -484,7 +469,7 @@ export function constructSingleUpdateQuery(
   const {last, nesteds} = constructNestedUpdateClause(schema, table, updates, "0");
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
-  return `${nestedInserts} ${last};`;
+  return `${nestedInserts} ${last} ;`;
 }
 
 export function constructBulkUpdateQuery(
@@ -499,13 +484,13 @@ export function constructBulkUpdateQuery(
   const {last, nesteds} = constructNestedUpdateClause(schema, table, updates, "0");
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
-  return `${nestedInserts} ${last};`;
+  return `${nestedInserts} ${last} ;`;
 }
 
 function constructNestedDeleteClause(
   schema: string,
   table: string, 
-  updates: Record<string, any>,
+  deletes: Record<string, any>,
   parentId: string,
   referenceColumn: string = "reference"
 ): nestedResult {
@@ -516,44 +501,42 @@ function constructNestedDeleteClause(
   tableValues = [...tableValues];
   tableValues.unshift("reference");
   
-  updates = updates["data"];
+  deletes = deletes["data"];
 
-  if (!Array.isArray(updates)) {
-    updates = [updates];
+  if (!Array.isArray(deletes)) {
+    deletes = [deletes];
   }
 
   const records: string[] = [];
   const nestedDeletes: string[] = [];
 
-  for (const update of updates as Array<Record<string, any>>) {
+  for (let i = 0; i < deletes.length; i++) {
+    const _delete = deletes[i];
     const record: string[] = [];
 
-    for (let i = 0; i < tableValues.length; i++) {
-      const tableValue = tableValues[i];
+    for (let j = 0; j < tableValues.length; j++) {
+      const tableValue = tableValues[j];
 
-      if (tableValue in update) {
-        const value = update[tableValue];
+      if (tableValue in _delete) {
+        const value = _delete[tableValue];
 
         if (/ByReference/.test(tableValue) && value !== null && typeof value === "object") {
-          const id = parentId.toString() + i.toString();
+          const id = parentId.toString() + i.toString() + j.toString();
           const relation = tableValue.replace("ByReference", "");
           const alias = "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
 
-          let { last, nesteds } = constructNestedUpdateClause(schema, relation, value, id);
+          let { last, nesteds } = constructNestedDeleteClause(schema, relation, value, id);
           last = `"${alias}" AS (${last})`;
           nestedDeletes.concat(nesteds);
           nestedDeletes.push(last);
 
           record.push(escapeLiteral(value["data"]["reference"]));
 
-        } else if (/ByReference/.test(tableValue)) {
-          continue;
-
-        } else {
+        } else if (!/ByReference/.test(tableValue)) {
           record.push(escapeLiteral(value));
-          
         }
-      } else {
+      
+      } else if (!/ByReference/.test(tableValue) && !Object.keys(_delete).includes((tableValue + `ByReference`))) {
         record.push(escapeLiteral(null));
       }
     }
@@ -562,7 +545,7 @@ function constructNestedDeleteClause(
   }
 
   const values = `(VALUES ${records.join(", ")})`;
-  const keys = `(${tableValues.map(value => `"${value}"`).join(", ")})`;
+  const keys = `(${tableValues.filter(value => !/ByReference/.test(value)).map(value => `"${value}"`).join(", ")})`;
 
   const last = `DELETE FROM "${schema}"."${table}" USING ${values} "${parentId}"${keys} WHERE "${table}"."${referenceColumn}" = "${parentId}"."${referenceColumn}" RETURNING *`
 
@@ -581,7 +564,7 @@ export function constructSingleDeleteQuery(
   const {last, nesteds} = constructNestedDeleteClause(schema, table, deletes, "0");
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
-  return `${nestedInserts} ${last};`;
+  return `${nestedInserts} ${last} ;`;
 }
 
 export function constructBulkDeleteQuery(
@@ -597,5 +580,5 @@ export function constructBulkDeleteQuery(
   const {last, nesteds} = constructNestedDeleteClause(schema, table, deletes, "0", referenceColumn);
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
-  return `${nestedInserts} ${last};`;
+  return `${nestedInserts} ${last} ;`;
 }
