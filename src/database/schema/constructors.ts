@@ -1,4 +1,13 @@
-import { TableValuesMap } from "./definitions";
+import path from "path";
+
+import getLogger from "../../utils/logger";
+import { getDataBaseInfo } from "./options";
+
+const logger = getLogger({
+    source: "constructors",
+    service: "api",
+    module: path.basename(__filename)
+});
 
 function escapeLiteral(value: any): string {
   if (value === null || value === undefined) {
@@ -296,13 +305,44 @@ function constructConflictClause(
   return conflictClause;
 }
 
-function constructNestedInsertClause(
+async function getTableValues(schema: string, table: string) {
+  try {
+    const databaseInfo = await getDataBaseInfo();
+
+    const schemaInfo = databaseInfo?.schemas.find(s => s.name === schema);
+    if (!schemaInfo) {
+      throw new Error(`Schema "${schema}" not found`);
+    }
+
+    const tableInfo = schemaInfo.tables.find(t => t.name === table);
+    if (!tableInfo) {
+      throw new Error(`Table "${table}" not found in schema "${schema}"`);
+    }
+
+    return tableInfo.columns.flatMap(column => {
+      if (column.name === "reference") return [];
+
+      const values = [column.name];
+
+      if (column.foreignKey) {
+        values.push(`${column.name}ByReference`);
+      }
+
+      return values;
+    });
+  } catch (error) {
+    logger.error(`Unable to retrieve database info for schema "${schema}" and table "${table}".`, error);
+    throw error;
+  }
+}
+
+async function constructNestedInsertClause(
   schema: string,
   table: string, 
   inputs: Record<string, any>,
   parentId: string
-): nestedResult {
-  const tableValues = TableValuesMap.get(table);
+): Promise<nestedResult> {
+  const tableValues = await getTableValues(schema, table);
   if (!tableValues) {
     throw new Error(`No table values found for table: ${table}`);
   }
@@ -334,7 +374,7 @@ function constructNestedInsertClause(
           const relation = tableValue.replace("ByReference", "");
           const alias = "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
 
-          let { last, nesteds } = constructNestedInsertClause(schema, relation, value, id);
+          let { last, nesteds } = await constructNestedInsertClause(schema, relation, value, id);
           last = `"${alias}" AS (${last})`;
           nestedInserts.concat(nesteds);
           nestedInserts.push(last);
@@ -361,43 +401,43 @@ function constructNestedInsertClause(
   return { last, nesteds: nestedInserts };
 }
 
-export function constructSingleInsertQuery(
+export async function constructSingleInsertQuery(
   schema: string,
   table: string, 
   inputs: Record<string, any>
-): string {
+): Promise<string> {
   if (typeof inputs !== "object" || !("data" in inputs) || typeof inputs["data"] !== "object" ) {
     throw new Error(`Record insertion expects data of type record, instead it received:\n${inputs}`);
   }
 
-  const {last, nesteds} = constructNestedInsertClause(schema, table, inputs, "0");
+  const {last, nesteds} = await constructNestedInsertClause(schema, table, inputs, "0");
   const nestedInserts = nesteds ? `WITH ${nesteds.join(", ")}` : "";
 
   return `${nestedInserts} ${last} ;`;
 }
 
-export function constructBulkInsertQuery(
+export async function constructBulkInsertQuery(
   schema: string,
   table: string, 
   inputs: Record<string, any>
-): string {
+): Promise<string> {
   if (typeof inputs !== "object" || !("data" in inputs) || !Array.isArray(inputs["data"]) ) {
     throw new Error(`Bulk insertion expects data of type array of records, instead it received:\n${inputs}`);
   }
 
-  const {last, nesteds} = constructNestedInsertClause(schema, table, inputs, "0");
+  const {last, nesteds} = await constructNestedInsertClause(schema, table, inputs, "0");
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
   return `${nestedInserts} ${last} ;`;
 }
 
-function constructNestedUpdateClause(
+async function constructNestedUpdateClause(
   schema: string,
   table: string, 
   updates: Record<string, any>,
   parentId: string
-): nestedResult {
-  let tableValues = TableValuesMap.get(table);
+): Promise<nestedResult> {
+  let tableValues = await getTableValues(schema, table);
   if (!tableValues) {
     throw new Error(`No table values found for table: ${table}`);
   }
@@ -428,7 +468,7 @@ function constructNestedUpdateClause(
           const relation = tableValue.replace("ByReference", "");
           const alias = "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
 
-          let { last, nesteds } = constructNestedUpdateClause(schema, relation, value, id);
+          let { last, nesteds } = await constructNestedUpdateClause(schema, relation, value, id);
           last = `"${alias}" AS (${last})`;
           nestedUpdates.concat(nesteds);
           nestedUpdates.push(last);
@@ -457,44 +497,44 @@ function constructNestedUpdateClause(
   return { last, nesteds: nestedUpdates };
 }
 
-export function constructSingleUpdateQuery(
+export async function constructSingleUpdateQuery(
   schema: string,
   table: string,
   updates: Record<string, any>
-): string {
+): Promise<string> {
   if (typeof updates !== "object" || !("data" in updates) || typeof updates["data"] !== "object" ) {
     throw new Error(`Record update expects data of type record, instead it received:\n${updates}`);
   }
 
-  const {last, nesteds} = constructNestedUpdateClause(schema, table, updates, "0");
+  const {last, nesteds} = await constructNestedUpdateClause(schema, table, updates, "0");
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
   return `${nestedInserts} ${last} ;`;
 }
 
-export function constructBulkUpdateQuery(
+export async function constructBulkUpdateQuery(
   schema: string,
   table: string,
   updates: Record<string, any>
-): string {
+): Promise<string> {
   if (typeof updates !== "object" || !("data" in updates) || !Array.isArray(updates["data"])) {
     throw new Error(`Bulk update expects data of type array of records, instead it received:\n${updates}`);
   }
 
-  const {last, nesteds} = constructNestedUpdateClause(schema, table, updates, "0");
+  const {last, nesteds} = await constructNestedUpdateClause(schema, table, updates, "0");
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
   return `${nestedInserts} ${last} ;`;
 }
 
-function constructNestedDeleteClause(
+async function constructNestedDeleteClause(
   schema: string,
   table: string, 
   deletes: Record<string, any>,
   parentId: string,
   referenceColumn: string = "reference"
-): nestedResult {
-  let tableValues = TableValuesMap.get(table);
+): Promise<nestedResult> {
+  let tableValues = await getTableValues(schema, table);
   if (!tableValues) {
     throw new Error(`No table values found for table: ${table}`);
   }
@@ -525,7 +565,7 @@ function constructNestedDeleteClause(
           const relation = tableValue.replace("ByReference", "");
           const alias = "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
 
-          let { last, nesteds } = constructNestedDeleteClause(schema, relation, value, id);
+          let { last, nesteds } = await constructNestedDeleteClause(schema, relation, value, id);
           last = `"${alias}" AS (${last})`;
           nestedDeletes.concat(nesteds);
           nestedDeletes.push(last);
@@ -552,32 +592,32 @@ function constructNestedDeleteClause(
   return { last, nesteds: nestedDeletes };
 }
 
-export function constructSingleDeleteQuery(
+export async function constructSingleDeleteQuery(
   schema: string,
   table: string,
   deletes: Record<string, any>
-): string {
+): Promise<string> {
   if (typeof deletes !== "object" || !("data" in deletes) || typeof deletes["data"] !== "object" ) {
     throw new Error(`Record deletion expects data of type record, instead it received:\n${deletes}`);
   }
 
-  const {last, nesteds} = constructNestedDeleteClause(schema, table, deletes, "0");
+  const {last, nesteds} = await constructNestedDeleteClause(schema, table, deletes, "0");
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
   return `${nestedInserts} ${last} ;`;
 }
 
-export function constructBulkDeleteQuery(
+export async function constructBulkDeleteQuery(
   schema: string,
   table: string,
   deletes: Record<string, any>,
   referenceColumn: string = "reference"
-): string {
+): Promise<string> {
   if (typeof deletes !== "object" || !("data" in deletes) || !Array.isArray(deletes["data"])) {
     throw new Error(`Bulk deletion expects data of type array of records, instead it received:\n${deletes}`);
   }
 
-  const {last, nesteds} = constructNestedDeleteClause(schema, table, deletes, "0", referenceColumn);
+  const {last, nesteds} = await constructNestedDeleteClause(schema, table, deletes, "0", referenceColumn);
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
   return `${nestedInserts} ${last} ;`;

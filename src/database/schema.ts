@@ -519,7 +519,7 @@ export async function buildSchema() {
             const table = "user";
             const inputs = { data, onConflict };
 
-            const query = constructors.constructSingleInsertQuery(schema, table, inputs);
+            const query = await constructors.constructSingleInsertQuery(schema, table, inputs);
 
             const res = await pgClient.query(query);
             return res.rows[0];
@@ -529,7 +529,7 @@ export async function buildSchema() {
             const table = "user";
             const inputs = { data, onConflict };
 
-            const query = constructors.constructBulkInsertQuery(schema, table, inputs);
+            const query = await constructors.constructBulkInsertQuery(schema, table, inputs);
 
             const res = await pgClient.query(query);
             return res.rows;
@@ -539,7 +539,7 @@ export async function buildSchema() {
             const table = "address";
             const inputs = {data, onConflict}
 
-            const query = constructors.constructSingleInsertQuery(schema, table, inputs);
+            const query = await constructors.constructSingleInsertQuery(schema, table, inputs);
 
             const res = await pgClient.query(query);
             return res.rows[0];
@@ -549,7 +549,7 @@ export async function buildSchema() {
             const table = "address";
             const inputs = {data, onConflict}
 
-            const query = constructors.constructBulkInsertQuery(schema, table, inputs);
+            const query = await constructors.constructBulkInsertQuery(schema, table, inputs);
 
             const res = await pgClient.query(query);
             return res.rows;
@@ -559,7 +559,7 @@ export async function buildSchema() {
           const table = "articleBrandEnum";
           const inputs = {data};
 
-          const query = constructors.constructBulkInsertQuery(schema, table, inputs);
+          const query = await constructors.constructBulkInsertQuery(schema, table, inputs);
 
           const res = await pgClient.query(query);
           return res.rows;
@@ -569,7 +569,7 @@ export async function buildSchema() {
           const table = "user";
           const updates = { data };
 
-          const query = constructors.constructSingleUpdateQuery(schema, table, updates);
+          const query = await constructors.constructSingleUpdateQuery(schema, table, updates);
 
           const res = await pgClient.query(query);
           return res.rows[0];
@@ -579,7 +579,7 @@ export async function buildSchema() {
           const table = "user";
           const updates = { data };
 
-          const query = constructors.constructBulkUpdateQuery(schema, table, updates);
+          const query = await constructors.constructBulkUpdateQuery(schema, table, updates);
 
           const res = await pgClient.query(query);
           return res.rows;
@@ -589,7 +589,7 @@ export async function buildSchema() {
           const table = "address";
           const updates = { data };
 
-          const query = constructors.constructSingleUpdateQuery(schema, table, updates);
+          const query = await constructors.constructSingleUpdateQuery(schema, table, updates);
 
           const res = await pgClient.query(query);
           return res.rows[0];
@@ -599,7 +599,7 @@ export async function buildSchema() {
           const table = "address";
           const updates = { data };
 
-          const query = constructors.constructBulkUpdateQuery(schema, table, updates);
+          const query = await constructors.constructBulkUpdateQuery(schema, table, updates);
 
           const res = await pgClient.query(query);
           return res.rows;
@@ -609,7 +609,7 @@ export async function buildSchema() {
           const table = "user";
           const deletes = { data };
 
-          const query = constructors.constructSingleDeleteQuery(schema, table, deletes);
+          const query = await constructors.constructSingleDeleteQuery(schema, table, deletes);
 
           const res = await pgClient.query(query);
           return res.rows[0];
@@ -619,7 +619,7 @@ export async function buildSchema() {
           const table = "user";
           const deletes = { data };
           
-          const query = constructors.constructBulkDeleteQuery(schema, table, deletes);
+          const query = await constructors.constructBulkDeleteQuery(schema, table, deletes);
 
           const res = await pgClient.query(query);
           return res.rows;
@@ -629,7 +629,7 @@ export async function buildSchema() {
           const table = "address";
           const deletes = { data };
 
-          const query = constructors.constructSingleDeleteQuery(schema, table, deletes);
+          const query = await constructors.constructSingleDeleteQuery(schema, table, deletes);
 
           const res = await pgClient.query(query);
           return res.rows[0];
@@ -639,7 +639,7 @@ export async function buildSchema() {
           const table = "address";
           const deletes = { data };
 
-          const query = constructors.constructBulkDeleteQuery(schema, table, deletes);
+          const query = await constructors.constructBulkDeleteQuery(schema, table, deletes);
 
           const res = await pgClient.query(query);
           return res.rows;
@@ -650,7 +650,7 @@ export async function buildSchema() {
           const deletes = {data};
           const referenceColumn = "articleBrand"
 
-          const query = constructors.constructBulkDeleteQuery(schema, table, deletes, referenceColumn);
+          const query = await constructors.constructBulkDeleteQuery(schema, table, deletes, referenceColumn);
 
           const res = await pgClient.query(query);
           return res.rows;
