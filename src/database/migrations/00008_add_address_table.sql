@@ -22,3 +22,7 @@ CREATE TABLE shop.address (
 COMMENT ON COLUMN shop.address.reference IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop.address."createdAt" IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop.address."updatedAt" IS 'AUTOMATIC UPDATE';
+
+CREATE TRIGGER "triggerSetUpdatedAt"
+    BEFORE UPDATE ON shop.address
+    FOR EACH ROW EXECUTE FUNCTION shop."setUpdatedAt"();

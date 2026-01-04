@@ -15,3 +15,11 @@ CREATE TABLE shop.favorite (
     "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	"updatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+COMMENT ON COLUMN shop.favorite.reference IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop.favorite."createdAt" IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop.favorite."updatedAt" IS 'AUTOMATIC UPDATE';
+
+CREATE TRIGGER "triggerSetUpdatedAt"
+    BEFORE UPDATE ON shop.favorite
+    FOR EACH ROW EXECUTE FUNCTION shop."setUpdatedAt"();

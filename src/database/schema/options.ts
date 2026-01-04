@@ -319,7 +319,8 @@ enum OrderDirection {
                 ) && ! _tableInfo.isEnum
             );
 
-            const tableType = `
+            if (!tableInfo.isEnum) {
+                const tableType = `
 
 type ${schemaTableName}Type {
 ${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable ? "" : "!"}`).join("\n")}
@@ -327,20 +328,8 @@ ${fkTables.map(_table => `\t${_table.name}ByReference: ${capitalize(schema) + ca
 ${pkTables.map(_table => `\t${plural(_table.name)}: [${capitalize(schema) + capitalize(_table.name)}Type!]!`).join("\n")}
 }
 
-            `;  // TO DO: add computed fields
+                `;  // TO DO: add computed fields
 
-            const tableMutationType = `
-
-input ${schemaTableName}MutationType {
-${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable || _columnInfo.hasDefault || _columnInfo.isPrimaryKey || _columnInfo.handleAutomaticUpdate ? "" : "!"}`).join("\n")}
-${fkTables.map(_table => `\t${_table.name}ByReference: ${schemaTableName}${capitalize(_table.foreignKey!)}MutationType`).join("\n")}
-}
-
-            `;
-
-            typeDefs = typeDefs.concat(tableType, tableMutationType);
-
-            if (!tableInfo.isEnum) {
                 const getType = `
 
 input ${schemaTableName}GetType {
@@ -372,6 +361,15 @@ ${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: OrderDirection`).join("
 
                 `;
 
+                const tableMutationType = `
+
+input ${schemaTableName}MutationType {
+${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable || _columnInfo.hasDefault || _columnInfo.isPrimaryKey || _columnInfo.handleAutomaticUpdate ? "" : "!"}`).join("\n")}
+${fkTables.map(_table => `\t${_table.name}ByReference: ${schemaTableName}${capitalize(_table.foreignKey!)}MutationType`).join("\n")}
+}
+
+                `;
+
                 const pkTableMutationType = pkTables.map(_table => {
                     return `
 
@@ -383,7 +381,7 @@ input ${capitalize(schema) + capitalize(_table.name) + capitalize(table)}Mutatio
                 `
                 }).join("");
 
-                typeDefs = typeDefs.concat(getType, getWhereType, getOrderType, pkTableMutationType);
+                typeDefs = typeDefs.concat(tableType, getType, getWhereType, getOrderType, tableMutationType, pkTableMutationType);
 
                 const getByReferenceQuery = `get${schemaTableName}ByReference(reference: ID!): ${schemaTableName}Type`;
                 const getBulkQuery = `get${plural(schemaTableName)}(where: ${schemaTableName}WhereType, orderBy: [${schemaTableName}OrderByType!], limit: Int, offset: Int): [${schemaTableName}Type!]!`;
@@ -399,6 +397,26 @@ input ${capitalize(schema) + capitalize(_table.name) + capitalize(table)}Mutatio
 
 
             } else {
+                const tableType = `
+
+type ${schemaTableName}Type {
+${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable ? "" : "!"}`).join("\n")}
+${fkTables.map(_table => `\t${_table.name}ByReference: ${capitalize(schema) + capitalize(_table.foreignKey!)}Type`).join("\n")}
+}
+
+                `;
+
+                const tableMutationType = `
+
+input ${schemaTableName}MutationType {
+${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable || _columnInfo.hasDefault || _columnInfo.isPrimaryKey || _columnInfo.handleAutomaticUpdate ? "" : "!"}`).join("\n")}
+${fkTables.map(_table => `\t${_table.name}ByReference: ${schemaTableName}${capitalize(_table.foreignKey!)}MutationType`).join("\n")}
+}
+
+                `;
+
+                typeDefs = typeDefs.concat(tableType, tableMutationType);
+
                 const getQuery = `get${plural(schemaTableName)}: [${schemaTableName}Type!]!`;
                 queryTypes.push(getQuery);
 

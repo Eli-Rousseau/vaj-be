@@ -42,3 +42,11 @@ CREATE TABLE shop.order (
     "createdAt" TIMESTAMP CONSTRAINT "orderCreatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP CONSTRAINT "orderUpdatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+COMMENT ON COLUMN shop.order.reference IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop.order."createdAt" IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop.order."updatedAt" IS 'AUTOMATIC UPDATE';
+
+CREATE TRIGGER "triggerSetUpdatedAt"
+    BEFORE UPDATE ON shop.order
+    FOR EACH ROW EXECUTE FUNCTION shop."setUpdatedAt"();

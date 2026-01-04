@@ -15,3 +15,11 @@ CREATE TABLE shop."articleDiscountCoupon" (
     "createdAt" TIMESTAMP CONSTRAINT "articleDiscountCouponCreatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP CONSTRAINT "articleDiscountCouponUpdatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+COMMENT ON COLUMN shop."articleDiscountCoupon".reference IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop."articleDiscountCoupon"."createdAt" IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop."articleDiscountCoupon"."updatedAt" IS 'AUTOMATIC UPDATE';
+
+CREATE TRIGGER "triggerSetUpdatedAt"
+    BEFORE UPDATE ON shop."articleDiscountCoupon"
+    FOR EACH ROW EXECUTE FUNCTION shop."setUpdatedAt"();

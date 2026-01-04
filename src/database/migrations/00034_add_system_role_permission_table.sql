@@ -16,3 +16,11 @@ CREATE TABLE shop."systemRolePermission" (
     "updatedAt" TIMESTAMP CONSTRAINT "systemRolePermissionUpdatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT "uniqueSystemRoleSystemPermissionKey" UNIQUE ("systemRole", "systemPermission")
 );
+
+COMMENT ON COLUMN shop."systemRolePermission".reference IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop."systemRolePermission"."createdAt" IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop."systemRolePermission"."updatedAt" IS 'AUTOMATIC UPDATE';
+
+CREATE TRIGGER "triggerSetUpdatedAt"
+    BEFORE UPDATE ON shop."systemRolePermission"
+    FOR EACH ROW EXECUTE FUNCTION shop."setUpdatedAt"();

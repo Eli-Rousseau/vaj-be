@@ -84,3 +84,11 @@ CREATE TABLE shop.article(
 	"rentalPrice" FLOAT DEFAULT NULL,
 	media JSONB DEFAULT NULL
 );
+
+COMMENT ON COLUMN shop.article.reference IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop.article."createdAt" IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop.article."updatedAt" IS 'AUTOMATIC UPDATE';
+
+CREATE TRIGGER "triggerSetUpdatedAt"
+    BEFORE UPDATE ON shop.article
+    FOR EACH ROW EXECUTE FUNCTION shop."setUpdatedAt"();

@@ -25,3 +25,7 @@ CREATE TABLE shop.user (
 COMMENT ON COLUMN shop.user.reference IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop.user."createdAt" IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop.user."updatedAt" IS 'AUTOMATIC UPDATE';
+
+CREATE TRIGGER "triggerSetUpdatedAt"
+    BEFORE UPDATE ON shop.user
+    FOR EACH ROW EXECUTE FUNCTION shop."setUpdatedAt"();

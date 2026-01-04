@@ -14,7 +14,7 @@ VALUES
 WITH users AS (
     SELECT reference, name
     FROM shop.user
-    WHERE name IN ('Eli', 'Natan')
+    WHERE name IN ('Eli', 'Natan', 'Ester')
 )
 INSERT INTO shop.address (
     "user",
