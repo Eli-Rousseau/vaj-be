@@ -20,8 +20,10 @@ type ColumnInfo = {
     name: string;
     dataType: string;
     isPrimaryKey: boolean;
+    hasDefault: boolean;
     foreignKey: string | null;
     isNullable: boolean;
+    handleAutomaticUpdate: boolean;
 };
 
 type TableInfo = {
@@ -42,15 +44,25 @@ type DataBaseInfo = {
 
 async function getColumnInfo(schema: string, table: string) {
     const query = `
-SELECT DISTINCT
+SELECT
     c.column_name,
     c.data_type,
     (c.is_nullable = 'YES') AS is_nullable,
-	CASE 
-		WHEN (tc.constraint_type = 'PRIMARY KEY') THEN true
+    BOOL_OR(tc.constraint_type = 'PRIMARY KEY') AS is_primary_key,
+    MAX(
+        CASE
+            WHEN tc.constraint_type = 'FOREIGN KEY'
+            THEN ccu.table_name
+        END
+    ) AS foreign_key,
+	CASE
+		WHEN (c.column_default IS NOT NULL) THEN true
 		ELSE false
-	END AS is_primary_key,
-    ccu.table_name AS foreign_key
+	END has_default,
+	CASE
+		WHEN (d.description = 'AUTOMATIC UPDATE') THEN true
+		ELSE false
+	END handle_automatic_update
 FROM information_schema.columns c
 LEFT JOIN information_schema.key_column_usage kcu
     ON c.table_schema = kcu.table_schema
@@ -61,10 +73,27 @@ LEFT JOIN information_schema.table_constraints tc
    AND kcu.table_schema = tc.table_schema
 LEFT JOIN information_schema.constraint_column_usage ccu
     ON tc.constraint_name = ccu.constraint_name
-   AND tc.constraint_type = 'FOREIGN KEY'
+JOIN pg_catalog.pg_class cls
+    ON cls.relname = c.table_name
+JOIN pg_catalog.pg_namespace ns
+    ON ns.oid = cls.relnamespace
+   AND ns.nspname = c.table_schema
+JOIN pg_catalog.pg_attribute a
+    ON a.attrelid = cls.oid
+   AND a.attname = c.column_name
+LEFT JOIN pg_catalog.pg_description d
+    ON d.objoid = cls.oid
+   AND d.objsubid = a.attnum
 WHERE c.table_schema = '${schema}'
   AND c.table_name = '${table}'
-;
+GROUP BY
+    c.column_name,
+    c.data_type,
+    c.is_nullable,
+    c.ordinal_position,
+	c.column_default,
+	d.description
+ORDER BY c.ordinal_position;
 `;
 
     const columnInfos: ColumnInfo[] = [];
@@ -75,15 +104,19 @@ WHERE c.table_schema = '${schema}'
             const columnName = columnDetail["column_name"];
             const columnDataType = columnDetail["data_type"];
             const isNullable = columnDetail["is_nullable"];
+            const hasDefault = columnDetail["has_default"];
             const isPrimaryKey = columnDetail["is_primary_key"];
             const foreignKey = columnDetail["foreign_key"];
+            const handleAutomaticUpdate = columnDetail["handle_automatic_update"];
 
             const columnInfo: ColumnInfo = {
                 name: columnName,
                 dataType: columnDataType,
                 isNullable,
+                hasDefault,
                 isPrimaryKey,
-                foreignKey
+                foreignKey,
+                handleAutomaticUpdate
             }
             columnInfos.push(columnInfo);
         }
@@ -290,7 +323,7 @@ enum OrderDirection {
 
 type ${schemaTableName}Type {
 ${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable ? "" : "!"}`).join("\n")}
-${fkTables.map(_table => `\t${_table}ByReference: ${capitalize(schema) + capitalize(_table.foreignKey!)}Type`).join("\n")}
+${fkTables.map(_table => `\t${_table.name}ByReference: ${capitalize(schema) + capitalize(_table.foreignKey!)}Type`).join("\n")}
 ${pkTables.map(_table => `\t${plural(_table.name)}: [${capitalize(schema) + capitalize(_table.name)}Type!]!`).join("\n")}
 }
 
@@ -299,8 +332,8 @@ ${pkTables.map(_table => `\t${plural(_table.name)}: [${capitalize(schema) + capi
             const tableMutationType = `
 
 input ${schemaTableName}MutationType {
-${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable && _columnInfo.foreignKey ? "" : "!"}`).join("\n")}
-${fkTables.map(_table => `\t${_table}ByReference: ${schemaTableName}${capitalize(_table.foreignKey!)}MutationType`).join("\n")}
+${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable || _columnInfo.hasDefault || _columnInfo.isPrimaryKey || _columnInfo.handleAutomaticUpdate ? "" : "!"}`).join("\n")}
+${fkTables.map(_table => `\t${_table.name}ByReference: ${schemaTableName}${capitalize(_table.foreignKey!)}MutationType`).join("\n")}
 }
 
             `;
@@ -323,7 +356,7 @@ input ${schemaTableName}GetType {
 
 input ${schemaTableName}WhereType {
 ${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: ComparisonExp`).join("\n")}
-${fkTables.map(_table => `\t${_table}ByReference: ${capitalize(schema) + capitalize(_table.foreignKey!)}GetType`).join("\n")}
+${fkTables.map(_table => `\t${_table.name}ByReference: ${capitalize(schema) + capitalize(_table.foreignKey!)}GetType`).join("\n")}
 \t_and: [${schemaTableName}WhereType!]
 \t_or: [${schemaTableName}WhereType!]
 \t_not: [${schemaTableName}WhereType!]
@@ -424,8 +457,6 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
                 _columnInfo.foreignKey && ! _columnInfo.foreignKey.endsWith("Enum")
             );
 
-            resolvers[schemaTableName] = {};
-
             if (!tableInfo.isEnum) {
                 resolvers["Query"][`get${schemaTableName}ByReference`] = async (_, { reference }) => {
                     const query = constructors.constructGetOnColumnQuery(schema, table, "reference", reference);
@@ -469,14 +500,16 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
                     return res.rows;
                 } ;
 
-                pkTables.forEach(_table => resolvers[`${schemaTableName}`][plural(_table.name)] = async (parent) => {
+                resolvers[`${schemaTableName}Type`] = {};
+
+                pkTables.forEach(_table => resolvers[`${schemaTableName}Type`][plural(_table.name)] = async (parent) => {
                     const query = constructors.constructGetOnColumnQuery(schema, _table.name, table, parent.reference);
                     const res = await psqlClient!.query(query)
-                    return res.rows[0];
+                    return res.rows;
                 });
 
-                fkTables.forEach(_table => resolvers[`${schemaTableName}`][`${_table.name}ByReference`] = async (parent) => {
-                    const query = constructors.constructGetOnColumnQuery(schema, _table.name, table, parent.user);
+                fkTables.forEach(_table => resolvers[`${schemaTableName}Type`][`${_table.name}ByReference`] = async (parent) => {
+                    const query = constructors.constructGetOnColumnQuery(schema, _table.name, "reference", parent.user);
                     const res = await psqlClient!.query(query);
                     return res.rows[0];
                 });

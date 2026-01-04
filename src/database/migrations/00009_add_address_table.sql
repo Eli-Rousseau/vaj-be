@@ -18,3 +18,7 @@ CREATE TABLE shop.address (
     "createdAt" TIMESTAMP CONSTRAINT "addressCreatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP, 
     "updatedAt" TIMESTAMP CONSTRAINT "addressUpdatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+COMMENT ON COLUMN shop.address.reference IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop.address."createdAt" IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop.address."updatedAt" IS 'AUTOMATIC UPDATE';

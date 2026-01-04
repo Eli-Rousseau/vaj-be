@@ -320,7 +320,7 @@ async function getTableValues(schema: string, table: string) {
     }
 
     return tableInfo.columns.flatMap(column => {
-      if (column.name === "reference") return [];
+      if (column.handleAutomaticUpdate) return [];
 
       const values = [column.name];
 
