@@ -14,7 +14,6 @@ let psqlClient: pgClient | null = null;
 let dataBaseInfo: DataBaseInfo | null = null;
 
 let schemaToFilter: string[] | null = null;
-let ComputedFieldsByTable: Record<string, Record<string, string[]>> | null = null;
 
 type ColumnInfo = {
     name: string;
@@ -26,16 +25,23 @@ type ColumnInfo = {
     handleAutomaticUpdate: boolean;
 };
 
+type ComputedFieldInfo = {
+    name: string;
+    table: string;
+    arg: { name: string, type: string };
+    returnType: string;
+};
+
 type TableInfo = {
     name: string;
     isEnum: boolean;
     columns: ColumnInfo[];
-    computedFields: string[];
 };
 
 type SchemaInfo = {
     name: string;
     tables: TableInfo[];
+    computedFields: ComputedFieldInfo[];
 };
 
 type DataBaseInfo = {
@@ -128,6 +134,57 @@ ORDER BY c.ordinal_position;
     return columnInfos;
 }
 
+async function getComputedFields(schema: string) {
+    const query = `
+SELECT
+    p.proname                         	AS function_name,
+	m.type_name                       	AS table_name,
+    m.schema_name || '.' || m.type_name AS argument,
+    pg_get_function_result(p.oid)     	AS return_type
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+CROSS JOIN LATERAL (
+    SELECT
+        replace(m[1], '"', '') AS schema_name,
+        replace(m[2], '"', '') AS type_name
+    FROM regexp_matches(
+        pg_get_function_arguments(p.oid),
+        '("${schema}"|${schema})\s*\.\s*("[^"]+"|[A-Za-z0-9_]+)',
+        'g'
+    ) AS m
+) AS m
+WHERE n.nspname = '${schema}'
+ORDER BY function_name;
+
+`;
+
+    const computedFieldInfos: ComputedFieldInfo[] = [];
+    try {
+        const computedFieldDetails = (await psqlClient!.query(query)).rows;
+        
+        for (const computedFieldDetail of computedFieldDetails) {
+            const fnName = computedFieldDetail["function_name"];
+            const table = computedFieldDetail["table_name"];
+            const argType = computedFieldDetail["argument"];
+            const returnType = computedFieldDetail["return_type"];
+
+            const computedFieldInfo: ComputedFieldInfo = {
+                name: fnName,
+                table,
+                arg: { name: table, type: argType },
+                returnType: returnType
+            };
+            computedFieldInfos.push(computedFieldInfo);
+        }
+
+    } catch (error) {
+        logger.error(`Failed to query the database tables computed functions details: ${error}`);
+        throw error;
+    }
+
+    return computedFieldInfos;
+}
+
 async function getTableInfo(schema: string) {
     const query = `
 SELECT 
@@ -138,7 +195,7 @@ SELECT
     END AS "is_enum"
 FROM information_schema.tables
 WHERE table_schema = '${schema}';
-`
+`;
     const tableInfos: TableInfo[] = [];
     try {
         const tableDetails = (await psqlClient!.query(query)).rows;
@@ -146,14 +203,12 @@ WHERE table_schema = '${schema}';
         for (const tableDetail of tableDetails) {
             const tableName = tableDetail["table_name"];
             const isEnum = tableDetail["is_enum"];
-            const computedFields = ComputedFieldsByTable?.[schema]?.[tableName] ?? [];
             const columnInfos = await getColumnInfo(schema, tableName);
 
             const tableInfo: TableInfo = { 
                 name: tableName,
                 columns: columnInfos, 
-                isEnum, 
-                computedFields 
+                isEnum
             };
             tableInfos.push(tableInfo);
         }
@@ -179,10 +234,12 @@ async function getSchemaInfo() {
 
         for (const schemaName of schemaNames) {
             const tableInfos = await getTableInfo(schemaName);
+            const computedFieldInfos = await getComputedFields(schemaName);
 
             const schemaInfo: SchemaInfo = {
                 name: schemaName,
-                tables: tableInfos
+                tables: tableInfos,
+                computedFields: computedFieldInfos
             };
             schemaInfos.push(schemaInfo);
         }
@@ -562,11 +619,6 @@ function buildTransformerClasses() {}
 export async function buildSchemaOptions() {
     // >>> Configurables <<<
     schemaToFilter = ["shop"];
-    ComputedFieldsByTable = {
-        "shop": {
-            "user": ["userBillingAddress", "userShippingAddress"] 
-        }
-    }
     // >>> Configurables <<<
 
     await loadStage();
