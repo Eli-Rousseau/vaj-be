@@ -350,7 +350,6 @@ function computedFieldReturnType(schema: string, comptedField: ComputedFieldInfo
 function buildTypeDefs(dataBaseInfo: DataBaseInfo) {
     let typeDefs = `
 scalar JSON
-scalar NULL
 
 input OnConflictType {
 \tconstraint: String!
@@ -626,9 +625,23 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
                 computedFields.forEach(_computedField => resolvers[`${schemaTableName}Type`][_computedField.name] = async (parent) => {
                     const query = constructors.constructGetComputationalFieldQuery(schema, table, _computedField.name, parent.reference);
                     const res = await psqlClient!.query(query);
-                    console.log(res.rows);
-                    console.log(_computedField.returnCardinality);
-                    return _computedField.returnCardinality === "SINGLE" ? res.rows[0] : res.rows;
+                    
+                    if (_computedField.returnCardinality === "ARRAY") {
+                        return res.rows ?? [];
+                    } else {
+                    const row = res.rows?.[0];
+
+                    if (!row) {
+                        return null;
+                    }
+
+                    const allValuesNull = Object.values(row).every(
+                        value => value === null
+                    );
+
+                    return allValuesNull ? null : row;
+                    }
+
                 });
             } else {
                 resolvers["Query"][`get${plural(schemaTableName)}`] = async (_) => {
