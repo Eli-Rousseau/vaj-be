@@ -27,21 +27,21 @@ type ColumnInfo = {
 
 type ComputedFieldInfo = {
     name: string;
-    table: string;
     arg: { name: string, type: string };
     returnType: string;
+    returnCardinality: "SINGLE" | "ARRAY" ;
 };
 
 type TableInfo = {
     name: string;
     isEnum: boolean;
     columns: ColumnInfo[];
+    computedFields: ComputedFieldInfo[];
 };
 
 type SchemaInfo = {
     name: string;
     tables: TableInfo[];
-    computedFields: ComputedFieldInfo[];
 };
 
 type DataBaseInfo = {
@@ -134,15 +134,22 @@ ORDER BY c.ordinal_position;
     return columnInfos;
 }
 
-async function getComputedFields(schema: string) {
+async function getComputedFields(schema: string, table: string) {
     const query = `
 SELECT
-    p.proname                         	AS function_name,
-	m.type_name                       	AS table_name,
-    m.schema_name || '.' || m.type_name AS argument,
-    pg_get_function_result(p.oid)     	AS return_type
+    p.proname                               AS function_name,
+    m.schema_name || '.' || m.type_name     AS argument,
+    pg_get_function_result(p.oid)           AS return_type,
+
+    CASE
+        WHEN p.proretset OR t.typelem <> 0 THEN 'ARRAY'
+        ELSE 'SINGLE'
+    END                                     AS return_cardinality
+
 FROM pg_proc p
 JOIN pg_namespace n ON n.oid = p.pronamespace
+JOIN pg_type t ON t.oid = p.prorettype
+
 CROSS JOIN LATERAL (
     SELECT
         replace(m[1], '"', '') AS schema_name,
@@ -153,7 +160,10 @@ CROSS JOIN LATERAL (
         'g'
     ) AS m
 ) AS m
+
 WHERE n.nspname = '${schema}'
+  AND m.type_name = '${table}'
+
 ORDER BY function_name;
 
 `;
@@ -164,15 +174,15 @@ ORDER BY function_name;
         
         for (const computedFieldDetail of computedFieldDetails) {
             const fnName = computedFieldDetail["function_name"];
-            const table = computedFieldDetail["table_name"];
             const argType = computedFieldDetail["argument"];
             const returnType = computedFieldDetail["return_type"];
+            const returnCardinality = computedFieldDetail["return_cardinality"];
 
             const computedFieldInfo: ComputedFieldInfo = {
                 name: fnName,
-                table,
                 arg: { name: table, type: argType },
-                returnType: returnType
+                returnType: returnType,
+                returnCardinality
             };
             computedFieldInfos.push(computedFieldInfo);
         }
@@ -204,11 +214,13 @@ WHERE table_schema = '${schema}';
             const tableName = tableDetail["table_name"];
             const isEnum = tableDetail["is_enum"];
             const columnInfos = await getColumnInfo(schema, tableName);
+            const computedFields = await getComputedFields(schema, tableName);
 
             const tableInfo: TableInfo = { 
                 name: tableName,
                 columns: columnInfos, 
-                isEnum
+                isEnum,
+                computedFields
             };
             tableInfos.push(tableInfo);
         }
@@ -234,12 +246,10 @@ async function getSchemaInfo() {
 
         for (const schemaName of schemaNames) {
             const tableInfos = await getTableInfo(schemaName);
-            const computedFieldInfos = await getComputedFields(schemaName);
 
             const schemaInfo: SchemaInfo = {
                 name: schemaName,
-                tables: tableInfos,
-                computedFields: computedFieldInfos
+                tables: tableInfos
             };
             schemaInfos.push(schemaInfo);
         }
@@ -323,9 +333,24 @@ function capitalize(text: string) {
     return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
+function computedFieldReturnType(schema: string, comptedField: ComputedFieldInfo): { field: string, type: string} {
+    const regExpSchema = new RegExp(`^${schema}\.`);
+
+    if (regExpSchema.test(comptedField.returnType)) {
+        const returnType = comptedField.returnType.replace(regExpSchema, "");
+        const field = `${capitalize(schema)}${capitalize(returnType)}Type`;
+        const type = ``;
+
+        return { field, type };
+    } else {
+        throw new Error(`Unable to handle computed field return type: ${comptedField.returnType}`);
+    }
+}
+
 function buildTypeDefs(dataBaseInfo: DataBaseInfo) {
     let typeDefs = `
 scalar JSON
+scalar NULL
 
 input OnConflictType {
 \tconstraint: String!
@@ -363,6 +388,7 @@ enum OrderDirection {
         for (const tableInfo of tableInfos) {
             const table = tableInfo.name;
             const columnInfos = tableInfo.columns;
+            const computedFields = tableInfo.computedFields;
 
             const schemaTableName = capitalize(schema) + capitalize(table);
             const fkTables = columnInfos
@@ -383,9 +409,16 @@ type ${schemaTableName}Type {
 ${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable ? "" : "!"}`).join("\n")}
 ${fkTables.map(_table => `\t${_table.name}ByReference: ${capitalize(schema) + capitalize(_table.foreignKey!)}Type`).join("\n")}
 ${pkTables.map(_table => `\t${plural(_table.name)}: [${capitalize(schema) + capitalize(_table.name)}Type!]!`).join("\n")}
+${computedFields.map(_computedField => `\t${_computedField.name}: ${computedFieldReturnType(schema, _computedField).field}`)}
 }
 
-                `;  // TO DO: add computed fields
+                `;
+
+                const computedFieldTypes = `
+
+${computedFields.map(_computedField => computedFieldReturnType(schema, _computedField).type).join("")}
+
+                `;
 
                 const getType = `
 
@@ -438,7 +471,7 @@ input ${capitalize(schema) + capitalize(_table.name) + capitalize(table)}Mutatio
                 `
                 }).join("");
 
-                typeDefs = typeDefs.concat(tableType, getType, getWhereType, getOrderType, tableMutationType, pkTableMutationType);
+                typeDefs = typeDefs.concat(tableType, computedFieldTypes, getType, getWhereType, getOrderType, tableMutationType, pkTableMutationType);
 
                 const getByReferenceQuery = `get${schemaTableName}ByReference(reference: ID!): ${schemaTableName}Type`;
                 const getBulkQuery = `get${plural(schemaTableName)}(where: ${schemaTableName}WhereType, orderBy: [${schemaTableName}OrderByType!], limit: Int, offset: Int): [${schemaTableName}Type!]!`;
@@ -519,6 +552,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
         for (const tableInfo of tableInfos) {
             const table = tableInfo.name;
             const columnInfos = tableInfo.columns;
+            const computedFields = tableInfo.computedFields;
 
             const schemaTableName = capitalize(schema) + capitalize(table);
             const pkTables = tableInfos
@@ -589,7 +623,13 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
                     return res.rows[0];
                 });
 
-                // TO DO: computed fields
+                computedFields.forEach(_computedField => resolvers[`${schemaTableName}Type`][_computedField.name] = async (parent) => {
+                    const query = constructors.constructGetComputationalFieldQuery(schema, table, _computedField.name, parent.reference);
+                    const res = await psqlClient!.query(query);
+                    console.log(res.rows);
+                    console.log(_computedField.returnCardinality);
+                    return _computedField.returnCardinality === "SINGLE" ? res.rows[0] : res.rows;
+                });
             } else {
                 resolvers["Query"][`get${plural(schemaTableName)}`] = async (_) => {
                     const query = constructors.constructGetQuery(schema, table); 
