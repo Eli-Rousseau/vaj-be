@@ -1,7 +1,7 @@
 import path from "path";
 
 import getLogger from "../../utils/logger";
-import { getDataBaseInfo } from "./options";
+import { getDataBaseInfo, ComputedFieldReturnType } from "./options";
 
 const logger = getLogger({
     source: "constructors",
@@ -277,9 +277,10 @@ export function constructGetComputationalFieldQuery(
   schema: string, 
   table: string,
   fn: string,
+  returnTypeKind: ComputedFieldReturnType,
   reference: string
 ): string {
-  const query = `SELECT ("${schema}"."${fn}"("${table}")).* FROM "${schema}"."${table}" WHERE "${table}"."reference" = ${escapeLiteral(reference)} ;`
+  const query = `SELECT ("${schema}"."${fn}"("${table}"))${returnTypeKind === "REFERENCE" ? "" : ".*"} FROM "${schema}"."${table}" WHERE "${table}"."reference" = ${escapeLiteral(reference)} ;`
   return query;
 }
 

@@ -18,18 +18,23 @@ let schemaToFilter: string[] | null = null;
 type ColumnInfo = {
     name: string;
     dataType: string;
-    isPrimaryKey: boolean;
     hasDefault: boolean;
-    foreignKey: string | null;
     isNullable: boolean;
+    isPrimaryKey: boolean;
+    foreignKey: string | null;
     handleAutomaticUpdate: boolean;
 };
+
+export type ComputedFieldReturnType = "TABLE" | "REFERENCE" | "COMPOSITE";
+
+type ComputedFieldCardinalityType = "SINGLE" | "ARRAY";
 
 type ComputedFieldInfo = {
     name: string;
     arg: { name: string, type: string };
     returnType: string;
-    returnCardinality: "SINGLE" | "ARRAY" ;
+    returnCardinality: ComputedFieldCardinalityType;
+    returnTypeKind: ComputedFieldReturnType;
 };
 
 type TableInfo = {
@@ -39,13 +44,26 @@ type TableInfo = {
     computedFields: ComputedFieldInfo[];
 };
 
+type CompositeTypeColumnInfo = {
+    name: string;
+    dataType: string;
+    hasDefault: boolean;
+    isNullable: boolean;
+};
+
+type CompositeTypeInfo = {
+    name: string;
+    columns: CompositeTypeColumnInfo[];
+}
+
 type SchemaInfo = {
     name: string;
     tables: TableInfo[];
+    compsiteTypes: CompositeTypeInfo[];
 };
 
 type DataBaseInfo = {
-    schemas: SchemaInfo[] 
+    schemas: SchemaInfo[];
 }
 
 async function getColumnInfo(schema: string, table: string) {
@@ -139,16 +157,31 @@ async function getComputedFields(schema: string, table: string) {
 SELECT
     p.proname                               AS function_name,
     m.schema_name || '.' || m.type_name     AS argument,
-    pg_get_function_result(p.oid)           AS return_type,
-
+    regexp_replace(
+        pg_get_function_result(p.oid),
+        '^SETOF\\s+|"',
+        '',
+        'g'
+    )                                       AS return_type,
     CASE
         WHEN p.proretset OR t.typelem <> 0 THEN 'ARRAY'
         ELSE 'SINGLE'
-    END                                     AS return_cardinality
+    END                                     AS return_cardinality,
+
+    CASE
+        WHEN t.typtype = 'c'
+             AND c.relkind = 'c'
+            THEN 'COMPOSITE'
+        WHEN t.typtype = 'c'
+             AND c.relkind IN ('r','p','v','m','f')
+            THEN 'TABLE'
+        ELSE 'REFERENCE'
+    END                                     AS return_type_kind
 
 FROM pg_proc p
 JOIN pg_namespace n ON n.oid = p.pronamespace
 JOIN pg_type t ON t.oid = p.prorettype
+LEFT JOIN pg_class c ON c.oid = t.typrelid
 
 CROSS JOIN LATERAL (
     SELECT
@@ -165,7 +198,6 @@ WHERE n.nspname = '${schema}'
   AND m.type_name = '${table}'
 
 ORDER BY function_name;
-
 `;
 
     const computedFieldInfos: ComputedFieldInfo[] = [];
@@ -177,12 +209,14 @@ ORDER BY function_name;
             const argType = computedFieldDetail["argument"];
             const returnType = computedFieldDetail["return_type"];
             const returnCardinality = computedFieldDetail["return_cardinality"];
+            const returnTypeKind = computedFieldDetail["return_type_kind"];
 
             const computedFieldInfo: ComputedFieldInfo = {
                 name: fnName,
                 arg: { name: table, type: argType },
                 returnType: returnType,
-                returnCardinality
+                returnCardinality,
+                returnTypeKind
             };
             computedFieldInfos.push(computedFieldInfo);
         }
@@ -233,6 +267,97 @@ WHERE table_schema = '${schema}';
     return tableInfos;
 }
 
+async function getCompositeTypeColumnInfos(schema: string, compsiteType: string) {
+    const query = `
+SELECT
+    a.attname                                   AS field_name,
+    pg_catalog.format_type(a.atttypid, a.atttypmod)
+                                                AS data_type,
+    (a.atthasdef)                               AS has_default,
+    (NOT a.attnotnull)                          AS is_nullable
+FROM pg_type t
+JOIN pg_namespace n
+    ON n.oid = t.typnamespace
+JOIN pg_class c
+    ON c.oid = t.typrelid
+JOIN pg_attribute a
+    ON a.attrelid = c.oid
+WHERE n.nspname = '${schema}'
+  AND t.typname = '${compsiteType}'
+  AND t.typtype = 'c'                -- composite types
+  AND c.relkind = 'c'                -- NOT tables/views
+  AND a.attnum > 0                   -- user-defined fields only
+  AND NOT a.attisdropped
+ORDER BY a.attnum;
+`;
+
+    const columnInfos: CompositeTypeColumnInfo[] = [];
+    try {
+        const columnDetails = (await psqlClient!.query(query)).rows;
+
+        for (const columnDetail of columnDetails) {
+            const columnName = columnDetail["field_name"];
+            const columnDataType = columnDetail["data_type"];
+            const isNullable = columnDetail["is_nullable"];
+            const hasDefault = columnDetail["has_default"];
+
+            const columnInfo: CompositeTypeColumnInfo = {
+                name: columnName,
+                dataType: columnDataType,
+                isNullable,
+                hasDefault
+            }
+            columnInfos.push(columnInfo);
+        }
+    } catch (error) {
+        logger.error(`Failed to query the database schema compsoite type column details for schema "${schema}" and compsite type "${compsiteType}": ${error}`);
+        throw error;
+    }
+
+    return columnInfos;
+}
+
+async function getCompositeTypes(schema: string) {
+    const query = `
+SELECT DISTINCT
+    t.typname                                   AS composite_type
+FROM pg_type t
+JOIN pg_namespace n
+    ON n.oid = t.typnamespace
+JOIN pg_class c
+    ON c.oid = t.typrelid
+JOIN pg_attribute a
+    ON a.attrelid = c.oid
+WHERE n.nspname = '${schema}'
+  AND t.typtype = 'c'                -- composite types
+  AND c.relkind = 'c'                -- NOT tables/views
+  AND a.attnum > 0                   -- user-defined fields only
+  AND NOT a.attisdropped
+;
+`;  
+    const compositeTypesInfos: CompositeTypeInfo[] = [];
+    try {
+        const compositeTypesDetails = (await psqlClient!.query(query)).rows;
+
+        for (const compositeTypeDetail of compositeTypesDetails) {
+            const compositeTypeName = compositeTypeDetail["composite_type"];
+            const compositeTypeColumnInfos = await getCompositeTypeColumnInfos(schema, compositeTypeName);
+
+            const compositeTypeInfo: CompositeTypeInfo = {
+                name: compositeTypeName,
+                columns: compositeTypeColumnInfos
+            };
+            compositeTypesInfos.push(compositeTypeInfo);
+        }
+
+    } catch (error) {
+        logger.error(`Failed to query the database schema composite types details: ${error}`);
+        throw error;
+    }
+
+    return compositeTypesInfos;
+}
+
 async function getSchemaInfo() {
     const query = `SELECT schema_name FROM information_schema.schemata ;`
 
@@ -246,10 +371,12 @@ async function getSchemaInfo() {
 
         for (const schemaName of schemaNames) {
             const tableInfos = await getTableInfo(schemaName);
+            const compositeTypeInfo = await getCompositeTypes(schemaName);
 
             const schemaInfo: SchemaInfo = {
                 name: schemaName,
-                tables: tableInfos
+                tables: tableInfos,
+                compsiteTypes: compositeTypeInfo
             };
             schemaInfos.push(schemaInfo);
         }
@@ -333,16 +460,30 @@ function capitalize(text: string) {
     return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-function computedFieldReturnType(schema: string, comptedField: ComputedFieldInfo): { field: string, type: string} {
+function computedField(schema: string, comptedField: ComputedFieldInfo) {
     const regExpSchema = new RegExp(`^${schema}\.`);
+    const returnType = comptedField.returnType.replace(regExpSchema, "");
 
-    if (regExpSchema.test(comptedField.returnType)) {
-        const returnType = comptedField.returnType.replace(regExpSchema, "");
-        const field = `${capitalize(schema)}${capitalize(returnType)}Type`;
-        const type = ``;
+    if (comptedField.returnTypeKind === "TABLE" && comptedField.returnCardinality === "SINGLE") {
+        return `${capitalize(schema)}${capitalize(returnType)}Type`;
 
-        return { field, type };
-    } else {
+    } else if (comptedField.returnTypeKind === "TABLE" && comptedField.returnCardinality === "ARRAY") {
+        return `[${capitalize(schema)}${capitalize(returnType)}Type]!`;
+
+    } else if (comptedField.returnTypeKind === "REFERENCE" && comptedField.returnCardinality === "SINGLE") {
+        return `${PostgresYogaTypesMap[returnType as PostgresType]}`;
+
+    } else if (comptedField.returnTypeKind === "REFERENCE" && comptedField.returnCardinality === "ARRAY") {
+        return `[${PostgresYogaTypesMap[returnType as PostgresType]}]!`;
+
+    } else if (comptedField.returnTypeKind === "COMPOSITE" && comptedField.returnCardinality === "SINGLE") {
+        return `${capitalize(schema) + capitalize(returnType)}Type`;
+        
+    } else if (comptedField.returnTypeKind === "COMPOSITE" && comptedField.returnCardinality === "ARRAY") {
+        return `[${capitalize(schema) + capitalize(returnType)}Type]!`;
+        
+    }
+    else {
         throw new Error(`Unable to handle computed field return type: ${comptedField.returnType}`);
     }
 }
@@ -383,6 +524,20 @@ enum OrderDirection {
     for (const schemaInfo of schemaInfos) {
         const schema = schemaInfo.name;
         const tableInfos = schemaInfo.tables;
+
+        const schemaCompositeTypes = schemaInfo.compsiteTypes;
+
+        for (const schemaCompositeType of schemaCompositeTypes) {
+            const compositeType = `
+            
+type ${capitalize(schema) + capitalize(schemaCompositeType.name)}Type {
+${schemaCompositeType.columns.map(_columnInfo => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable ? "" : "!"}`).join("\n")}
+}
+            
+            `;
+
+            typeDefs = typeDefs.concat(compositeType);
+        }
  
         for (const tableInfo of tableInfos) {
             const table = tableInfo.name;
@@ -408,14 +563,8 @@ type ${schemaTableName}Type {
 ${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable ? "" : "!"}`).join("\n")}
 ${fkTables.map(_table => `\t${_table.name}ByReference: ${capitalize(schema) + capitalize(_table.foreignKey!)}Type`).join("\n")}
 ${pkTables.map(_table => `\t${plural(_table.name)}: [${capitalize(schema) + capitalize(_table.name)}Type!]!`).join("\n")}
-${computedFields.map(_computedField => `\t${_computedField.name}: ${computedFieldReturnType(schema, _computedField).field}`)}
+${computedFields.map(_computedField => `\t${_computedField.name}: ${computedField(schema, _computedField)}`).join("\n")}
 }
-
-                `;
-
-                const computedFieldTypes = `
-
-${computedFields.map(_computedField => computedFieldReturnType(schema, _computedField).type).join("")}
 
                 `;
 
@@ -470,7 +619,7 @@ input ${capitalize(schema) + capitalize(_table.name) + capitalize(table)}Mutatio
                 `
                 }).join("");
 
-                typeDefs = typeDefs.concat(tableType, computedFieldTypes, getType, getWhereType, getOrderType, tableMutationType, pkTableMutationType);
+                typeDefs = typeDefs.concat(tableType, getType, getWhereType, getOrderType, tableMutationType, pkTableMutationType);
 
                 const getByReferenceQuery = `get${schemaTableName}ByReference(reference: ID!): ${schemaTableName}Type`;
                 const getBulkQuery = `get${plural(schemaTableName)}(where: ${schemaTableName}WhereType, orderBy: [${schemaTableName}OrderByType!], limit: Int, offset: Int): [${schemaTableName}Type!]!`;
@@ -623,11 +772,11 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
                 });
 
                 computedFields.forEach(_computedField => resolvers[`${schemaTableName}Type`][_computedField.name] = async (parent) => {
-                    const query = constructors.constructGetComputationalFieldQuery(schema, table, _computedField.name, parent.reference);
+                    const query = constructors.constructGetComputationalFieldQuery(schema, table, _computedField.name, _computedField.returnTypeKind, parent.reference);
                     const res = await psqlClient!.query(query);
                     
                     if (_computedField.returnCardinality === "ARRAY") {
-                        return res.rows ?? [];
+                        return res.rows.map(_row => _computedField.returnTypeKind === "REFERENCE" ? _row[_computedField.name] : _row) ?? [];
                     } else {
                     const row = res.rows?.[0];
 
@@ -639,7 +788,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
                         value => value === null
                     );
 
-                    return allValuesNull ? null : row;
+                    return allValuesNull ? null : (_computedField.returnTypeKind === "REFERENCE" ? row[_computedField.name] : row);
                     }
 
                 });

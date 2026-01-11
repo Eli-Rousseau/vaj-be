@@ -71,3 +71,87 @@ SELECT
     TRUE AS shipping,
     TRUE AS billing
 FROM users;
+
+CREATE OR REPLACE FUNCTION shop."userReferenceType"("user" shop."user")
+RETURNS TEXT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  result TEXT;
+BEGIN
+  SELECT address.reference::TEXT
+	INTO result
+  FROM shop.address
+  WHERE address.user = "user".reference
+    AND address.billing = TRUE
+  ORDER BY address."updatedAt" DESC
+  LIMIT 1;
+
+	RETURN result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION shop."userReferenceTypeArray"("user" shop."user")
+RETURNS SETOF TEXT
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT address.reference::TEXT
+  FROM shop.address
+  ORDER BY address."updatedAt" DESC;
+END;
+$$;
+
+CREATE TYPE shop."userCompositeType" AS (
+	reference UUID,
+	country VARCHAR,
+	city VARCHAR
+);
+
+CREATE OR REPLACE FUNCTION shop."userGetCompositeType"("user" shop."user")
+RETURNS shop."userCompositeType"
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  result shop."userCompositeType";
+BEGIN
+  SELECT address.reference, address.country, address.city
+	INTO result
+  FROM shop.address
+  WHERE address.user = "user".reference
+    AND address.billing = TRUE
+  ORDER BY address."updatedAt" DESC
+  LIMIT 1;
+
+	RETURN result;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION shop."userGetCompositeTypeArray"("user" shop."user")
+RETURNS SETOF shop."userCompositeType"
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  result shop."userCompositeType";
+BEGIN
+  RETURN QUERY
+  SELECT address.reference, address.country, address.city
+  FROM shop.address
+  ORDER BY address."updatedAt" DESC;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION shop."userBillingAddressArray"("user" shop."user")
+RETURNS SETOF shop.address
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  result shop.address;
+BEGIN
+  RETURN QUERY
+  SELECT address.*
+  FROM shop.address
+  ORDER BY address."updatedAt" DESC;
+END;
+$$;
