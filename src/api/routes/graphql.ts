@@ -1,12 +1,10 @@
 import { Router } from "express";
 import { createYoga } from "graphql-yoga";
-import { createSchema } from "graphql-yoga";
 
-import { buildSchemaOptions } from "../../database/schema/options";
+import { buildGraphQLSchema } from "../../graphql/build-schema";
 
 async function getGraphQlRouter() {
-    const options = await buildSchemaOptions();
-    const schema = createSchema(options);
+    const schema = await buildGraphQLSchema();
     const yoga = createYoga({ schema });
 
     const router = Router();

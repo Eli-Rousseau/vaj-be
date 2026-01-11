@@ -1,7 +1,7 @@
 import path from "path";
 
-import getLogger from "../../utils/logger";
-import { getDataBaseInfo, ComputedFieldReturnType } from "./options";
+import getLogger from "../utils/logger";
+import { getDataBaseInfo, ComputedFieldReturnType } from "../database/database-info";
 
 const logger = getLogger({
     source: "constructors",
