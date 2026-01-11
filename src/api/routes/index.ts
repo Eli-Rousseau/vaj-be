@@ -1,2 +1,1 @@
-import getGraphQlRouter from "./graphql";
-export { getGraphQlRouter };
+export { getGraphQlRouter } from "./graphql";

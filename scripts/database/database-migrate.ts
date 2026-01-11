@@ -30,7 +30,8 @@ async function definePsqlClient() {
     const password = process.env.DATABASE_DEFAULT_USER_PASSWORD;
 
     if (!database || !host || !port || !user || !password) {
-        throw Error("Missing required environment variables: DATABASE_VAJ, DATABASE_HOST, DATABASE_PORT, DATABASE_DEFAULT_USER_NAME, or DATABASE_DEFAULT_USER_PASSWORD.");
+        logger.error("Missing required environment variables: DATABASE_VAJ, DATABASE_HOST, DATABASE_PORT, DATABASE_DEFAULT_USER_NAME, or DATABASE_DEFAULT_USER_PASSWORD.");
+        process.exit(1);
     }
 
     const pgConfig = {
@@ -156,6 +157,31 @@ async function applyMigrations(scripts: string[]) {
     }
 }
 
+async function rebuildGraphQLSchema() {
+    const applicationUrl = process.env.APPLICATION_URL;
+
+    if (!applicationUrl) {
+        logger.error("Missing required environment variables: APPLICATION_URL.");
+        process.exit(1);
+    }
+
+    try {
+        const url = `${applicationUrl}/api/graphql/update-schema`;
+
+        const response = await fetch(url, {
+            method: "POST"
+        });
+
+        if (!response.ok) {
+            throw Error(`Failed graphql/update-schema request: HTTP ${response.status} ${response.statusText}`);
+        }
+
+        logger.info(`Succeeded graphql/update-schema request: HTTP ${response.status} ${response.statusText}`);
+    } catch (error) {
+        logger.warn(`The graphql/update-schema request failed: ${error}`);
+    }
+}
+
 async function main() {
     await loadStage();
 
@@ -180,6 +206,9 @@ async function main() {
 
     await applyMigrations(diffs);
     logger.info("All migrations applied.");
+
+    await rebuildGraphQLSchema();
+
     process.exit(0);
 }
 

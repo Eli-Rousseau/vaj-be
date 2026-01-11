@@ -8,9 +8,8 @@ import { rateLimiter, unhandeledRoutes } from "./middlewares";
 import getLogger from "../utils/logger";
 import * as routers from "./routes/index";
 
-
 const logger = getLogger({
-    source: "api",
+    source: "src",
     service: "api",
     module: path.basename(__filename)
 })
@@ -38,7 +37,7 @@ async function startServer() {
   app.use(express.json());
 
   // Adding the routers
-  app.use("/graphql", await routers.getGraphQlRouter());
+  app.use("/api/graphql", await routers.getGraphQlRouter());
 
   app.use(unhandeledRoutes);
 

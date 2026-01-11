@@ -1,16 +1,15 @@
 import { Router } from "express";
-import { createYoga } from "graphql-yoga";
+import { yoga, initSchema } from "../../graphql/yoga";
+import { handleGraphQLUpdateSchema } from "../../graphql/handlers";
 
-import { buildGraphQLSchema } from "../../graphql/build-schema";
+export async function getGraphQlRouter() {
+  const router = Router();
 
-async function getGraphQlRouter() {
-    const schema = await buildGraphQLSchema();
-    const yoga = createYoga({ schema });
+  // Ensure schema is built before any request hits Yoga
+  await initSchema();
 
-    const router = Router();
-    router.use(yoga);
+  router.post("/update-schema", handleGraphQLUpdateSchema);
+  router.use(yoga);
 
-    return router;
+  return router;
 }
-
-export default getGraphQlRouter;
