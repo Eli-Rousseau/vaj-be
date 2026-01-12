@@ -3,6 +3,5 @@ import { rebuildSchema } from "./yoga";
 
 export async function handleGraphQLUpdateSchema(req: Request, res: Response) {
   await rebuildSchema(true);
-  res.status(200);
-  res.end();
+  res.status(200).end();
 }
