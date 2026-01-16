@@ -354,7 +354,6 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
                 } ;
                 resolvers["Mutation"][`update${plural(schemaTableName)}`] = async (_, { data, set }) => {
                     const query = await constructors.constructBulkUpdateQuery(schema, table, { data, set });
-                    console.log(query);
                     const res = await psqlClient!.query(query);
                     return res.rows;
                 } ;

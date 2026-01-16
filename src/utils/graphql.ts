@@ -17,7 +17,7 @@ export const graphql = async function(query: string, variables?: any) {
         throw Error("Missing required environmental variable: APPLICATION_URL.");
     }
     
-    const url = `${basesUrl}/graphql`;
+    const url = `${basesUrl}/api/graphql`;
     
     const response = await fetch(url,{
         method: "POST",
