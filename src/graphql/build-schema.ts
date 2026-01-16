@@ -108,16 +108,16 @@ input OnConflictType {
 }
 
 input ComparisonExp {
-\t_eq: JSON
-\t_neq: JSON
-\t_gt: JSON
-\t_gte: JSON
-\t_lt: JSON
-\t_lte: JSON
-\t_in: [JSON!]
-\t_nin: [JSON!]
-\t_hasKey: String
-\t_contains: JSON
+\teq: JSON
+\tneq: JSON
+\tgt: JSON
+\tgte: JSON
+\tlt: JSON
+\tlte: JSON
+\tin: [JSON!]
+\tnin: [JSON!]
+\thasKey: String
+\tcontains: JSON
 }
 
 enum OrderDirection {
@@ -194,9 +194,9 @@ input ${schemaTableName}GetType {
 input ${schemaTableName}WhereType {
 ${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: ComparisonExp`).join("\n")}
 ${fkTables.map(_table => `\t${_table.name}ByReference: ${capitalize(schema) + capitalize(_table.foreignKey!)}GetType`).join("\n")}
-\t_and: [${schemaTableName}WhereType!]
-\t_or: [${schemaTableName}WhereType!]
-\t_not: [${schemaTableName}WhereType!]
+\tand: [${schemaTableName}WhereType!]
+\tor: [${schemaTableName}WhereType!]
+\tnot: [${schemaTableName}WhereType!]
 }
 
                 `;
@@ -212,7 +212,7 @@ ${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: OrderDirection`).join("
                 const tableMutationType = `
 
 input ${schemaTableName}MutationType {
-${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable || _columnInfo.hasDefault || _columnInfo.isPrimaryKey || _columnInfo.handleAutomaticUpdate ? "" : "!"}`).join("\n")}
+${columnInfos.map(_columnInfo => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}`).join("\n")}
 ${fkTables.map(_table => `\t${_table.name}ByReference: ${schemaTableName}${capitalize(_table.foreignKey!)}MutationType`).join("\n")}
 }
 
@@ -224,6 +224,7 @@ ${fkTables.map(_table => `\t${_table.name}ByReference: ${schemaTableName}${capit
 input ${capitalize(schema) + capitalize(_table.name) + capitalize(table)}MutationType {
 \tdata: ${schemaTableName}MutationType!
 \tonConflict: OnConflictType
+\tset: [String]
 }
 
                 `
@@ -237,8 +238,8 @@ input ${capitalize(schema) + capitalize(_table.name) + capitalize(table)}Mutatio
 
                 const singleInsertQuery = `insert${schemaTableName}(data: ${schemaTableName}MutationType!, onConflict: OnConflictType): ${schemaTableName}Type!`;
                 const bulkInsertQuery = `insert${plural(schemaTableName)}(data: [${schemaTableName}MutationType!]!, onConflict: OnConflictType): [${schemaTableName}Type!]!`;
-                const singleUpdateQuery = `update${schemaTableName}(data: ${schemaTableName}MutationType!): ${schemaTableName}Type!`;
-                const bulkUpdateQuery = `update${plural(schemaTableName)}(data: [${schemaTableName}MutationType!]!): [${schemaTableName}Type!]!`;
+                const singleUpdateQuery = `update${schemaTableName}(data: ${schemaTableName}MutationType!, set: [String]): ${schemaTableName}Type!`;
+                const bulkUpdateQuery = `update${plural(schemaTableName)}(data: [${schemaTableName}MutationType!]!, set: [String]): [${schemaTableName}Type!]!`;
                 const singleDeleteQuery = `delete${schemaTableName}(data: ${schemaTableName}MutationType!): ${schemaTableName}Type!`;
                 const bulkDeleteQuery = `delete${plural(schemaTableName)}(data: [${schemaTableName}MutationType!]!): [${schemaTableName}Type!]!`;
                 mutationTypes.push(singleInsertQuery, bulkInsertQuery, singleUpdateQuery, bulkUpdateQuery, singleDeleteQuery, bulkDeleteQuery);
@@ -346,13 +347,14 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
                     const res = await psqlClient!.query(query);
                     return res.rows;
                 } ;
-                resolvers["Mutation"][`update${schemaTableName}`] = async (_, { data }) => {
-                    const query = await constructors.constructSingleUpdateQuery(schema, table, { data });
+                resolvers["Mutation"][`update${schemaTableName}`] = async (_, { data, set }) => {
+                    const query = await constructors.constructSingleUpdateQuery(schema, table, { data, set });
                     const res = await psqlClient!.query(query);
                     return res.rows[0];
                 } ;
-                resolvers["Mutation"][`update${plural(schemaTableName)}`] = async (_, { data }) => {
-                    const query = await constructors.constructBulkUpdateQuery(schema, table, { data });
+                resolvers["Mutation"][`update${plural(schemaTableName)}`] = async (_, { data, set }) => {
+                    const query = await constructors.constructBulkUpdateQuery(schema, table, { data, set });
+                    console.log(query);
                     const res = await psqlClient!.query(query);
                     return res.rows;
                 } ;

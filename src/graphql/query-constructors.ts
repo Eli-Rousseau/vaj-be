@@ -147,7 +147,7 @@ function constructNestedWhereClause(
       const { nestedJoins, nestedWheres } = constructNestedWhereClause(schema, relation, nestedWhere);
       joins = joins.concat(nestedJoins);
       wheres = wheres.concat(nestedWheres);
-    } else if (column === "_and") {
+    } else if (column === "and") {
       const conditionalWheres: string[] = [];
       if (Array.isArray(expression)) {
         for (const nestedWhere of expression) {
@@ -157,7 +157,7 @@ function constructNestedWhereClause(
         }
       }
       wheres.push(`(${conditionalWheres.join(" AND ")})`);
-    } else if (column === "_or") {
+    } else if (column === "or") {
       const conditionalWheres: string[] = [];
       if (Array.isArray(expression)) {
         for (const nestedWhere of expression) {
@@ -167,7 +167,7 @@ function constructNestedWhereClause(
         }
       }
       wheres.push(`(${conditionalWheres.join(" OR ")})`);
-    } else if (column === "_not") {
+    } else if (column === "not") {
       const conditionalWheres: string[] = [];
       if (Array.isArray(expression)) {
         for (const nestedWhere of expression) {
@@ -181,43 +181,43 @@ function constructNestedWhereClause(
       for (const [operator, value] of Object.entries(expression)) {
         const col = `"${table}"."${column}"`;
 
-        if (operator === "_eq") {
+        if (operator === "eq") {
           wheres.push(
             value == null
               ? `${col} IS NULL`
               : `${col} = ${escapeLiteral(value)}`
           );
-        } else if (operator === "_neq") {
+        } else if (operator === "neq") {
           wheres.push(
             value == null
               ? `${col} IS NOT NULL`
               : `${col} <> ${escapeLiteral(value)}`
           );
-        } else if (operator === "_gt") {
+        } else if (operator === "gt") {
           wheres.push(`${col} > ${escapeLiteral(value)}`);
-        } else if (operator === "_gte") {
+        } else if (operator === "gte") {
           wheres.push(`${col} >= ${escapeLiteral(value)}`);
-        } else if (operator === "_lt") {
+        } else if (operator === "lt") {
           wheres.push(`${col} < ${escapeLiteral(value)}`);
-        } else if (operator === "_lte") {
+        } else if (operator === "lte") {
           wheres.push(`${col} <= ${escapeLiteral(value)}`);
-        } else if (operator === "_in") {
+        } else if (operator === "in") {
           if (Array.isArray(value) && value.length) {
             wheres.push(`${col} IN (${value.map(v => escapeLiteral(v)).join(", ")})`);
           }
-        } else if (operator === "_nin") {
+        } else if (operator === "nin") {
           if (Array.isArray(value) && value.length) {
             wheres.push(
               `${col} NOT IN (${value.map(v => escapeLiteral(v)).join(", ")})`
             );
           }
-        } else if (operator === "_hasKey") {
+        } else if (operator === "hasKey") {
           if (typeof value === "string") {
             wheres.push(
               `jsonb_path_exists(${col}, '${jsonPathFromDot(value)}')`
             );
           }
-        } else if(operator === "_contains") {
+        } else if(operator === "contains") {
           if (typeof value === "object") {
             const path = constructJSONPath(value, "");
             if (path) wheres.push(`${col}${path}`);
@@ -306,7 +306,7 @@ function constructConflictClause(
   return conflictClause;
 }
 
-async function getTableValues(schema: string, table: string) {
+async function getTableValues(schema: string, table: string, set: string[] | null = null) {
   try {
     const databaseInfo = await getDataBaseInfo();
 
@@ -320,7 +320,7 @@ async function getTableValues(schema: string, table: string) {
       throw new Error(`Table "${table}" not found in schema "${schema}"`);
     }
 
-    return tableInfo.columns.flatMap(column => {
+    let allValues = tableInfo.columns.flatMap(column => {
       if (column.handleAutomaticUpdate) return [];
 
       const values = [column.name];
@@ -331,6 +331,12 @@ async function getTableValues(schema: string, table: string) {
 
       return values;
     });
+
+    if (set) {
+      allValues = allValues.filter(value => set.includes(value));
+    }
+
+    return allValues;
   } catch (error) {
     logger.error(`Unable to retrieve database info for schema "${schema}" and table "${table}".`, error);
     throw error;
@@ -438,7 +444,9 @@ async function constructNestedUpdateClause(
   updates: Record<string, any>,
   parentId: string
 ): Promise<nestedResult> {
-  let tableValues = await getTableValues(schema, table);
+  const set = updates?.set || null;
+
+  let tableValues = await getTableValues(schema, table, set);
   if (!tableValues) {
     throw new Error(`No table values found for table: ${table}`);
   }
@@ -503,10 +511,6 @@ export async function constructSingleUpdateQuery(
   table: string,
   updates: Record<string, any>
 ): Promise<string> {
-  if (typeof updates !== "object" || !("data" in updates) || typeof updates["data"] !== "object" ) {
-    throw new Error(`Record update expects data of type record, instead it received:\n${updates}`);
-  }
-
   const {last, nesteds} = await constructNestedUpdateClause(schema, table, updates, "0");
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
@@ -518,10 +522,6 @@ export async function constructBulkUpdateQuery(
   table: string,
   updates: Record<string, any>
 ): Promise<string> {
-  if (typeof updates !== "object" || !("data" in updates) || !Array.isArray(updates["data"])) {
-    throw new Error(`Bulk update expects data of type array of records, instead it received:\n${updates}`);
-  }
-
   const {last, nesteds} = await constructNestedUpdateClause(schema, table, updates, "0");
   const nestedInserts = nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
 
