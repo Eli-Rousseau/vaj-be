@@ -81,8 +81,7 @@ CREATE TABLE shop.article(
 		ON DELETE SET NULL,
 	"forSale" BOOLEAN CONSTRAINT "articleForSaleNotNull" NOT NULL,
 	"forRent" BOOLEAN CONSTRAINT "articleForRentNotNull" NOT NULL,
-	"rentalPrice" FLOAT DEFAULT NULL,
-	media JSONB DEFAULT NULL
+	"rentalPrice" FLOAT DEFAULT NULL
 );
 
 COMMENT ON COLUMN shop.article.reference IS 'AUTOMATIC UPDATE';

@@ -4,7 +4,7 @@ import { rm, writeFile } from "fs/promises";
 
 import { loadStage } from "../../src/utils/stage";
 import { runCommand } from "../../src/utils/process";
-import { downloadFile, findBucket, listFiles } from "../../src/utils/storage";
+import { storage } from "../../src/utils/storage";
 import { logger } from "../../src/utils/logger";
 
 const LOGGER = logger.get({
@@ -29,8 +29,8 @@ async function dropDatabase(args: {
 
 async function retrieveBackup() {
 
-  const bucket = findBucket("private");
-  let backups = await listFiles(bucket, directory);
+  const bucket = storage.findBucket("private");
+  let backups = await storage.listFiles(bucket, directory);
   if (backups.length === 0) {
     LOGGER.error("No backup file retrieved.");
     process.exit(1);
@@ -43,7 +43,7 @@ async function retrieveBackup() {
   });
   const file = backups[0];
 
-  await downloadFile(file);
+  await storage.downloadFile(file);
 
   try {
     await writeFile(tmp, file.content as Buffer);

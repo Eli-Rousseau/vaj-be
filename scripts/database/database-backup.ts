@@ -5,7 +5,7 @@ import { readFile, rm } from "fs/promises";
 import { loadStage } from "../../src/utils/stage";
 import { logger } from "../../src/utils/logger";
 import { runCommand } from "../../src/utils/process";
-import { File, findBucket, uploadFile, S3ContentType } from "../../src/utils/storage";
+import { File, storage, S3ContentType } from "../../src/utils/storage";
 
 const LOGGER = logger.get({
     source: "scripts",
@@ -36,7 +36,7 @@ async function storeBackup() {
         process.exit(1);
     }
 
-    const bucket = findBucket("private");
+    const bucket = storage.findBucket("private");
     const key = `${directory}${Date.now().toString()}.tar`
     const file = new File({
         key,
@@ -45,7 +45,7 @@ async function storeBackup() {
         contentType: S3ContentType.TAR
     })
 
-    await uploadFile(file);
+    await storage.uploadFile(file);
     try {
         await rm(tmp);
     } catch (error) {

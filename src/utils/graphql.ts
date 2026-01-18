@@ -8,21 +8,17 @@ const LOGGER = logger.get({
 
 class GraphQLClient {
 
-    private url: string;
-
-    constructor() {
+    async execute(query: string, variables: any = {}) {
         const baseUrl = process.env.APPLICATION_URL;
 
         if (!baseUrl) {
             throw new Error("Missing required environmental variable: APPLICATION_URL.");
         }
 
-        this.url = `${baseUrl}/api/graphql`;
-    }
-
-    async execute(query: string, variables?: any) {
+        const url = `${baseUrl}/api/graphql`;
+        
         try {
-            const response = await fetch(this.url,{
+            const response = await fetch(url,{
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ query, variables })
