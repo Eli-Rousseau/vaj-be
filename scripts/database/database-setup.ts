@@ -3,9 +3,9 @@ import path from "path";
 
 import { runCommand } from "../../src/utils/process";
 import { loadStage } from "../../src/utils/stage";
-import getLogger from "../../src/utils/logger";
+import { logger } from "../../src/utils/logger";
 
-const logger = getLogger({
+const LOGGER = logger.get({
     source: "scripts",
     module: path.basename(__filename)
 });
@@ -92,7 +92,7 @@ async function main() {
     const administratorUserPassword = process.env.DATABASE_ADMINISTRATOR_USER_PASSWORD;
 
     if (!host || !port || !defaultUserPassword || !defaultUserName || !defaultDatabase || !database || !administratorUserName || !administratorUserPassword) {
-        logger.error("Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_DEFAULT_USER_NAME, DATABASE_DEFAULT, DATABASE_HOST, DATBASE_PORT, DATABASE_VAJ, DATABASE_ADMINISTRATOR_USER_NAME, or DATABASE_ADMINISTRATOR_USER_PASSWORD.");
+        LOGGER.error("Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_DEFAULT_USER_NAME, DATABASE_DEFAULT, DATABASE_HOST, DATBASE_PORT, DATABASE_VAJ, DATABASE_ADMINISTRATOR_USER_NAME, or DATABASE_ADMINISTRATOR_USER_PASSWORD.");
         process.exit(1);
     }
 
@@ -102,7 +102,7 @@ async function main() {
     await createMigrationTable({ database, defaultUserName, defaultUserPassword, host, port });
     await createUser({ database, defaultUserName, defaultUserPassword, host, port, newUserName: administratorUserName, newUserPassword: administratorUserPassword });
 
-    logger.info("Finished database setup.")
+    LOGGER.info("Finished database setup.")
 }
 
 main();

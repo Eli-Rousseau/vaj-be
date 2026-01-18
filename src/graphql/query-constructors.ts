@@ -1,9 +1,9 @@
 import path from "path";
 
-import getLogger from "../utils/logger";
+import { logger } from "../utils/logger";
 import { getDataBaseInfo, ComputedFieldReturnType } from "../database/database-info";
 
-const logger = getLogger({
+const LOGGER = logger.get({
     source: "constructors",
     service: "api",
     module: path.basename(__filename)
@@ -338,7 +338,7 @@ async function getTableValues(schema: string, table: string, set: string[] | nul
 
     return allValues;
   } catch (error) {
-    logger.error(`Unable to retrieve database info for schema "${schema}" and table "${table}".`, error);
+    LOGGER.error(`Unable to retrieve database info for schema "${schema}" and table "${table}".`, error);
     throw error;
   }
 }

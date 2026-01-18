@@ -1,15 +1,14 @@
 import path from "path";
 
-import { getPgClient, pgClient } from "../utils/database";
-import getLogger from "../utils/logger";
+import { logger } from "../utils/logger";
+import { postgres } from "../utils/postgres";
 
-const logger = getLogger({
+const LOGGER = logger.get({
     source: "src",
     service: "database",
     module: path.basename(__filename)
 });
 
-let psqlClient: pgClient | null = null;
 let dataBaseInfo: DataBaseInfo | null = null;
 
 let SCHEMAS_TO_FILTER: string[] = ["shop"];
@@ -66,6 +65,7 @@ export type DataBaseInfo = {
 }
 
 async function getColumnInfo(schema: string, table: string) {
+    const pgPool = postgres.getPool("default");
     const query = `
 SELECT
     c.column_name,
@@ -121,7 +121,7 @@ ORDER BY c.ordinal_position;
 
     const columnInfos: ColumnInfo[] = [];
     try {
-        const columnDetails = (await psqlClient!.query(query)).rows;
+        const columnDetails = (await pgPool.query(query)).rows;
 
         for (const columnDetail of columnDetails) {
             const columnName = columnDetail["column_name"];
@@ -144,7 +144,7 @@ ORDER BY c.ordinal_position;
             columnInfos.push(columnInfo);
         }
     } catch (error) {
-        logger.error(`Failed to query the database column details for schema "${schema}" and table ${table}: ${error}`);
+        LOGGER.error(`Failed to query the database column details for schema "${schema}" and table ${table}: ${error}`);
         throw error;
     }
 
@@ -152,6 +152,7 @@ ORDER BY c.ordinal_position;
 }
 
 async function getComputedFields(schema: string, table: string) {
+    const pgPool = postgres.getPool("default");
     const query = `
 SELECT
     p.proname                               AS function_name,
@@ -201,7 +202,7 @@ ORDER BY function_name;
 
     const computedFieldInfos: ComputedFieldInfo[] = [];
     try {
-        const computedFieldDetails = (await psqlClient!.query(query)).rows;
+        const computedFieldDetails = (await pgPool.query(query)).rows;
         
         for (const computedFieldDetail of computedFieldDetails) {
             const fnName = computedFieldDetail["function_name"];
@@ -221,7 +222,7 @@ ORDER BY function_name;
         }
 
     } catch (error) {
-        logger.error(`Failed to query the database tables computed functions details: ${error}`);
+        LOGGER.error(`Failed to query the database tables computed functions details: ${error}`);
         throw error;
     }
 
@@ -229,6 +230,7 @@ ORDER BY function_name;
 }
 
 async function getTableInfo(schema: string) {
+    const pgPool = postgres.getPool("default");
     const query = `
 SELECT 
     table_name,
@@ -241,7 +243,7 @@ WHERE table_schema = '${schema}';
 `;
     const tableInfos: TableInfo[] = [];
     try {
-        const tableDetails = (await psqlClient!.query(query)).rows;
+        const tableDetails = (await pgPool.query(query)).rows;
 
         for (const tableDetail of tableDetails) {
             const tableName = tableDetail["table_name"];
@@ -259,7 +261,7 @@ WHERE table_schema = '${schema}';
         }
         
     } catch (error) {
-        logger.error(`Failed to query the database tables details: ${error}`);
+        LOGGER.error(`Failed to query the database tables details: ${error}`);
         throw error;
     }
 
@@ -267,6 +269,7 @@ WHERE table_schema = '${schema}';
 }
 
 async function getCompositeTypeColumnInfos(schema: string, compsiteType: string) {
+    const pgPool = postgres.getPool("default");
     const query = `
 SELECT
     a.attname                                   AS field_name,
@@ -292,7 +295,7 @@ ORDER BY a.attnum;
 
     const columnInfos: CompositeTypeColumnInfo[] = [];
     try {
-        const columnDetails = (await psqlClient!.query(query)).rows;
+        const columnDetails = (await pgPool.query(query)).rows;
 
         for (const columnDetail of columnDetails) {
             const columnName = columnDetail["field_name"];
@@ -309,7 +312,7 @@ ORDER BY a.attnum;
             columnInfos.push(columnInfo);
         }
     } catch (error) {
-        logger.error(`Failed to query the database schema compsoite type column details for schema "${schema}" and compsite type "${compsiteType}": ${error}`);
+        LOGGER.error(`Failed to query the database schema compsoite type column details for schema "${schema}" and compsite type "${compsiteType}": ${error}`);
         throw error;
     }
 
@@ -317,6 +320,7 @@ ORDER BY a.attnum;
 }
 
 async function getCompositeTypes(schema: string) {
+    const pgPool = postgres.getPool("default");
     const query = `
 SELECT DISTINCT
     t.typname                                   AS composite_type
@@ -336,7 +340,7 @@ WHERE n.nspname = '${schema}'
 `;  
     const compositeTypesInfos: CompositeTypeInfo[] = [];
     try {
-        const compositeTypesDetails = (await psqlClient!.query(query)).rows;
+        const compositeTypesDetails = (await pgPool.query(query)).rows;
 
         for (const compositeTypeDetail of compositeTypesDetails) {
             const compositeTypeName = compositeTypeDetail["composite_type"];
@@ -350,7 +354,7 @@ WHERE n.nspname = '${schema}'
         }
 
     } catch (error) {
-        logger.error(`Failed to query the database schema composite types details: ${error}`);
+        LOGGER.error(`Failed to query the database schema composite types details: ${error}`);
         throw error;
     }
 
@@ -358,11 +362,12 @@ WHERE n.nspname = '${schema}'
 }
 
 async function getSchemaInfo() {
+    const pgPool = postgres.getPool("default");
     const query = `SELECT schema_name FROM information_schema.schemata ;`
 
     const schemaInfos: SchemaInfo[] = [];
     try {
-        let schemaNames = (await psqlClient!.query(query)).rows.map(record => record["schema_name"]);
+        let schemaNames = (await pgPool.query(query)).rows.map(record => record["schema_name"]);
 
         if (SCHEMAS_TO_FILTER) {
             schemaNames = schemaNames.filter(name => SCHEMAS_TO_FILTER!.includes(name));
@@ -380,7 +385,7 @@ async function getSchemaInfo() {
             schemaInfos.push(schemaInfo);
         }
     } catch (error) {
-        logger.error(`Failed to query the database schema details: ${error}`);
+        LOGGER.error(`Failed to query the database schema details: ${error}`);
         throw error;
     }
     
@@ -388,11 +393,9 @@ async function getSchemaInfo() {
 }
 
 async function buildDataBaseInfo() {
-    psqlClient = await getPgClient();
-
     const schemaInfos = await getSchemaInfo();
     dataBaseInfo = { schemas: schemaInfos };
-    logger.info("Database info retrieved successfully.");
+    LOGGER.info("Database info retrieved successfully.");
 }
 
 export async function getDataBaseInfo(forceBuild: boolean = false) {

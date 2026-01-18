@@ -3,7 +3,7 @@ import path from "path";
 import { existsSync, readFileSync } from "fs";
 import { Readable } from "stream";
 
-import getLogger from "./logger";
+import { logger } from "./logger";
 import { findEnumsValue, S3ContentType } from "./enums";
 
 type Allowed = {
@@ -207,7 +207,7 @@ export class File {
         id: plain.id
       });
     } catch (error) {
-      throw Error(`Failed to create File instance: ${error}`);
+      throw new Error(`Failed to create File instance: ${error}`);
     }
   }
 }
@@ -216,7 +216,7 @@ export class File {
 let globalAuthResponse: AccountAuthorizationUrlResponse | null = null;
 let globalUploadUrlResponses: Record<string, UploadUrlResponse> | null = null;
 
-const logger = getLogger({
+const LOGGER = logger.get({
   source: "utils",
   module: path.basename(__filename),
 });
@@ -228,26 +228,25 @@ const getBuckets = function () {
 
   const stage = process.env.STAGE;
   if (!stage) {
-    throw Error("Missing required environmental variable: STAGE.");
+    throw new Error("Missing required environmental variable: STAGE.");
   }
 
   const filePath = `${process.cwd()}/src/utils/buckets-config.json`;
   if (!existsSync(filePath)) {
-    throw Error("Missing the buckets configution file.");
+    throw new Error("Missing the buckets configution file.");
   }
 
   const fileContent = readFileSync(filePath, { encoding: "utf-8" });
   const parsedConfig = JSON.parse(fileContent);
 
   if (!parsedConfig[stage]) {
-    throw Error(`Stage "${stage}" not found in buckets configuration.`);
+    throw new Error(`Stage "${stage}" not found in buckets configuration.`);
   }
 
   const fileConfig: Record<string, any> = parsedConfig[stage];
 
   baseBuckets = Object.fromEntries(
     Object.entries(fileConfig).map(([key, value]) => {
-      // const bucketInstance = plainToInstance(Bucket, value);
       try {
         const bucketInstance = new Bucket({
           key: value?.key,
@@ -258,7 +257,7 @@ const getBuckets = function () {
         })
         return [key, bucketInstance];
       } catch (error) {
-        throw Error(`Unable to transform input into Bucket instance: ${value}`);
+        throw new Error(`Unable to transform input into Bucket instance: ${value}`);
       }
     })
   );
@@ -277,7 +276,7 @@ export const findBucket = function (bucketKey: string) {
     const bucket = buckets[bucketKey];
     return bucket;
   } catch (error) {
-    throw Error(`Unable to retrieve the bucketkey: ${error}`);
+    throw new Error(`Unable to retrieve the bucketkey: ${error}`);
   }
 };
 
@@ -298,7 +297,7 @@ const getAccountAuthorization = async function () {
   const applicationKey = process.env.B2_APPLICATION_KEY;
   const baseUrl = process.env.B2_BASE_URL;
   if (!applicationKeyId || !applicationKey || !baseUrl) {
-    throw Error("Missing required environment variables: B2_KEY_ID, B2_APPLICATION_KEY, or B2_BASE_URL.");
+    throw new Error("Missing required environment variables: B2_KEY_ID, B2_APPLICATION_KEY, or B2_BASE_URL.");
   }
 
   try {
@@ -315,15 +314,15 @@ const getAccountAuthorization = async function () {
     });
 
     if (!response.ok) {
-      throw Error(`Failed b2_authorize_account: HTTP ${response.status} ${response.statusText}`);
+      throw new Error(`Failed b2_authorize_account: HTTP ${response.status} ${response.statusText}`);
     }
 
     globalAuthResponse = await response.json();
-    logger.info(`b2_authorize_account request.`);
+    LOGGER.info(`b2_authorize_account request.`);
 
     return globalAuthResponse;
   } catch (error) {
-    throw Error(`Failed b2_authorize_account: ${error}`);
+    throw new Error(`Failed b2_authorize_account: ${error}`);
   }
 };
 
@@ -350,7 +349,7 @@ const getUploadUrl = async function (
   // Retrieve the account authorization response
   const authResponse = await getAccountAuthorization();
   if (!authResponse) {
-    throw Error("Unable to retrieve account authorization.");
+    throw new Error("Unable to retrieve account authorization.");
   }
 
   try {
@@ -367,18 +366,18 @@ const getUploadUrl = async function (
     });
 
     if (!response.ok) {
-      throw Error(`Failed b2_get_upload_url: HTTP ${response.status} ${response.statusText}`);
+      throw new Error(`Failed b2_get_upload_url: HTTP ${response.status} ${response.statusText}`);
     }
 
     const uploadUrlResponse: UploadUrlResponse = await response.json();
     uploadUrlResponse["authorizationTokenExpirationTimestamp"] = now;
     globalUploadUrlResponses = globalUploadUrlResponses ?? {};
     globalUploadUrlResponses[bucket.id] = uploadUrlResponse;
-    logger.info(`b2_get_upload_url request.`);
+    LOGGER.info(`b2_get_upload_url request.`);
 
     return uploadUrlResponse;
   } catch (error) {
-    throw Error(`Failed b2_get_upload_url request: ${error}`);
+    throw new Error(`Failed b2_get_upload_url request: ${error}`);
   }
 };
 
@@ -388,13 +387,13 @@ const getUploadUrl = async function (
  */
 export const uploadFile = async function (file: File) {
   if (!file.content) {
-    throw Error("Unable to upload file with empty content.")
+    throw new Error("Unable to upload file with empty content.")
   }
 
   // Retrieve the upload url response
   const uploadUrlResponse = await getUploadUrl(file.bucket);
   if (!uploadUrlResponse) {
-    throw Error("Unable to retrieve the upload url.");
+    throw new Error("Unable to retrieve the upload url.");
   }
 
   try {
@@ -420,11 +419,11 @@ export const uploadFile = async function (file: File) {
     });
 
     if (!response.ok) {
-      throw Error(`Failed b2_upload_file: HTTP ${response.status} ${response.statusText}`);
+      throw new Error(`Failed b2_upload_file: HTTP ${response.status} ${response.statusText}`);
     }
 
     const uploadFileResponse: UploadFileResponse = await response.json();
-    logger.info("b2_upload_file request.");
+    LOGGER.info("b2_upload_file request.");
 
     const publicUrl: string = `https://f${
       file.bucket.region.match(/\d{3}/)![0]
@@ -434,7 +433,7 @@ export const uploadFile = async function (file: File) {
 
     return;
   } catch (error) {
-    throw Error(`Failed b2_upload_file request: ${error}.`);
+    throw new Error(`Failed b2_upload_file request: ${error}.`);
   }
 };
 /**
@@ -445,7 +444,7 @@ export const fileExists = async function (file: File) {
   // Retrieve the account authorization response
   const authResponse = await getAccountAuthorization();
   if (!authResponse) {
-    throw Error("Unable to retrieve account authorization.");
+    throw new Error("Unable to retrieve account authorization.");
   }
 
   try {
@@ -459,15 +458,15 @@ export const fileExists = async function (file: File) {
     });
 
     if (!response.ok && response.status !== 400) {
-      throw Error(`Failed b2_get_file_info: HTTP ${response.status} ${response.statusText}`);
+      throw new Error(`Failed b2_get_file_info: HTTP ${response.status} ${response.statusText}`);
     }
 
     const getFileInfoResponse: GetFileInfoResponse | BadFileIdResponse =
       await response.json();
-    logger.info("b2_get_file_info request.");
+    LOGGER.info("b2_get_file_info request.");
     return response.ok;
   } catch (error) {
-    throw Error(`Failed b2_get_file_info request: ${error}`);
+    throw new Error(`Failed b2_get_file_info request: ${error}`);
   }
 };
 
@@ -479,7 +478,7 @@ export const deleteFile = async function (file: File): Promise<void> {
   // Retrieve the account authorization response
   const authResponse = await getAccountAuthorization();
   if (!authResponse) {
-    throw Error("Unable to retrieve account authorization.");
+    throw new Error("Unable to retrieve account authorization.");
   }
 
   try {
@@ -500,17 +499,17 @@ export const deleteFile = async function (file: File): Promise<void> {
     });
 
     if (!response.ok) {
-      throw Error(`Failed b2_delete_file_version: HTTP ${response.status} ${response.statusText}`);
+      throw new Error(`Failed b2_delete_file_version: HTTP ${response.status} ${response.statusText}`);
     }
 
     const deleteFileResponse: DeleteFileResponse = await response.json();
-    logger.info("b2_delete_file_version request.");
+    LOGGER.info("b2_delete_file_version request.");
 
     file["publicUrl"] = undefined;
     file["id"] = undefined;
     return;
   } catch (error) {
-    throw Error(`Failed b2_delete_file_version request: ${error}`);
+    throw new Error(`Failed b2_delete_file_version request: ${error}`);
   }
 };
 
@@ -525,7 +524,7 @@ export const listFiles = async function (
   // Retrieve the account authorization response
   const authResponse = await getAccountAuthorization();
   if (!authResponse) {
-    throw Error("Unable to retrieve account authorization.");
+    throw new Error("Unable to retrieve account authorization.");
   }
 
   try {
@@ -548,7 +547,7 @@ export const listFiles = async function (
       });
 
       if (!response.ok) {
-        throw Error(`Failed b2_list_file_names: HTTP ${response.status} ${response.statusText}`);
+        throw new Error(`Failed b2_list_file_names: HTTP ${response.status} ${response.statusText}`);
       }
 
       const listFileNamesResponse: ListFileNamesResponse = await response.json();
@@ -577,11 +576,11 @@ export const listFiles = async function (
       startFileName = listFileNamesResponse.nextFileName;
     }
 
-    logger.info("b2_list_file_names request.");
+    LOGGER.info("b2_list_file_names request.");
 
     return files;
   } catch (error) {
-    throw Error(`Failed b2_list_file_names reques: ${error}`);
+    throw new Error(`Failed b2_list_file_names reques: ${error}`);
   }
 };
 
@@ -592,7 +591,7 @@ export const downloadFile = async function (file: File) {
   // Retrieve the account authorization response
   const authResponse = await getAccountAuthorization();
   if (!authResponse) {
-    throw Error("Unable to retrieve account authorization.");
+    throw new Error("Unable to retrieve account authorization.");
   }
 
   try {
@@ -607,14 +606,14 @@ export const downloadFile = async function (file: File) {
     });
 
     if (!response.ok) {
-      throw Error(`Failed b2_download_file_by_id: HTTP ${response.status} ${response.statusText}`);
+      throw new Error(`Failed b2_download_file_by_id: HTTP ${response.status} ${response.statusText}`);
     }
 
-    logger.info("b2_download_file_by_id request.");
+    LOGGER.info("b2_download_file_by_id request.");
 
     file.content = Buffer.from(await response.arrayBuffer());
 
   } catch (error) {
-    throw Error(`Failed b2_download_file_by_id request: ${error}.`);
+    throw new Error(`Failed b2_download_file_by_id request: ${error}.`);
   }
 };

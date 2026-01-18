@@ -1,50 +1,54 @@
 import path from "path";
-import getLogger from "./logger";
+import { logger } from "./logger";
 
-const logger = getLogger({
+const LOGGER = logger.get({
     source: "utils",
     module: path.basename(__filename)
 });
 
-/**
- * 
- * @description Can be used to request the graphql server with queries and variables.
- */
-export const graphql = async function(query: string, variables?: any) {
-    const basesUrl = process.env.APPLICATION_URL;
+class GraphQLClient {
 
-    if (!basesUrl) {
-        throw Error("Missing required environmental variable: APPLICATION_URL.");
+    private url: string;
+
+    constructor() {
+        const baseUrl = process.env.APPLICATION_URL;
+
+        if (!baseUrl) {
+            throw new Error("Missing required environmental variable: APPLICATION_URL.");
+        }
+
+        this.url = `${baseUrl}/api/graphql`;
     }
-    
-    const url = `${basesUrl}/api/graphql`;
-    
-    const response = await fetch(url,{
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, variables })
-    })
 
-    if (!response.ok) {
-        const text = await response.text();
-        let errorsStr = text;
-
+    async execute(query: string, variables?: any) {
         try {
-            const body = JSON.parse(text);
-            if (body.errors) {
-            errorsStr = body.errors.map((e: any) => JSON.stringify(e, null, 2)).join("\n");
+            const response = await fetch(this.url,{
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query, variables })
+            })
+
+            if (!response.ok) {
+                const text = await response.text();
+                let errorsStr = text;
+
+                const body = JSON.parse(text);
+                if (body.errors) {
+                    errorsStr = body.errors.map((e: any) => JSON.stringify(e, null, 2)).join("\n");
+                }
+
+                throw new Error(`Failed GraphQL request: HTTP ${response.status} ${response.statusText}\n${errorsStr}`);
             }
-        } catch {
-            // If not JSON, keep raw text
+
+            const body = await response.json();
+            LOGGER.info(`Suceeded graphql request.`);
+
+            return body;
+        } catch (error) {
+            LOGGER.error("Failed graphql query.", query, variables);
+            throw error;
         }
-
-        throw new Error(
-            `Failed GraphQL request: HTTP ${response.status} ${response.statusText}\n${errorsStr}`
-        );
-        }
-
-    const body = await response.json();
-    logger.info(`Suceeded graphql request.`);
-
-    return body;
+    }
 }
+
+const graphql = new GraphQLClient();

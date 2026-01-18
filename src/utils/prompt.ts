@@ -126,14 +126,3 @@ export function dropDown(question: string, options: string[]): Promise<string> {
     process.stdin.on("keypress", onKeypress);
   });
 }
-
-export function captureCtrlC() {
-  readline.emitKeypressEvents(process.stdin);
-  if (process.stdin.isTTY) process.stdin.setRawMode(true);
-
-  process.stdin.on("keypress", (str, key) => {
-    if (key.sequence === '\u0003') {   // Ctrl+C
-      process.emit('SIGINT');
-    }
-  });
-}

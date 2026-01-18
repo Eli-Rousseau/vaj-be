@@ -1,18 +1,16 @@
 import path from "path";
 import { createSchema } from "graphql-yoga";
 
-import { getPgClient, pgClient } from "../utils/database";
-import getLogger from "../utils/logger";
+import { logger } from "../utils/logger";
 import * as constructors from "./query-constructors";
+import { postgres } from "../utils/postgres";
 import { getDataBaseInfo, DataBaseInfo, ComputedFieldInfo } from "../database/database-info";
 
-const logger = getLogger({
+const LOGGER = logger.get({
     source: "src",
     service: "graphql",
     module: path.basename(__filename)
 });
-
-let psqlClient: pgClient | null = null;
 
 type PostgresType =
   | "bigint"
@@ -300,6 +298,8 @@ type ResolverFn = (...args: any[]) => any;
 
 function buildResolvers(dataBaseInfo: DataBaseInfo) {
 
+    const pgPool = postgres.getPool("administrator");
+
     const schemaInfos = dataBaseInfo.schemas;
 
     let resolvers: Record<string, Record<string, ResolverFn>> = { Query: {}, Mutation: {} };
@@ -328,43 +328,43 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             if (!tableInfo.isEnum) {
                 resolvers["Query"][`get${schemaTableName}ByReference`] = async (_, { reference }) => {
                     const query = constructors.constructGetOnColumnQuery(schema, table, "reference", reference);
-                    const res = await psqlClient!.query(query);
+                    const res = await pgPool.query(query);
                     return res.rows[0];
                 } ;
                 resolvers["Query"][`get${plural(schemaTableName)}`] = async (_, { where, orderBy, limit, offset }) => {
                     const query = constructors.constructGetQuery(schema, table, where, orderBy, limit, offset);
-                    const res = await psqlClient!.query(query);
+                    const res = await pgPool.query(query);
                     return res.rows;
                 } ;
                 
                 resolvers["Mutation"][`insert${schemaTableName}`] = async (_, {data, onConflict}) => {
                     const query = await constructors.constructSingleInsertQuery(schema, table, { data, onConflict });
-                    const res = await psqlClient!.query(query);
+                    const res = await pgPool.query(query);
                     return res.rows[0];
                 } ;
                 resolvers["Mutation"][`insert${plural(schemaTableName)}`] = async (_, {data, onConflict}) => {
                     const query = await constructors.constructBulkInsertQuery(schema, table, { data, onConflict });
-                    const res = await psqlClient!.query(query);
+                    const res = await pgPool.query(query);
                     return res.rows;
                 } ;
                 resolvers["Mutation"][`update${schemaTableName}`] = async (_, { data, set }) => {
                     const query = await constructors.constructSingleUpdateQuery(schema, table, { data, set });
-                    const res = await psqlClient!.query(query);
+                    const res = await pgPool.query(query);
                     return res.rows[0];
                 } ;
                 resolvers["Mutation"][`update${plural(schemaTableName)}`] = async (_, { data, set }) => {
                     const query = await constructors.constructBulkUpdateQuery(schema, table, { data, set });
-                    const res = await psqlClient!.query(query);
+                    const res = await pgPool.query(query);
                     return res.rows;
                 } ;
                 resolvers["Mutation"][`delete${schemaTableName}`] = async (__dirname, { data }) => {
                     const query = await constructors.constructSingleDeleteQuery(schema, table, { data });
-                    const res = await psqlClient!.query(query);
+                    const res = await pgPool.query(query);
                     return res.rows[0];
                 } ;
                 resolvers["Mutation"][`delete${plural(schemaTableName)}`] = async (__dirname, { data }) => {
                     const query = await constructors.constructBulkDeleteQuery(schema, table, { data });
-                    const res = await psqlClient!.query(query);
+                    const res = await pgPool.query(query);
                     return res.rows;
                 } ;
 
@@ -372,19 +372,19 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
 
                 pkTables.forEach(_table => resolvers[`${schemaTableName}Type`][plural(_table.name)] = async (parent) => {
                     const query = constructors.constructGetOnColumnQuery(schema, _table.name, table, parent.reference);
-                    const res = await psqlClient!.query(query)
+                    const res = await pgPool.query(query)
                     return res.rows;
                 });
 
                 fkTables.forEach(_table => resolvers[`${schemaTableName}Type`][`${_table.name}ByReference`] = async (parent) => {
                     const query = constructors.constructGetOnColumnQuery(schema, _table.name, "reference", parent.user);
-                    const res = await psqlClient!.query(query);
+                    const res = await pgPool.query(query);
                     return res.rows[0];
                 });
 
                 computedFields.forEach(_computedField => resolvers[`${schemaTableName}Type`][_computedField.name] = async (parent) => {
                     const query = constructors.constructGetComputationalFieldQuery(schema, table, _computedField.name, _computedField.returnTypeKind, parent.reference);
-                    const res = await psqlClient!.query(query);
+                    const res = await pgPool.query(query);
                     
                     if (_computedField.returnCardinality === "ARRAY") {
                         return res.rows.map(_row => _computedField.returnTypeKind === "REFERENCE" ? _row[_computedField.name] : _row) ?? [];
@@ -406,18 +406,18 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             } else {
                 resolvers["Query"][`get${plural(schemaTableName)}`] = async (_) => {
                     const query = constructors.constructGetQuery(schema, table); 
-                    const res = await psqlClient!.query(query);
+                    const res = await pgPool.query(query);
                     return res.rows;
                 };
 
                 resolvers["Mutation"][`insert${plural(schemaTableName)}`] = async (__dirname, { data }) => {
                     const query = await constructors.constructBulkInsertQuery(schema, table, { data });
-                    const res = await psqlClient!.query(query);
+                    const res = await pgPool.query(query);
                     return res.rows;
                 };
                 resolvers["Mutation"][`delete${plural(schemaTableName)}`] = async (__dirname, { data }) => {
                     const query = await constructors.constructBulkDeleteQuery(schema, table, { data }, columnInfos[0].name);
-                    const res = await psqlClient!.query(query);
+                    const res = await pgPool.query(query);
                     return res.rows;
                 };
             }
@@ -428,8 +428,6 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
 }
 
 export async function buildGraphQLSchema(forceBuild: boolean = false) {
-    psqlClient = await getPgClient();
-    
     const dataBaseInfo = await getDataBaseInfo(forceBuild);
 
     const typeDefs = buildTypeDefs(dataBaseInfo!);

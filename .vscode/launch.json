@@ -13,7 +13,7 @@
             "sourceMaps": true,
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "runtimeVersion": "24"
+            "runtimeVersion": "25"
         }
     ]
 }

@@ -3,9 +3,9 @@ import { existsSync } from "fs";
 import path from "path";
 
 import { dropDown } from "./prompt";
-import getLogger from "./logger";
+import { logger } from "./logger";
 
-let logger = getLogger({
+let LOGGER = logger.get({
   source: "utils",
   module: path.basename(__filename),
 });
@@ -38,14 +38,14 @@ export const loadStage = async function (
   const config = stageConfigs[stage];
   const configFullPath = `${process.cwd()}/${config}`;
   if (!existsSync(configFullPath)) {
-    logger.error(`Missing .env file for ${stage}: ${configFullPath}`);
+    LOGGER.error(`Missing .env file for ${stage}: ${configFullPath}`);
     process.exit(-1);
   }
 
   dotenv.config({ path: config, quiet: true });
 
-  // Reinitialize the baseLogger once the environment is loaded
-  logger = getLogger(
+  // Reinitialize the baseLOGGER once the environment is loaded
+  LOGGER = logger.get(
     {
       source: "utils",
       module: path.basename(__filename),
@@ -53,5 +53,5 @@ export const loadStage = async function (
     true
   );
 
-  logger.info("Environment loaded.");
+  LOGGER.info("Environment loaded.");
 };

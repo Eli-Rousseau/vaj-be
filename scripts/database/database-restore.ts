@@ -5,9 +5,9 @@ import { rm, writeFile } from "fs/promises";
 import { loadStage } from "../../src/utils/stage";
 import { runCommand } from "../../src/utils/process";
 import { downloadFile, findBucket, listFiles } from "../../src/utils/storage";
-import getLogger from "../../src/utils/logger";
+import { logger } from "../../src/utils/logger";
 
-const logger = getLogger({
+const LOGGER = logger.get({
   source: "scripts",
   module: path.basename(__filename)
 });
@@ -32,7 +32,7 @@ async function retrieveBackup() {
   const bucket = findBucket("private");
   let backups = await listFiles(bucket, directory);
   if (backups.length === 0) {
-    logger.error("No backup file retrieved.");
+    LOGGER.error("No backup file retrieved.");
     process.exit(1);
   }
 
@@ -48,7 +48,7 @@ async function retrieveBackup() {
   try {
     await writeFile(tmp, file.content as Buffer);
   } catch (error) {
-    logger.error(`Unable to write backup file: ${error}`);
+    LOGGER.error(`Unable to write backup file: ${error}`);
     process.exit(1);
   }
 }
@@ -67,7 +67,7 @@ async function restoreDatabase(args: {
   try {
     await rm(tmp);
   } catch (error) {
-    logger.error(`Failed to remove backup: ${error}`);
+    LOGGER.error(`Failed to remove backup: ${error}`);
     process.exit(1);
   }
 }
@@ -85,7 +85,7 @@ async function main() {
   const database = process.env.DATABASE_VAJ;
 
   if (!host || !port || !defaultUserPassword || !defaultUserName || !defaultDatabase || !database) {
-      logger.error("Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_DEFAULT_USER_NAME, DATABASE_DEFAULT, DATABASE_HOST, DATBASE_PORT, or DATABASE_VAJ.");
+      LOGGER.error("Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_DEFAULT_USER_NAME, DATABASE_DEFAULT, DATABASE_HOST, DATBASE_PORT, or DATABASE_VAJ.");
       process.exit(1);
   }
 

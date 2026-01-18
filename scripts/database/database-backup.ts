@@ -3,11 +3,11 @@ import { cwd } from "process";
 import { readFile, rm } from "fs/promises";
 
 import { loadStage } from "../../src/utils/stage";
-import getLogger from "../../src/utils/logger";
+import { logger } from "../../src/utils/logger";
 import { runCommand } from "../../src/utils/process";
 import { File, findBucket, uploadFile, S3ContentType } from "../../src/utils/storage";
 
-const logger = getLogger({
+const LOGGER = logger.get({
     source: "scripts",
     module: path.basename(__filename)
 });
@@ -32,7 +32,7 @@ async function storeBackup() {
     try {
         content = await readFile(tmp);
     } catch (error) {
-        logger.error(`Unable to read the database backup: ${error}`);
+        LOGGER.error(`Unable to read the database backup: ${error}`);
         process.exit(1);
     }
 
@@ -49,7 +49,7 @@ async function storeBackup() {
     try {
         await rm(tmp);
     } catch (error) {
-        logger.error(`Unable to remove temporary backup: ${error}`);
+        LOGGER.error(`Unable to remove temporary backup: ${error}`);
         process.exit(1);
     }
 }
@@ -65,14 +65,14 @@ async function main() {
     const defaultUserPassword = process.env.DATABASE_DEFAULT_USER_PASSWORD;
 
     if (!host || !port || !defaultUserPassword || !defaultUserName || !database) {
-        logger.error("Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_DEFAULT_USER_NAME, DATABASE_HOST, DATBASE_PORT, or DATABASE_VAJ.");
+        LOGGER.error("Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_DEFAULT_USER_NAME, DATABASE_HOST, DATBASE_PORT, or DATABASE_VAJ.");
         process.exit(1);
     }
 
     await makeDatabaseBackup({ database, defaultUserName, defaultUserPassword, host, port });
     await storeBackup();
     
-    logger.info("Finished the database backup.");
+    LOGGER.info("Finished the database backup.");
 }
 
 main();

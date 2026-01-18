@@ -2,10 +2,10 @@ import path from "path";
 import { createYoga } from "graphql-yoga";
 import type { GraphQLSchema } from "graphql";
 
-import getLogger from "../utils/logger";
+import { logger } from "../utils/logger";
 import { buildGraphQLSchema } from "./build-schema";
 
-const logger = getLogger({
+const LOGGER = logger.get({
     source: "src",
     service: "graphql",
     module: path.basename(__filename)
@@ -24,10 +24,10 @@ export const yoga = createYoga({
 
 export async function initSchema() {
   currentSchema = await buildGraphQLSchema();
-  logger.info("GraphQL schema build.")
+  LOGGER.info("GraphQL schema build.")
 }
 
 export async function rebuildSchema(force = false) {
   currentSchema = await buildGraphQLSchema(force);
-  logger.info("GraphQL schema updated.")
+  LOGGER.info("GraphQL schema updated.")
 }
