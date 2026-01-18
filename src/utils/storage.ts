@@ -5,7 +5,6 @@ import { Readable } from "stream";
 
 import { logger } from "../../src/utils/logger";
 import { findEnumsValue, S3ContentType } from "../../src/utils/enums";
-import { loadStage } from "./stage";
 
 const LOGGER = logger.get({
   source: "utils",
