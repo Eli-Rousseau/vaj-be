@@ -61,11 +61,7 @@ export const fromDay = function (
   if (options?.isNullable && value === null) return null;
 
   if (value instanceof Date) {
-    const year = value.getUTCFullYear().toString();
-    const month = (value.getUTCMonth() + 1).toString().padStart(2, "0");
-    const day = value.getUTCDate().toString().padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
+    return value.getDate().toString();
   }
 
   throw new TransformerError(`Expected a Date instance. Recieved: ${value}`);
@@ -117,18 +113,7 @@ export const fromDatetime = function (
   if (options?.isNullable && value === null) return null;
 
   if (value instanceof Date) {
-    const year = value.getUTCFullYear().toString();
-    const month = (value.getUTCMonth() + 1).toString().padStart(2, "0");
-    const day = value.getUTCDate().toString().padStart(2, "0");
-    const hours = value.getUTCHours().toString().padStart(2, "0");
-    const minutes = value.getUTCMinutes().toString().padStart(2, "0");
-    const seconds = value.getUTCSeconds().toString().padStart(2, "0");
-    const milliseconds = (value.getUTCMilliseconds() / 1000).toPrecision(6);
-
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds.slice(
-        2,
-        milliseconds.length
-    )}`;
+    return value.getDate().toString();
   }
 
   throw new TransformerError(`Expected an Date instance. Recieved: ${value}`);
