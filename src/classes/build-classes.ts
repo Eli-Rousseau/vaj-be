@@ -145,9 +145,36 @@ function buildColumnFields(
   tableInfo: TableInfo
 ): string {
   return tableInfo.columns
-    .map(column => buildColumnField(schema, column))
+    .flatMap(column => buildColumnVariants(schema, column))
     .join("\n\n");
 }
+
+
+function buildColumnVariants(
+  schema: SchemaInfo,
+  column: ColumnInfo
+): string[] {
+  if (!column.foreignKey || column.foreignKey.endsWith("Enum")) {
+    return [buildColumnField(schema, column)];
+  }
+
+  const referenceColumn: ColumnInfo = {
+    ...column,
+    name: `${column.name}ByReference`,
+  };
+
+  const baseColumn: ColumnInfo = {
+    ...column,
+    foreignKey: null,
+    isNullable: false
+  };
+
+  return [
+    buildColumnField(schema, referenceColumn),
+    buildColumnField(schema, baseColumn),
+  ];
+}
+
 
 function buildColumnField(
   schema: SchemaInfo,
@@ -214,7 +241,7 @@ function buildForeignKeyCollections(
       return `
 ${INDENT}@Type(() => ${type})
 ${INDENT}@Expose()
-${INDENT}${type}${plural(type)}?: ${type} | null = null;`.trim();
+${INDENT}${plural(type)}?: ${type}[] | null = null;`;
     })
     .join("\n\n");
 }
@@ -232,7 +259,8 @@ function buildComputedField(
   schema: SchemaInfo,
   field: ComputedFieldInfo
 ): string {
-  const typeName = `${capitalize(schema.name)}${capitalize(field.returnType)}`;
+  const returnType = field.returnType.replace(SCHEMA_REGEXP, "");
+  const typeName = `${capitalize(schema.name)}${capitalize(returnType)}`;
   const isTable =
     field.returnTypeKind === "TABLE" ||
     field.returnTypeKind === "COMPOSITE";
@@ -245,7 +273,7 @@ function buildComputedField(
 
   return `
 ${decorators}
-${INDENT}${field.name}?: ${typeName}${array} | null = null;`.trim();
+${INDENT}${field.name}?: ${typeName}${array} | null = null;`;
 }
 
 function buildComputedTransformDecorators(
