@@ -12,7 +12,7 @@ const LOGGER = logger.get({
     module: path.basename(__filename)
 });
 
-type PostgresType =
+export type PostgresType =
   | "bigint"
   | "boolean"
   | "character"

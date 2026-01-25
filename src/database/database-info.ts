@@ -11,9 +11,9 @@ const LOGGER = logger.get({
 
 let dataBaseInfo: DataBaseInfo | null = null;
 
-let SCHEMAS_TO_FILTER: string[] = ["shop"];
+export const SCHEMAS_TO_FILTER: string[] = ["shop"];
 
-type ColumnInfo = {
+export type ColumnInfo = {
     name: string;
     dataType: string;
     hasDefault: boolean;
@@ -35,26 +35,26 @@ export type ComputedFieldInfo = {
     returnTypeKind: ComputedFieldReturnType;
 };
 
-type TableInfo = {
+export type TableInfo = {
     name: string;
     isEnum: boolean;
     columns: ColumnInfo[];
     computedFields: ComputedFieldInfo[];
 };
 
-type CompositeTypeColumnInfo = {
+export type CompositeTypeColumnInfo = {
     name: string;
     dataType: string;
     hasDefault: boolean;
     isNullable: boolean;
 };
 
-type CompositeTypeInfo = {
+export type CompositeTypeInfo = {
     name: string;
     columns: CompositeTypeColumnInfo[];
 }
 
-type SchemaInfo = {
+export type SchemaInfo = {
     name: string;
     tables: TableInfo[];
     compsiteTypes: CompositeTypeInfo[];

@@ -4,9 +4,8 @@
   "description": "vintage archive jungle - backend project",
   "main": "index.js",
   "scripts": {
-    "generate-transformer-classes": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/generate-transformer-classes.js",
+    "generate-transformer-classes": "tsc -p tsconfig.json && node ./dist/scripts/generate-transformer-classes.js",
     "server": "tsc -p tsconfig.json && node ./dist/src/api/server.js",
-    "generate-api-key": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/generate-api-key.js",
     "postgres": "tsc -p tsconfig.json && node ./dist/scripts/database/postgres.js",
     "database-setup": "tsc -p tsconfig.json && node ./dist/scripts/database/database-setup.js",
     "database-backup": "tsc -p tsconfig.json && node ./dist/scripts/database/database-backup.js",
