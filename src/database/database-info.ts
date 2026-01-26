@@ -398,11 +398,11 @@ async function buildDataBaseInfo() {
     LOGGER.info("Database info retrieved successfully.");
 }
 
-export async function getDataBaseInfo(forceBuild: boolean = false) {
+export async function getDataBaseInfo(forceBuild: boolean = false): Promise<DataBaseInfo> {
     if (dataBaseInfo && !forceBuild) {
         return dataBaseInfo;
     }
 
     await buildDataBaseInfo();
-    return dataBaseInfo;
+    return dataBaseInfo!;
 }

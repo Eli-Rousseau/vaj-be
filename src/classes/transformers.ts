@@ -12,7 +12,7 @@ class TransformerError extends Error {
     }
 }
 
-export abstract class TransformerClass {
+abstract class TransformerClass {
   static fromPlain<T extends TransformerClass>(
     this: new (...args: any[]) => T,
     plain: unknown

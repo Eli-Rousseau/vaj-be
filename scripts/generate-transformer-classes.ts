@@ -1,8 +1,7 @@
-import { readFile, writeFile, unlink } from "fs/promises";
+import { writeFile} from "fs/promises";
 import * as path from "path";
 
 import { loadStage } from "../src/utils/stage";
-import { runCommand } from "../src/utils/process";
 import { buildTransformerClasses } from "../src/classes/build-classes";
 import { getDataBaseInfo } from "../src/database/database-info";
 import { logger } from "../src/utils/logger";
@@ -15,8 +14,7 @@ const LOGGER = logger.get({
 async function main() {
   await loadStage();
 
-  const dataBaseInfo = await getDataBaseInfo(true);
-  const classes = buildTransformerClasses(dataBaseInfo!);
+  const classes = await buildTransformerClasses();
 
   const outputFile = `${process.cwd()}/src/classes/transformer-classes.ts`;
   try {

@@ -2,7 +2,7 @@ import path from "path";
 
 import { logger } from "../utils/logger";
 import { PostgresType } from "../graphql/build-schema";
-import { DataBaseInfo, SchemaInfo, TableInfo, ColumnInfo, ComputedFieldInfo, CompositeTypeInfo, CompositeTypeColumnInfo, SCHEMAS_TO_FILTER } from "../database/database-info";
+import { DataBaseInfo, SchemaInfo, TableInfo, ColumnInfo, ComputedFieldInfo, CompositeTypeInfo, CompositeTypeColumnInfo, SCHEMAS_TO_FILTER, getDataBaseInfo } from "../database/database-info";
 
 const LOGGER = logger.get({
     source: "src",
@@ -84,12 +84,10 @@ function buildCompositeTypeTransformerClasses(
         .join("\n\n");
 
     const transformerClass = `
-
-export class ${className} extends transformers.TransformerClass {
+export class ${className} extends TransformerClass {
 ${body}
 }
-
-`;
+`.trim().concat("\n\n");
     TRANSFORMER_CLASSES += transformerClass;
 }
 
@@ -130,12 +128,10 @@ function buildTableTransformerClasses(
     .join("\n\n");
 
   const transformerClass = `
-
-export class ${className} extends transformers.TransformerClass {
+export class ${className} extends TransformerClass {
 ${body}
 }
-
-`;
+`.trim().concat("\n\n");
 
   TRANSFORMER_CLASSES += transformerClass;
 }
@@ -154,7 +150,11 @@ function buildColumnVariants(
   schema: SchemaInfo,
   column: ColumnInfo
 ): string[] {
-  if (!column.foreignKey || column.foreignKey.endsWith("Enum")) {
+  if (column.foreignKey?.endsWith("Enum")) {
+    column.foreignKey = null;
+  }
+
+  if (!column.foreignKey) {
     return [buildColumnField(schema, column)];
   }
 
@@ -207,9 +207,11 @@ function buildTransformDecorators(
 
   const nullable = column.isNullable ? ", { isNullable: true }" : "";
 
-  return `
-${INDENT}@Transform(({ value }) => transformers.${transformer.to}(value${nullable}), { toClassOnly: true })
-${INDENT}@Transform(({ value }) => transformers.${transformer.from}(value${nullable}), { toPlainOnly: true })`;
+  return [
+    `${INDENT}@Transform(({ value }) => transformers.${transformer.to}(value${nullable}), { toClassOnly: true })`,
+    `${INDENT}@Transform(({ value }) => transformers.${transformer.from}(value${nullable}), { toPlainOnly: true })`,
+  ].join('\n');
+
 }
 
 function buildPropertyDeclaration(
@@ -238,10 +240,11 @@ function buildForeignKeyCollections(
     .map(table => {
       const type = `${capitalize(schema.name)}${capitalize(table)}`;
 
-      return `
-${INDENT}@Type(() => ${type})
-${INDENT}@Expose()
-${INDENT}${plural(type)}?: ${type}[] | null = null;`;
+      return [
+        `${INDENT}@Type(() => ${type})`,
+        `${INDENT}@Expose()`,
+        `${INDENT}${plural(type)}?: ${type}[] | null = null;`
+      ].join("\n");
     })
     .join("\n\n");
 }
@@ -260,7 +263,9 @@ function buildComputedField(
   field: ComputedFieldInfo
 ): string {
   const returnType = field.returnType.replace(SCHEMA_REGEXP, "");
-  const typeName = `${capitalize(schema.name)}${capitalize(returnType)}`;
+  const typeName = field.returnTypeKind === "REFERENCE" 
+    ? `${TYPE_MAPPER[field.returnType as PostgresType]}` 
+    : `${capitalize(schema.name)}${capitalize(returnType)}`;
   const isTable =
     field.returnTypeKind === "TABLE" ||
     field.returnTypeKind === "COMPOSITE";
@@ -271,9 +276,10 @@ function buildComputedField(
 
   const array = field.returnCardinality === "ARRAY" ? "[]" : "";
 
-  return `
-${decorators}
-${INDENT}${field.name}?: ${typeName}${array} | null = null;`;
+  return [
+    `${decorators}`,
+    `${INDENT}${field.name}?: ${typeName}${array} | null = null;`
+  ].join("\n");
 }
 
 function buildComputedTransformDecorators(
@@ -284,9 +290,10 @@ function buildComputedTransformDecorators(
 
   if (!transformer) return "";
 
-  return `
-${INDENT}@Transform(({ value }) => transformers.${transformer.to}(value, { isNullable: true }), { toClassOnly: true })
-${INDENT}@Transform(({ value }) => transformers.${transformer.from}(value, { isNullable: true }), { toPlainOnly: true })`.trim();
+  return [
+    `${INDENT}@Transform(({ value }) => transformers.${transformer.to}(value, { isNullable: true }), { toClassOnly: true })`,
+    `${INDENT}@Transform(({ value }) => transformers.${transformer.from}(value, { isNullable: true }), { toPlainOnly: true })`
+  ].join("\n");
 }
 
 function buildSchemaTransformerClasses(schemaInfo: SchemaInfo) {
@@ -321,19 +328,35 @@ function buildSchemaTransformerClasses(schemaInfo: SchemaInfo) {
         }
 
         if (!buildClasses.has(tableInfo.name)) buildTableTransformerClasses(schemaInfo, tableInfo);
+        buildClasses.add(tableInfo.name);
     }
 }
 
-export function buildTransformerClasses(databaseInfo: DataBaseInfo) {
+export async function buildTransformerClasses() {
+    const dataBaseInfo = await getDataBaseInfo(true);
+
     const plate = `
-import { Transform, Expose, Type } from "class-transformer";
+import { Transform, Expose, Type, plainToInstance, instanceToPlain } from "class-transformer";
 
 import * as transformers from "./transformers";
-    `
+
+abstract class TransformerClass {
+  static fromPlain<T extends TransformerClass>(
+    this: new (...args: any[]) => T,
+    plain: unknown
+  ): T {
+    return plainToInstance(this, plain as object);
+  }
+
+  toPlain(): object {
+    return instanceToPlain(this);
+  }
+}
+    `.trim().concat("\n");
 
     TRANSFORMER_CLASSES += plate;
 
-    for (const schemaInfo of databaseInfo.schemas) {
+    for (const schemaInfo of dataBaseInfo.schemas) {
         if (SCHEMAS_TO_FILTER.includes(schemaInfo.name)) {
             SCHEMA_REGEXP = new RegExp(`^${schemaInfo.name}.`);
             buildSchemaTransformerClasses(schemaInfo);
