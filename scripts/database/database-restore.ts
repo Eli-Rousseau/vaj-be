@@ -9,26 +9,25 @@ import { logger } from "../../src/utils/logger";
 
 const LOGGER = logger.get({
   source: "scripts",
-  module: path.basename(__filename)
+  module: path.basename(__filename),
 });
 
 const tmp = `${cwd()}/src/database/.backup.tar`;
 const directory = "database/backups/";
 
 async function dropDatabase(args: {
-    database: string,
-    defaultUserName: string,
-    defaultUserPassword: string,
-    host: string,
-    port: string
+  database: string;
+  defaultUserName: string;
+  defaultUserPassword: string;
+  host: string;
+  port: string;
 }) {
-    const {database, defaultUserName, defaultUserPassword, host, port} = args;
-    const dropCommand = `export PGPASSWORD='${defaultUserPassword}'; dropdb -h ${host} -p ${port} -U ${defaultUserName} -f ${database}; unset PGPASSWORD`;
-    await runCommand(dropCommand, "Database drop");
+  const { database, defaultUserName, defaultUserPassword, host, port } = args;
+  const dropCommand = `export PGPASSWORD='${defaultUserPassword}'; dropdb -h ${host} -p ${port} -U ${defaultUserName} -f ${database}; unset PGPASSWORD`;
+  await runCommand(dropCommand, "Database drop");
 }
 
 async function retrieveBackup() {
-
   const bucket = storage.findBucket("private");
   let backups = await storage.listFiles(bucket, directory);
   if (backups.length === 0) {
@@ -37,8 +36,8 @@ async function retrieveBackup() {
   }
 
   backups = backups.sort((fileA, fileB) => {
-    const timeStampA = Number(fileA.name.replace(".tar", ""));
-    const timeStampB = Number(fileB.name.replace(".tar", ""));
+    const timeStampA = Number(fileA.name!.replace(".tar", ""));
+    const timeStampB = Number(fileB.name!.replace(".tar", ""));
     return timeStampB - timeStampA;
   });
   const file = backups[0];
@@ -54,13 +53,14 @@ async function retrieveBackup() {
 }
 
 async function restoreDatabase(args: {
-    defaultDatabase: string,
-    defaultUserName: string,
-    defaultUserPassword: string,
-    host: string,
-    port: string
+  defaultDatabase: string;
+  defaultUserName: string;
+  defaultUserPassword: string;
+  host: string;
+  port: string;
 }) {
-  const {defaultDatabase, defaultUserName, defaultUserPassword, host, port} = args;
+  const { defaultDatabase, defaultUserName, defaultUserPassword, host, port } =
+    args;
   const restoreCommand: string = `export PGPASSWORD='${defaultUserPassword}'; pg_restore -h ${host} -p ${port} -U ${defaultUserName} -C -c --if-exists -d ${defaultDatabase} ${tmp}; unset PGPASSWORD`;
   await runCommand(restoreCommand, "Database backup");
 
@@ -84,14 +84,35 @@ async function main() {
 
   const database = process.env.DATABASE_VAJ;
 
-  if (!host || !port || !defaultUserPassword || !defaultUserName || !defaultDatabase || !database) {
-      LOGGER.error("Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_DEFAULT_USER_NAME, DATABASE_DEFAULT, DATABASE_HOST, DATBASE_PORT, or DATABASE_VAJ.");
-      process.exit(1);
+  if (
+    !host ||
+    !port ||
+    !defaultUserPassword ||
+    !defaultUserName ||
+    !defaultDatabase ||
+    !database
+  ) {
+    LOGGER.error(
+      "Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_DEFAULT_USER_NAME, DATABASE_DEFAULT, DATABASE_HOST, DATBASE_PORT, or DATABASE_VAJ.",
+    );
+    process.exit(1);
   }
 
-  await dropDatabase({ database, defaultUserName, defaultUserPassword, host, port });
+  await dropDatabase({
+    database,
+    defaultUserName,
+    defaultUserPassword,
+    host,
+    port,
+  });
   await retrieveBackup();
-  await restoreDatabase({ defaultDatabase, defaultUserName, defaultUserPassword, host, port });
+  await restoreDatabase({
+    defaultDatabase,
+    defaultUserName,
+    defaultUserPassword,
+    host,
+    port,
+  });
 }
 
 main();
