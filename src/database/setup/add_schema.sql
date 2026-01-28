@@ -1,0 +1,3 @@
+CREATE SCHEMA shop;
+CREATE SCHEMA meta;
+DROP SCHEMA public;

@@ -1,0 +1,15 @@
+INSERT INTO shop."orderStatusEnum" ("orderStatus") VALUES
+('PENDING'),
+('CONFIRMED'),
+('PROCESSING'),
+('AWAITING_PAYMENT'),
+('PAID'),
+('SHIPPED'),
+('IN_TRANSIT'),
+('DELIVERED'),
+('COMPLETED'),
+('CANCELLED'),
+('RETURNED'),
+('REFUNDED'),
+('FAILED'),
+('ON_HOLD');

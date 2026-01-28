@@ -178,7 +178,7 @@ export const fromTime = function (
     return undefined;
   }
   if (!(value instanceof Date)) {
-    throw new Error(`Expected an Date instance. Recieved: ${value}`);
+    throw new Error(`Expected a Date instance. Recieved: ${value}`);
   }
 
   const hours: string = value.getUTCHours().toString().padStart(2, "0");

@@ -1,66 +1,59 @@
-const Colors = {
-  Reset: "\x1b[0m",
-  Bright: "\x1b[1m",
-  Dim: "\x1b[2m",
-  Underscore: "\x1b[4m",
-  Blink: "\x1b[5m",
-  Reverse: "\x1b[7m",
-  Hidden: "\x1b[8m",
+import winston from "winston";
 
-  FgBlack: "\x1b[30m",
-  FgRed: "\x1b[31m",
-  FgGreen: "\x1b[32m",
-  FgYellow: "\x1b[33m",
-  FgBlue: "\x1b[34m",
-  FgMagenta: "\x1b[35m",
-  FgCyan: "\x1b[36m",
-  FgWhite: "\x1b[37m",
-  FgGray: "\x1b[90m",
+type LogFormat = "JSON" | "SIMPLE" | "CLI";
 
-  BgBlack: "\x1b[40m",
-  BgRed: "\x1b[41m",
-  BgGreen: "\x1b[42m",
-  BgYellow: "\x1b[43m",
-  BgBlue: "\x1b[44m",
-  BgMagenta: "\x1b[45m",
-  BgCyan: "\x1b[46m",
-  BgWhite: "\x1b[47m",
-  BgGray: "\x1b[100m",
+const loggerFormats: Record<LogFormat, winston.Logform.Format> = {
+  JSON: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  SIMPLE: winston.format.combine(
+    winston.format.colorize(),
+    winston.format.timestamp(),
+    winston.format.printf(({ level, message, timestamp }) => {
+      return `[${timestamp}] ${level}: ${message}`;
+    })
+  ),
+  CLI: winston.format.combine(winston.format.colorize(), winston.format.cli()),
 };
 
-// Static class that is used to display standardized info, warning, debug, and error logs
-export default class Logger {
-  static info(message: string): void {
-    console.log(
-      `${Colors.FgBlue}[INFO]${
-        Colors.Reset
-      }\t${new Date().toLocaleString()}\t${message}`
-    );
-  }
-
-  static warning(message: string): void {
-    console.warn(
-      `${Colors.FgMagenta}[WARNING]${
-        Colors.Reset
-      }\t${new Date().toLocaleString()}\t${message}`
-    );
-  }
-
-  static debug(message: string): void {
-    if (process.env.STAGE === "dev") {
-      console.debug(
-        `${Colors.FgGray}[DEBUG]${
-          Colors.Reset
-        }\t${new Date().toLocaleString()}\t${message}`
-      );
-    }
-  }
-
-  static error(message: string): void {
-    console.error(
-      `${Colors.FgRed}[ERROR]${
-        Colors.Reset
-      }\t${new Date().toLocaleString()}\t${message}`
-    );
-  }
+interface LoggerContext {
+  source?: string;
+  service?: string;
+  module?: string;
 }
+
+class Logger {
+
+  private baseLogger: winston.Logger;
+
+  constructor() {
+    this.baseLogger = this.create();
+  }
+
+  private create(replace: boolean = false) {
+    const level = process.env.LOG_LEVEL ?? "info";
+    const envFormat = (process.env.LOG_FORMAT ?? "CLI") as LogFormat;
+    const format = loggerFormats[envFormat] ?? loggerFormats.JSON;
+
+    const baseLogger = winston.createLogger({
+      level,
+      format,
+      transports: [new winston.transports.Console()],
+    });
+
+    return baseLogger;
+  }
+
+  get(context: LoggerContext, replace: boolean = false) {
+    if (replace) {
+      this.baseLogger = this.create();
+    }
+
+    return this.baseLogger.child(context);
+  }
+
+}
+
+export const logger = new Logger();

@@ -1,0 +1,7 @@
+CREATE FUNCTION shop."setUpdatedAt"()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW."updatedAt" = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;

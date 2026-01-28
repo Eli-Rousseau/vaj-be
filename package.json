@@ -4,32 +4,34 @@
   "description": "vintage archive jungle - backend project",
   "main": "index.js",
   "scripts": {
-    "database-backup": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/database-backup.js",
-    "database-restore": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/database-restore.js",
-    "database-setup": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/database-setup.js",
-    "generate-transformer-classes": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/generate-transformer-classes.js",
-    "server": "nodemon --watch api --ext ts,tsx --exec ts-node ./src/api/server.ts",
-    "generate-api-key": "tsc -p tsconfig.scripts.json && node ./.temp/scripts/generate-api-key.js",
+    "server": "tsc -p tsconfig.json && node ./dist/src/api/server.js",
+    "postgres": "tsc -p tsconfig.json && node ./dist/scripts/database/postgres.js",
+    "database-setup": "tsc -p tsconfig.json && node ./dist/scripts/database/database-setup.js",
+    "database-backup": "tsc -p tsconfig.json && node ./dist/scripts/database/database-backup.js",
+    "database-restore": "tsc -p tsconfig.json && node ./dist/scripts/database/database-restore.js",
+    "database-migrate": "tsc -p tsconfig.json && node ./dist/scripts/database/database-migrate.js",
     "test": "vitest"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "class-transformer": "^0.5.1",
-    "express": "^5.1.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "graphql-yoga": "^5.17.1",
     "nodemailer": "^7.0.5",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
-    "tsconfig-paths": "^4.2.0"
+    "tsconfig-paths": "^4.2.0",
+    "winston": "^3.18.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.15",
     "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.15.4",
-    "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
-    "vitest": "^3.2.4"
+    "vitest": "^4.0.16"
   }
 }
