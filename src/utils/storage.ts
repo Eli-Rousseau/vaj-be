@@ -1,10 +1,12 @@
 import crypto from "crypto";
 import path from "path";
-import { existsSync, readFileSync } from "fs";
 import { Readable } from "stream";
+import { existsSync, readFileSync } from "fs";
+import { Exclude, Expose } from "class-transformer";
 
 import { logger } from "../../src/utils/logger";
 import { findEnumsValue, S3ContentType } from "../../src/utils/enums";
+import { ShopFile } from "../database/classes/transformer-classes";
 
 const LOGGER = logger.get({
   source: "utils",
@@ -38,74 +40,87 @@ class Bucket {
 
 export { S3ContentType };
 
-export class File {
-  key!: string;
-  name!: string;
-  bucket!: Bucket;
-  content?: Buffer;
-  contentType!: S3ContentType;
-  publicUrl?: string;
-  id?: string;
+export class File extends ShopFile {
+  @Exclude()
+  content: Buffer | null = null;
 
-  constructor(init: {
-    key: string;
-    bucket: Bucket;
-    content?: Buffer;
-    contentType: S3ContentType;
-    publicUrl?: string;
-    id?: string;
-  }) {
-    this.key = init.key;
-    this.bucket = init.bucket;
-    this.content = init.content;
-    this.contentType = init.contentType;
-    this.name = path.basename(init.key);
-    this.publicUrl = init.publicUrl;
-    this.id = init.id;
-  }
+  @Expose()
+  override contentType: S3ContentType | null = null;
 
-  toPlain() {
-    return {
-      key: this.key,
-      name: this.name,
-      bucket: this.bucket.key,
-      contentType: this.contentType,
-      publicUrl: this.publicUrl,
-      id: this.id,
-    };
-  }
-
-  static fromPlain(plain: {
-    key: string,
-    name: string,
-    bucket: string,
-    content?: Buffer,
-    contentType: string,
-    publicUrl?: string,
-    id: string
-  }) {
-    try {
-      const bucket = storage.findBucket(plain.bucket);
-
-      const contentType = findEnumsValue(plain.contentType, S3ContentType);
-      
-      if (!contentType) {
-        throw new Error(`Unrecognized S3ContentType: ${plain.contentType}`);
-      }
-
-      return new File({
-        key: plain.key,
-        bucket,
-        content: plain.content,
-        contentType,
-        publicUrl: plain.publicUrl,
-        id: plain.id
-      });
-    } catch (error) {
-      throw new Error(`Failed to create File instance: ${error}`);
-    }
+  override toPlain(): ShopFile {
+    return ShopFile.fromPlain(super.toPlain());
   }
 }
+
+
+// export class File {
+//   key!: string;
+//   name!: string;
+//   bucket!: Bucket;
+//   content?: Buffer;
+//   contentType!: S3ContentType;
+//   publicUrl?: string;
+//   id?: string;
+
+//   constructor(init: {
+//     key: string;
+//     bucket: Bucket;
+//     content?: Buffer;
+//     contentType: S3ContentType;
+//     publicUrl?: string;
+//     id?: string;
+//   }) {
+//     this.key = init.key;
+//     this.bucket = init.bucket;
+//     this.content = init.content;
+//     this.contentType = init.contentType;
+//     this.name = path.basename(init.key);
+//     this.publicUrl = init.publicUrl;
+//     this.id = init.id;
+//   }
+
+//   toPlain() {
+//     return {
+//       key: this.key,
+//       name: this.name,
+//       bucket: this.bucket.key,
+//       contentType: this.contentType,
+//       publicUrl: this.publicUrl,
+//       id: this.id,
+//     };
+//   }
+
+//   static fromPlain(plain: {
+//     key: string,
+//     name: string,
+//     bucket: string,
+//     content?: Buffer,
+//     contentType: string,
+//     publicUrl?: string,
+//     id: string
+//   }) {
+//     try {
+//       const bucket = storage.findBucket(plain.bucket);
+
+//       const contentType = findEnumsValue(plain.contentType, S3ContentType);
+      
+//       if (!contentType) {
+//         throw new Error(`Unrecognized S3ContentType: ${plain.contentType}`);
+//       }
+
+//       return new File({
+//         key: plain.key,
+//         bucket,
+//         content: plain.content,
+//         contentType,
+//         publicUrl: plain.publicUrl,
+//         id: plain.id
+//       });
+//     } catch (error) {
+//       throw new Error(`Failed to create File instance: ${error}`);
+//     }
+//   }
+// }
 
 class StorageClient {
 

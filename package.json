@@ -4,7 +4,6 @@
   "description": "vintage archive jungle - backend project",
   "main": "index.js",
   "scripts": {
-    "generate-transformer-classes": "tsc -p tsconfig.json && node ./dist/scripts/generate-transformer-classes.js",
     "server": "tsc -p tsconfig.json && node ./dist/src/api/server.js",
     "postgres": "tsc -p tsconfig.json && node ./dist/scripts/database/postgres.js",
     "database-setup": "tsc -p tsconfig.json && node ./dist/scripts/database/database-setup.js",

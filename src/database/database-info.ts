@@ -2,6 +2,7 @@ import path from "path";
 
 import { logger } from "../utils/logger";
 import { postgres } from "../utils/postgres";
+import { DataBaseInfo, ColumnInfo, ComputedFieldInfo, TableInfo, CompositeTypeColumnInfo, CompositeTypeInfo, SchemaInfo } from "./types";
 
 const LOGGER = logger.get({
     source: "src",
@@ -12,57 +13,6 @@ const LOGGER = logger.get({
 let dataBaseInfo: DataBaseInfo | null = null;
 
 export const SCHEMAS_TO_FILTER: string[] = ["shop"];
-
-export type ColumnInfo = {
-    name: string;
-    dataType: string;
-    hasDefault: boolean;
-    isNullable: boolean;
-    isPrimaryKey: boolean;
-    foreignKey: string | null;
-    handleAutomaticUpdate: boolean;
-};
-
-export type ComputedFieldReturnType = "TABLE" | "REFERENCE" | "COMPOSITE";
-
-type ComputedFieldCardinalityType = "SINGLE" | "ARRAY";
-
-export type ComputedFieldInfo = {
-    name: string;
-    arg: { name: string, type: string };
-    returnType: string;
-    returnCardinality: ComputedFieldCardinalityType;
-    returnTypeKind: ComputedFieldReturnType;
-};
-
-export type TableInfo = {
-    name: string;
-    isEnum: boolean;
-    columns: ColumnInfo[];
-    computedFields: ComputedFieldInfo[];
-};
-
-export type CompositeTypeColumnInfo = {
-    name: string;
-    dataType: string;
-    hasDefault: boolean;
-    isNullable: boolean;
-};
-
-export type CompositeTypeInfo = {
-    name: string;
-    columns: CompositeTypeColumnInfo[];
-}
-
-export type SchemaInfo = {
-    name: string;
-    tables: TableInfo[];
-    compsiteTypes: CompositeTypeInfo[];
-};
-
-export type DataBaseInfo = {
-    schemas: SchemaInfo[];
-}
 
 async function getColumnInfo(schema: string, table: string) {
     const pgPool = postgres.getPool("default");
