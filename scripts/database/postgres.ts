@@ -19,7 +19,7 @@ const runDatabaseContainer = function () {
 
   if (!password || !host || !port) {
     LOGGER.error("Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_HOST, or DATABASE_PORT.");
-    process.exit(-1);
+    process.exit(1);
   }
 
   try {
@@ -44,7 +44,7 @@ const runDatabaseContainer = function () {
 const main = async function () {
   await loadStage();
 
-  setupShutdownHooks()
+  setupShutdownHooks();
 
   runDatabaseContainer();
 

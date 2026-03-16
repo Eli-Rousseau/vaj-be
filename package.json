@@ -10,6 +10,7 @@
     "database-backup": "tsc -p tsconfig.json && node ./dist/scripts/database/database-backup.js",
     "database-restore": "tsc -p tsconfig.json && node ./dist/scripts/database/database-restore.js",
     "database-migrate": "tsc -p tsconfig.json && node ./dist/scripts/database/database-migrate.js",
+    "redis": "tsc -p tsconfig.json && node ./dist/scripts/redis/redis.js",
     "test": "vitest"
   },
   "author": "",
