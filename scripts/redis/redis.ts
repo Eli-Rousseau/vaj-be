@@ -1,5 +1,4 @@
 import path from "path";
-import { cwd } from "process";
 
 import { docker } from "../../src/utils/docker";
 import { logger } from "../../src/utils/logger";
@@ -11,20 +10,19 @@ const LOGGER = logger.get({
     module: path.basename(__filename)
 });
 
+const IMAGE_NAME = "redis/redis-stack"
 const CONTAINER_NAME = "vaj-redis";
 
 function runRedisContainer() {
     const redisPort = process.env.REDIS_PORT;
     const redisInsightsPort = process.env.REDIS_INSIGHTS_PORT;
     const redisHost = process.env.REDIS_HOST;
-    const stage = process.env.STAGE;
+    const redisPassword = process.env.REDIS_PASSWORD;
 
-    if (!redisPort || !redisInsightsPort || !redisHost || !stage) {
-        LOGGER.error("Missing required environment variables: REDIS_STACK_PORT, REDIS_INSIGHTS_PORT, REDIS_HOST, or STAGE.");
+    if (!redisPort || !redisInsightsPort || !redisHost || !redisPassword ) {
+        LOGGER.error("Missing required environment variables: REDIS_PORT, REDIS_INSIGHTS_PORT, REDIS_HOST, or REDIS_PASSWORD.");
         process.exit(1);
     }
-    
-    const envFile = `${cwd()}/.env.${stage}`;
 
     try {
         docker.activate();
@@ -33,10 +31,10 @@ function runRedisContainer() {
             "--name": CONTAINER_NAME,
             args: [
                 "-d",
-                { "-p": `${redisPort}:6379` },
-                { "-p": `${redisInsightsPort}:8001` },
-                { "--env-file": envFile },
-                "redis/redis-stack"
+                { "-p": `${redisHost}:${redisPort}:6379` },
+                { "-p": `${redisHost}:${redisInsightsPort}:8001` },
+                `-e REDIS_ARGS="--requirepass ${redisPassword} --appendonly yes"`,
+                IMAGE_NAME
 
             ]
         });
