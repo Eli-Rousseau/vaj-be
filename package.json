@@ -10,6 +10,7 @@
     "database-backup": "tsc -p tsconfig.json && node ./dist/scripts/database/database-backup.js",
     "database-restore": "tsc -p tsconfig.json && node ./dist/scripts/database/database-restore.js",
     "database-migrate": "tsc -p tsconfig.json && node ./dist/scripts/database/database-migrate.js",
+    "redis": "tsc -p tsconfig.json && node ./dist/scripts/redis/redis.js",
     "test": "vitest"
   },
   "author": "",
@@ -21,6 +22,7 @@
     "graphql-yoga": "^5.17.1",
     "nodemailer": "^7.0.5",
     "pg": "^8.16.3",
+    "redis": "^5.11.0",
     "reflect-metadata": "^0.2.2",
     "tsconfig-paths": "^4.2.0",
     "winston": "^3.18.3"

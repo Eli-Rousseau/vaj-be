@@ -1,5 +1,6 @@
 import os from "os";
 import path from "path";
+import { cwd } from "process";
 import { execSync } from "child_process";
 
 import { logger } from "./logger";
@@ -12,6 +13,10 @@ const LOGGER = logger.get({
 export interface RunDockerContainerOptions {
   "--name": string;
   args: (string | Record<string, string>)[];
+}
+
+type BuildDockerImageOptions = {
+    variables: Record<string, string>
 }
 
 class Docker {
@@ -78,6 +83,23 @@ class Docker {
             }
         } catch (error) {
             LOGGER.error("Failed to start Docker automatically.");
+            throw error;
+        }
+    }
+
+    buildImage(dockerFile: string, name: string, options?: BuildDockerImageOptions) {
+        try {
+            let variables = "";
+            if (options?.variables) {
+                variables = Object.entries(options.variables)
+                    .map(([key, value]) => `--build-arg ${key}=${value}`)
+                    .join(" ");
+            }
+
+            execSync(`docker build -f ${dockerFile} -t ${name} ${variables} ${cwd()}`);
+            LOGGER.info(`${name} image build successfully.`);
+        } catch (error) {
+            LOGGER.error(`Failed the build of the docker file: ${dockerFile}.`);
             throw error;
         }
     }
