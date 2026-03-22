@@ -1,6 +1,7 @@
 CREATE TABLE shop.article(
 	-- Core Identifiers & Metadata
 	reference UUID CONSTRAINT "articlePk" PRIMARY KEY CONSTRAINT "articleReferenceNotNull" NOT NULL DEFAULT shop.uuid_generate_v4(),
+	"sequentialId" SERIAL CONSTRAINT "articleSequentialIdNotNull" NOT NULL,
 	title TEXT CONSTRAINT "articleTitleNotNull" NOT NULL,
 	description TEXT DEFAULT NULL,
 	brand TEXT,
@@ -14,16 +15,10 @@ CREATE TABLE shop.article(
 	"updatedAt" TIMESTAMP CONSTRAINT "articleUpdatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
 	-- Product Attributes
-	"parentCategory" TEXT,
-	CONSTRAINT "fkArticleParentCategory"
-        FOREIGN KEY ("parentCategory") 
-        REFERENCES shop."articleParentCategoryEnum"("articleParentCategory")
-		ON UPDATE CASCADE
-		ON DELETE SET NULL,
-	"subCategory" TEXT,
-	CONSTRAINT "fkArticleSubCategory"
-        FOREIGN KEY ("subCategory") 
-        REFERENCES shop."articleSubCategoryEnum"("articleSubCategory")
+	category UUID,
+	CONSTRAINT "fkArticleCategory"
+        FOREIGN KEY (category) 
+        REFERENCES shop."articleCategory"(reference)
 		ON UPDATE CASCADE
 		ON DELETE SET NULL,
 	gender TEXT,
@@ -66,12 +61,6 @@ CREATE TABLE shop.article(
 	-- Inventory & Pricing
 	quantity INT CONSTRAINT "articleQuantityNotNull" NOT NULL DEFAULT 1 CONSTRAINT "ArticleQuantityCheck" CHECK (quantity > 0),
 	price FLOAT CONSTRAINT "articlePriceNotNull" NOT NULL,
-	currency TEXT DEFAULT 'EUR',
-	CONSTRAINT "fkCurrency"
-        FOREIGN KEY (currency) 
-        REFERENCES shop."currencyEnum"(currency)
-		ON UPDATE CASCADE
-		ON DELETE SET NULL,
 	discount FLOAT CONSTRAINT "articleDiscountNotNull" NOT NULL DEFAULT 0 CONSTRAINT "ArticleDiscountCheck" CHECK (discount >= 0 AND discount <= 100),
 	availability TEXT,
 	CONSTRAINT "fkAvailibility"
@@ -87,6 +76,7 @@ CREATE TABLE shop.article(
 COMMENT ON COLUMN shop.article.reference IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop.article."createdAt" IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop.article."updatedAt" IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop.article."sequentialId" IS 'AUTOMATIC UPDATE';
 
 CREATE TRIGGER "triggerSetUpdatedAt"
     BEFORE UPDATE ON shop.article

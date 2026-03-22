@@ -1,5 +1,6 @@
 CREATE TABLE shop.file (
     reference UUID CONSTRAINT "filePk" PRIMARY KEY CONSTRAINT "fileReferenceNotNull" NOT NULL DEFAULT shop.uuid_generate_v4(),
+    "sequentialId" SERIAL CONSTRAINT "fileSequentialIdNotNull" NOT NULL,
     key TEXT CONSTRAINT "fileKeyNotNull" NOT NULL,
     name TEXT CONSTRAINT "fileNameNotNull" NOT NULL,
     bucket TEXT CONSTRAINT "fileBucketNotNull" NOT NULL,
@@ -14,6 +15,7 @@ CREATE TABLE shop.file (
 COMMENT ON COLUMN shop.file.reference IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop.file."createdAt" IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop.file."updatedAt" IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop.file."sequentialId" IS 'AUTOMATIC UPDATE';
 
 CREATE TRIGGER "triggerSetUpdatedAt"
     BEFORE UPDATE ON shop.file

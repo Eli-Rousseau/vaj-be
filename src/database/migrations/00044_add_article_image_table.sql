@@ -1,5 +1,6 @@
 CREATE TABLE shop."articleImage" (
     reference UUID CONSTRAINT "articleImagePk" PRIMARY KEY CONSTRAINT "articleImageReferenceNotNull" NOT NULL DEFAULT shop.uuid_generate_v4(),
+    "sequentialId" SERIAL CONSTRAINT "articleImageSequentialIdNotNull" NOT NULL,
     article UUID CONSTRAINT "articleImageArticleNotNull" NOT NULL,
     CONSTRAINT "fkArticle"
         FOREIGN KEY (article)
@@ -21,6 +22,7 @@ CREATE TABLE shop."articleImage" (
 COMMENT ON COLUMN shop."articleImage".reference IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop."articleImage"."createdAt" IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop."articleImage"."updatedAt" IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop."articleImage"."sequentialId" IS 'AUTOMATIC UPDATE';
 
 CREATE TRIGGER "triggerSetUpdatedAt"
     BEFORE UPDATE ON shop."articleImage"

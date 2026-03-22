@@ -1,5 +1,6 @@
 CREATE TABLE shop."articleDiscountCoupon" (
     reference UUID CONSTRAINT "articleDiscountCouponPk" PRIMARY KEY CONSTRAINT "articleDiscountCouponReferenceNotNull" NOT NULL DEFAULT shop.uuid_generate_v4(),
+    "sequentialId" SERIAL CONSTRAINT "articleDiscountCouponSequentialIdNotNull" NOT NULL,
     article UUID,
     CONSTRAINT "fkArticle"
         FOREIGN KEY (article)
@@ -19,6 +20,7 @@ CREATE TABLE shop."articleDiscountCoupon" (
 COMMENT ON COLUMN shop."articleDiscountCoupon".reference IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop."articleDiscountCoupon"."createdAt" IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop."articleDiscountCoupon"."updatedAt" IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop."articleDiscountCoupon"."sequentialId" IS 'AUTOMATIC UPDATE';
 
 CREATE TRIGGER "triggerSetUpdatedAt"
     BEFORE UPDATE ON shop."articleDiscountCoupon"

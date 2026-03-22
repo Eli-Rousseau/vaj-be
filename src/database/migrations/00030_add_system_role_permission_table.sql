@@ -1,5 +1,6 @@
 CREATE TABLE shop."systemRolePermission" (
 	reference UUID CONSTRAINT "systemRolePermissionPk" PRIMARY KEY CONSTRAINT "systemRolePermissionReferenceNotNull" NOT NULL DEFAULT shop.uuid_generate_v4(),
+	"sequentialId" SERIAL CONSTRAINT "systemRolePermissionSequentialIdNotNull" NOT NULL,
 	"systemRole" TEXT,
 	CONSTRAINT "fkSystemRole" 
         FOREIGN KEY ("systemRole") 
@@ -20,6 +21,7 @@ CREATE TABLE shop."systemRolePermission" (
 COMMENT ON COLUMN shop."systemRolePermission".reference IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop."systemRolePermission"."createdAt" IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop."systemRolePermission"."updatedAt" IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop."systemRolePermission"."sequentialId" IS 'AUTOMATIC UPDATE';
 
 CREATE TRIGGER "triggerSetUpdatedAt"
     BEFORE UPDATE ON shop."systemRolePermission"

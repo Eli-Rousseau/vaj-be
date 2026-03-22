@@ -1,5 +1,6 @@
 CREATE TABLE shop.user (
     reference UUID CONSTRAINT "userPk" PRIMARY KEY CONSTRAINT "userReferenceNotNull" NOT NULL DEFAULT shop.uuid_generate_v4(),
+    "sequentialId" SERIAL CONSTRAINT "userSequentialIdNotNull" NOT NULL,
     name TEXT CONSTRAINT "userNameNotNull" NOT NULL,
     birthday TEXT DEFAULT NULL,
     email TEXT CONSTRAINT "userEmailNotNull" NOT NULL CONSTRAINT "userEmailKey" UNIQUE,
@@ -25,6 +26,7 @@ CREATE TABLE shop.user (
 COMMENT ON COLUMN shop.user.reference IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop.user."createdAt" IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop.user."updatedAt" IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop.user."sequentialId" IS 'AUTOMATIC UPDATE';
 
 CREATE TRIGGER "triggerSetUpdatedAt"
     BEFORE UPDATE ON shop.user

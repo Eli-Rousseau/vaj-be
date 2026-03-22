@@ -3,9 +3,9 @@
 -- ===========================================
 INSERT INTO shop.user (name, birthday, email, "phoneNumber", password, salt, "systemAuthentication", "systemRole")
 VALUES 
-('Eli',   '2000-01-01', 'eli@mail.com',    '04567890', 'secret', 'sugar', 'GOOGLE', 'SYSTEM DEVELOPER'),
-('Natan', '1988-02-21', 'nathan@mail.com', '09876789', 'very',   'sweet', 'INTERN', 'USER'),
-('Ester', '2009-10-03', 'ester@gcloud.com','09876543', 'newly',  'secret', 'INTERN', 'SUPERUSER');
+('Eli',   '2000-01-01', 'eli@mail.com',    '04567890', 'secret', 'sugar', 'GOOGLE', 'DEVELOPER'),
+('Natan', '1988-02-21', 'nathan@mail.com', '09876789', 'very',   'sweet', 'INTERNAL', 'USER'),
+('Ester', '2009-10-03', 'ester@gcloud.com','09876543', 'newly',  'secret', 'INTERNAL', 'SUPERUSER');
 
 
 -- ===========================================

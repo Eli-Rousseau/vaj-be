@@ -1,2 +1,2 @@
 INSERT INTO shop."systemAuthenticationEnum" ("systemAuthentication")
-VALUES ('INTERN'), ('GOOGLE'), ('APPLE');
+VALUES ('INTERNAL'), ('GOOGLE'), ('APPLE');

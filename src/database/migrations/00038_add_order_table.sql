@@ -1,5 +1,6 @@
 CREATE TABLE shop.order (
     reference UUID CONSTRAINT "orderPk" PRIMARY KEY CONSTRAINT "orderReferenceNotNull" NOT NULL DEFAULT shop.uuid_generate_v4(),
+    "sequentialId" SERIAL CONSTRAINT "orderSequentialIdNotNull" NOT NULL,
     "user" UUID,
     CONSTRAINT "fkUser" 
         FOREIGN KEY ("user") 
@@ -7,12 +8,6 @@ CREATE TABLE shop.order (
         ON UPDATE CASCADE
         ON DELETE SET NULL,
     "totalPrice" FLOAT CONSTRAINT "orderTotalPriceNotNull" NOT NULL,
-    currency TEXT,
-	CONSTRAINT "fkCurrency"
-        FOREIGN KEY ("currency") 
-        REFERENCES shop."currencyEnum"(currency)
-		ON UPDATE CASCADE
-        ON DELETE SET NULL,
     "paymentMethod" TEXT,
 	CONSTRAINT "fkPaymentMethod"
         FOREIGN KEY ("paymentMethod") 
@@ -46,6 +41,7 @@ CREATE TABLE shop.order (
 COMMENT ON COLUMN shop.order.reference IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop.order."createdAt" IS 'AUTOMATIC UPDATE';
 COMMENT ON COLUMN shop.order."updatedAt" IS 'AUTOMATIC UPDATE';
+COMMENT ON COLUMN shop.order."sequentialId" IS 'AUTOMATIC UPDATE';
 
 CREATE TRIGGER "triggerSetUpdatedAt"
     BEFORE UPDATE ON shop.order
