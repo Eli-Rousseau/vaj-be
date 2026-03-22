@@ -1,58 +1,105 @@
-``` 
-DOCS: https://redis.io/docs/latest/operate/rs/references/rest-api/
-```
+import { createClientPool, RedisClientPoolType } from "redis";
+import { logger } from "./logger";
+import path from "path";
 
-import fetch, { Headers } from 'node-fetch';
-import * as https from 'https';
-
-const HOST = '[host]';
-const PORT = '[port]';
-const USERNAME = '[username]';
-const PASSWORD = '[password]';
-
-// Get the list of databases using GET /v1/bdbs
-const BDBS_URI = `https://${HOST}:${PORT}/v1/bdbs`;
-const USER_CREDENTIALS = Buffer.from(`${USERNAME}:${PASSWORD}`).toString('base64');
-const AUTH_HEADER = `Basic ${USER_CREDENTIALS}`;
-
-console.log(`GET ${BDBS_URI}`);
-
-const HTTPS_AGENT = new https.Agent({
-    rejectUnauthorized: false
+const LOGGER = logger.get({
+    source: "utils",
+    module: path.basename(__filename),
 });
 
-const response = await fetch(BDBS_URI, {
-    method: 'GET',
-    headers: {
-        'Accept': 'application/json',
-        'Authorization': AUTH_HEADER
-    },
-    agent: HTTPS_AGENT
-});
-
-const responseObject = await response.json();
-console.log(`${response.status}: ${response.statusText}`);
-console.log(responseObject);
-
-// Rename all databases using PUT /v1/bdbs
-for (const database of responseObject) {
-    const DATABASE_URI = `${BDBS_URI}/${database.uid}`;
-    const new_name = `database${database.uid}`;
-
-    console.log(`PUT ${DATABASE_URI}`);
-
-    const response = await fetch(DATABASE_URI, {
-        method: 'PUT',
-        headers: {
-            'Authorization': AUTH_HEADER,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            'name': new_name
-        }),
-        agent: HTTPS_AGENT
-    });
-
-    console.log(`${response.status}: ${response.statusText}`);
-    console.log(await(response.json()));
+type SetJSONOptions = {
+    expirationInSeconds?: number;
 }
+
+class RedisClient {
+    private pool: RedisClientPoolType | null = null;
+
+    getPool(): RedisClientPoolType {
+        if (this.pool) {
+            return this.pool;
+        }
+
+        const host = process.env.REDIS_HOST;
+        const port = process.env.REDIS_PORT;
+        const user = process.env.REDIS_USERNAME;
+        const password = process.env.REDIS_PASSWORD;
+
+        if (!host || !port || !user || !password) {
+            throw new Error(
+                "Missing required environment variables: REDIS_HOST, REDIS_PORT, REDIS_USERNAME, or REDIS_PASSWORD."
+            );
+        }
+
+        const url = `redis://${user}:${password}@${host}:${port}`;
+
+        const pool = createClientPool({
+            url,
+        });
+
+        pool.on("error", (err) => {
+            LOGGER.error("Redis pool error", err);
+        });
+
+        this.pool = pool as RedisClientPoolType;
+
+        return pool as RedisClientPoolType;
+    }
+
+    async shutDown() {
+        LOGGER.info("Shutting down Redis pool...");
+        await this.pool?.close();
+    }
+
+    async setJSON(key: string, object: any, options?: SetJSONOptions) {
+        const redisOptions: any = {};
+        if (options?.expirationInSeconds) {
+            redisOptions["expiration"] = { type: "EX", value: options.expirationInSeconds }
+        } 
+        
+        const redisPool = this.getPool();
+        await redisPool.set(key, JSON.stringify(object), redisOptions);
+    }
+
+    async getJSON(key: string): Promise<any> {
+        const redisPool = this.getPool();
+        const response = await redisPool.get(key);
+        
+        if (response === null) {
+            return null; 
+        }
+        return JSON.parse(response);
+    }
+
+    async deleteJSON(key: string) {
+        const redisPool = this.getPool();
+        await redisPool.del(key);
+    }
+
+    async findKeyInJSON(key: string, path: string) {
+        const object = await this.getJSON(key);
+
+        try {
+            const pathElements = path.split(".");
+            let nestedObject = object;
+            for (let element of pathElements) {
+                nestedObject = !isNaN(parseFloat(element)) && Array.isArray(nestedObject) ? 
+                    nestedObject[parseInt(element)] : 
+                    nestedObject[element]
+                ;
+            }
+
+            return nestedObject;
+        } catch (error) {
+            return null;
+        }
+        
+    }
+
+    async keyExistsInJSON(key: string, path: string) {
+        const result = await this.findKeyInJSON(key, path);
+        return result !== null;
+
+    }
+}
+
+export const redisClient = new RedisClient();
