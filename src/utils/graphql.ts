@@ -6,14 +6,22 @@ const LOGGER = logger.get({
     module: path.basename(__filename)
 });
 
+type GraphQLParams = {
+    query: string,
+    variables?: any
+}
+
 class GraphQLClient {
 
-    async execute(query: string, variables: any = {}) {
+    async execute(params: GraphQLParams) {
         const baseUrl = process.env.APPLICATION_URL;
 
         if (!baseUrl) {
             throw new Error("Missing required environmental variable: APPLICATION_URL.");
         }
+
+        const query = params.query.trim();
+        const variables = params?.variables ? params.variables : {};
 
         const url = `${baseUrl}/api/graphql`;
         
@@ -39,7 +47,7 @@ class GraphQLClient {
             const body = await response.json();
             LOGGER.info(`Suceeded graphql request.`);
 
-            return body;
+            return body["data"]["result"];
         } catch (error) {
             LOGGER.error("Failed graphql query.", query, variables);
             throw error;
@@ -47,4 +55,4 @@ class GraphQLClient {
     }
 }
 
-const graphql = new GraphQLClient();
+export const graphql = new GraphQLClient();
