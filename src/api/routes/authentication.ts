@@ -4,15 +4,8 @@ import { graphql } from "../../utils/graphql";
 import { isValidEmail } from "../../utils/validators";
 import { ShopUser } from "../../database/classes/transformer-classes";
 
-type UserInput = {
-    email: string;
-    password: string;
-    systemRole: string;
-    systemAuthentication: string;
-}
-
-async function findUsersByEmail(email: string) {
-    const users = graphql.execute({
+async function findUsersByEmail(email: string): Promise<ShopUser[]> {
+    const users = await graphql.execute({
         query: `
 query findUsersByEmail($email: JSON) {
   result: getShopUsers(
@@ -31,7 +24,7 @@ query findUsersByEmail($email: JSON) {
         }
     });
 
-    return users;
+    return users.map((user: unknown) => ShopUser.fromPlain(user));
 }
 
 async function isEmailAlreadyAssigned(email: string) {
@@ -39,7 +32,7 @@ async function isEmailAlreadyAssigned(email: string) {
     return users.length > 0;
 }
 
-async function createUser(input: UserInput) {
+async function createUser(input: ShopUser) {
     const user = (await graphql.execute({
         query: `
 mutation createUser($user: ShopUserMutationType!){
@@ -50,7 +43,6 @@ mutation createUser($user: ShopUserMutationType!){
     sequentialId
     name
     email
-    password
     systemRole
     systemAuthentication
   }
@@ -62,6 +54,34 @@ mutation createUser($user: ShopUserMutationType!){
     }))[0];
 
     return ShopUser.fromPlain(user);
+}
+
+function generateJWTToken(payload: any, secret: string, expirationInSeconds: number): string {
+    const header = {
+        alg: "HS256",
+        typ: "JWT"
+    };
+
+    const encodedHeader = Buffer
+        .from(JSON.stringify(header))
+        .toString("base64url");
+
+    const now = Math.floor(Date.now() / 1000);
+    payload["iat"] = now;
+    payload["exp"] = now + expirationInSeconds;
+
+    const encodedPayload = Buffer
+        .from(JSON.stringify(payload))
+        .toString("base64url");
+
+    const signature = crypto
+        .createHmac("sha256", secret)
+        .update(`${encodedHeader}.${encodedPayload}`)
+        .digest("base64url");
+
+    const token = `${encodedHeader}.${encodedPayload}.${signature}`;
+
+    return token;
 }
 
 const router = Router();
@@ -77,25 +97,26 @@ router.post("/internal/register", async (req, res) => {
         return;
     }
 
-    const { email, password } = req.body;
-
-    if (!email || typeof email !== "string" || !isValidEmail(email)) {
+    let user: ShopUser;
+    try {
+        user = ShopUser.fromPlain(req.body?.user);
+    } catch (error) {
         res.status(400).json({ 
             error: "Invalid request.", 
-            errorMessage: "Provide email is invalid." 
+            errorMessage: `Invalid user:\n${error}`
         }).end();
         return;
     }
 
-    if (!password || typeof password !== "string" || password.length >= 1) {
+    if (!user.email || !isValidEmail(user.email)) {
         res.status(400).json({ 
             error: "Invalid request.", 
-            errorMessage: "Provide password is invalid." 
+            errorMessage: `Invalid user email: ${user.email}`
         }).end();
         return;
     }
 
-    if (await isEmailAlreadyAssigned(email)) {
+    if (await isEmailAlreadyAssigned(user.email)) {
         res.status(400).json({ 
             error: "Invalid request.", 
             errorMessage: "The email is already in use." 
@@ -103,46 +124,27 @@ router.post("/internal/register", async (req, res) => {
         return;
     }
 
-    const user = await createUser({
-        email,
-        password,
-        systemRole: "USER",
-        systemAuthentication: "INTERNAL"
-    });
+    try {
+        user = await createUser(user);
+    } catch  (error) {
+        res.status(500).json({ 
+            error: "Failed query.", 
+            errorMessage: `Failed to create user:\n${error}`
+        }).end();
+        return;
+    }
 
-    const header = {
-        alg: "HS256",
-        typ: "JWT"
-    };
-
-    const encodedHeader = Buffer
-        .from(JSON.stringify(header))
-        .toString("base64url");
-
-    const now = Math.floor(Date.now() / 1000);
     const payload = {
         reference: user.reference,
         sequentialId: user.sequentialId,
         email: user.email,
         systemRole: user.systemRole,
         systemAuthentication: user.systemAuthentication,
-        iat: now,
-        exp: now + (60 * 20) // 20 minutes
     };
-
-    const encodedPayload = Buffer
-        .from(JSON.stringify(payload))
-        .toString("base64url");
-
-    const signature = crypto
-        .createHmac("sha256", secret)
-        .update(`${encodedHeader}.${encodedPayload}`)
-        .digest("base64url");
-
-    const token = `${encodedHeader}.${encodedPayload}.${signature}`;
+    const accessToken = generateJWTToken(payload, secret, 30 * 60);
 
     res.status(201).json({
-        token,
+        accessToken,
         expiresIn: 3600
     }).end();
 });
