@@ -349,7 +349,7 @@ import { Transform, Expose, Type, plainToInstance, instanceToPlain } from "class
 
 import * as transformers from "./transformers";
 
-abstract class TransformerClass {
+export class TransformerClass {
   static fromPlain<T extends TransformerClass>(
     this: new (...args: any[]) => T,
     plain: unknown

@@ -1,5 +1,7 @@
 import path from "path";
+
 import { logger } from "./logger";
+import { TransformerClass } from "../database/classes/transformer-classes";
 
 const LOGGER = logger.get({
     source: "utils",
@@ -52,6 +54,20 @@ class GraphQLClient {
             LOGGER.error("Failed graphql query.", query, variables);
             throw error;
         }
+    }
+
+    async executeAndTransform<T extends TransformerClass>(
+        transformer: T,
+        options: {
+            query: string;
+            variables?: Record<string, any>;
+        }
+    ): Promise<T[]> {
+        const result = await this.execute(options);
+
+        return result.map((item: unknown) =>
+            transformer.constructor().fromPlain(item)
+        );
     }
 }
 

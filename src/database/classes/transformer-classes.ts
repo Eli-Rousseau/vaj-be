@@ -1,8 +1,9 @@
+import "reflect-metadata";
 import { Transform, Expose, Type, plainToInstance, instanceToPlain } from "class-transformer";
 
 import * as transformers from "./transformers";
 
-abstract class TransformerClass {
+export class TransformerClass {
   static fromPlain<T extends TransformerClass>(
     this: new (...args: any[]) => T,
     plain: unknown
@@ -41,13 +42,13 @@ export class ShopOrder extends TransformerClass {
   @Expose()
   type?: string | null = null;
 
-  @Transform(({ value }) => transformers.toDatetime(value, { isNullable: true }), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value, { isNullable: true }), { toPlainOnly: true })
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
   @Expose()
   rentalStartDate?: string | null = null;
 
-  @Transform(({ value }) => transformers.toDatetime(value, { isNullable: true }), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value, { isNullable: true }), { toPlainOnly: true })
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
   @Expose()
   rentalEndDate?: string | null = null;
 
@@ -93,8 +94,8 @@ export class ShopArticle extends TransformerClass {
   @Expose()
   brand?: string | null = null;
 
-  @Transform(({ value }) => transformers.toDatetime(value, { isNullable: true }), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value, { isNullable: true }), { toPlainOnly: true })
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
   @Expose()
   release?: string | null = null;
 
@@ -290,6 +291,9 @@ export class ShopUser extends TransformerClass {
 
   @Expose()
   salt?: string | null = null;
+
+  @Expose()
+  refreshtoken?: string | null = null;
 
   @Expose()
   systemAuthentication?: string | null = null;

@@ -1,5 +1,3 @@
-import { plainToInstance, instanceToPlain } from "class-transformer";
-
 type TransformerOptions = {
   isNullable?: boolean;
 };
@@ -10,19 +8,6 @@ class TransformerError extends Error {
         super(message);
         this.name = "TransfomerError";
     }
-}
-
-abstract class TransformerClass {
-  static fromPlain<T extends TransformerClass>(
-    this: new (...args: any[]) => T,
-    plain: unknown
-  ): T {
-    return plainToInstance(this, plain as object);
-  }
-
-  toPlain(): object {
-    return instanceToPlain(this);
-  }
 }
 
 const EPOCH_PATTERN = /^\d+$/;
