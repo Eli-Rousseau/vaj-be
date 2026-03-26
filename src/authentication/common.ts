@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 export function generateGenericToken(): string {
-  return crypto.randomBytes(60).toString("hex");
+  return crypto.randomBytes(35).toString("hex");
 }
 
 export function generateJWTToken(payload: any, secret: string, expirationInSeconds: number): string {

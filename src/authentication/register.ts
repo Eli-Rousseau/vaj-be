@@ -37,14 +37,19 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
     throw new BadRequestError(`INVALID_EMAIL:${user.email}`);
   }
 
-  if (await isEmailAlreadyAssigned(user.email)) {
-    throw new BadRequestError("EMAIL_ALREADY_IN_USE");
+  try {
+    if (await isEmailAlreadyAssigned(user.email)) {
+      throw new BadRequestError("EMAIL_ALREADY_IN_USE");
+    }
+  } catch (error) {
+    throw new DatabaseError(`FIND_USER_EMAIL_FAILED:${error}`);
   }
-
+  
   const refreshToken = generateGenericToken();
   user.refreshtoken = refreshToken;
 
   try {
+    // @ts-ignore
     user = await createUser(user);
   } catch (error) {
     throw new DatabaseError(`CREATE_USER_FAILED:${error}`);

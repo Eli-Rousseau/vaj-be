@@ -40,13 +40,20 @@ class GraphQLClient {
 
                 const body = JSON.parse(text);
                 if (body.errors) {
-                    errorsStr = body.errors.map((e: any) => JSON.stringify(e, null, 2)).join("\n");
+                    errorsStr = body.errors.map((e: any) => JSON.stringify(e)).join("\n");
                 }
 
                 throw new Error(`Failed GraphQL request: HTTP ${response.status} ${response.statusText}\n${errorsStr}`);
             }
 
             const body = await response.json();
+            
+            if (body?.errors) {
+                let errorsStr = body.errors.map((e: any) => JSON.stringify(e)).join("\n");
+                
+                throw new Error(`Failed GraphQL request: HTTP ${response.status} ${response.statusText}\n${errorsStr}`);
+            }
+
             LOGGER.info(`Suceeded graphql request.`);
 
             return body["data"]["result"];
@@ -65,9 +72,12 @@ class GraphQLClient {
     ): Promise<T[]> {
         const result = await this.execute(options);
 
-        return result.map((item: unknown) =>
-            transformer.constructor().fromPlain(item)
+        if (Array.isArray(result)) return result.map((item: unknown) =>
+            // @ts-ignore
+            transformer.fromPlain(item)
         );
+        // @ts-ignore
+        else return transformer.fromPlain(result);
     }
 }
 

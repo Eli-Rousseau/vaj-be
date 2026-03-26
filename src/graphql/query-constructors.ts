@@ -489,7 +489,7 @@ export async function constructSingleInsertQuery(
     inputs,
     "0",
   );
-  const nestedInserts = nesteds ? `WITH ${nesteds.join(", ")}` : "";
+  const nestedInserts = nesteds.length > 0 ? `WITH ${nesteds.join(", ")}` : "";
 
   return `${nestedInserts} ${last} ;`;
 }

@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { Transform, Expose, Type, plainToInstance, instanceToPlain } from "class-transformer";
 
 import * as transformers from "./transformers";
+import { Default } from "./transformers";
 
 export class TransformerClass {
   static fromPlain<T extends TransformerClass>(
@@ -14,6 +15,158 @@ export class TransformerClass {
   toPlain(): object {
     return instanceToPlain(this);
   }
+}
+
+export class ShopDiscountCoupon extends TransformerClass {
+  @Expose()
+  reference: string | null = null;
+
+  @Expose()
+  sequentialId: number | null = null;
+
+  @Expose()
+  code: string | null = null;
+
+  @Expose()
+  description?: string | null = null;
+
+  @Expose()
+  discountType: string | null = null;
+
+  @Expose()
+  discountValue: number | null = null;
+
+  @Expose()
+  maxUses?: number | null = null;
+
+  @Expose()
+  minOrderValue?: number | null = null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Expose()
+  validFrom: string | null = null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Expose()
+  validUntil: string | null = null;
+
+  @Expose()
+  isAactive: boolean | null = null;
+
+  @Expose()
+  userLimit?: number | null = null;
+
+  @Expose()
+  isStackable: boolean | null = null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Expose()
+  createdAt: string | null = null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Expose()
+  updatedAt: string | null = null;
+}
+
+export class ShopUser extends TransformerClass {
+  @Default()
+  @Expose()
+  reference?: string | null = null;
+
+  @Default()
+  @Expose()
+  sequentialId?: number | null = null;
+
+  @Default()
+  @Expose()
+  name?: string | null = null;
+
+  @Default()
+  @Expose()
+  birthday?: string | null = null;
+
+  @Default()
+  @Expose()
+  email?: string | null = null;
+
+  @Default()
+  @Expose()
+  phoneNumber?: string | null = null;
+
+  @Default()
+  @Expose()
+  password?: string | null = null;
+
+  @Default()
+  @Expose()
+  salt?: string | null = null;
+
+  @Default()
+  @Expose()
+  refreshtoken?: string | null = null;
+
+  @Default()
+  @Expose()
+  systemAuthentication?: string | null = null;
+
+  @Default()
+  @Expose()
+  systemRole?: string | null = null;
+
+  // @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  // @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  // @Expose()
+  // createdAt: string | null = null;
+
+  // @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  // @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  // @Expose()
+  // updatedAt: string | null = null;
+
+  // @Type(() => ShopAddress)
+  // @Expose()
+  // userBillingAddress?: ShopAddress | null = null;
+
+  // @Type(() => ShopAddress)
+  // @Expose()
+  // userBillingAddressArray?: ShopAddress[] | null = null;
+
+  // @Type(() => ShopUserCompositeType)
+  // @Expose()
+  // userGetCompositeType?: ShopUserCompositeType | null = null;
+
+  // @Type(() => ShopUserCompositeType)
+  // @Expose()
+  // userGetCompositeTypeArray?: ShopUserCompositeType[] | null = null;
+
+  // @Expose()
+  // userReferenceType?: string | null = null;
+
+  // @Expose()
+  // userReferenceTypeArray?: string[] | null = null;
+
+  // @Type(() => ShopAddress)
+  // @Expose()
+  // userShippingAddress?: ShopAddress | null = null;
+}
+
+export class ShopPaymentMethodEnum extends TransformerClass {
+  @Expose()
+  paymentMethod: string | null = null;
+}
+
+export class ShopOrderStatusEnum extends TransformerClass {
+  @Expose()
+  orderStatus: string | null = null;
+}
+
+export class ShopOrderTypeEnum extends TransformerClass {
+  @Expose()
+  orderType: string | null = null;
 }
 
 export class ShopOrder extends TransformerClass {
@@ -42,13 +195,13 @@ export class ShopOrder extends TransformerClass {
   @Expose()
   type?: string | null = null;
 
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Transform(({ value }) => transformers.toDatetime(value, { isNullable: true }), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value, { isNullable: true }), { toPlainOnly: true })
   @Expose()
   rentalStartDate?: string | null = null;
 
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Transform(({ value }) => transformers.toDatetime(value, { isNullable: true }), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value, { isNullable: true }), { toPlainOnly: true })
   @Expose()
   rentalEndDate?: string | null = null;
 
@@ -94,8 +247,8 @@ export class ShopArticle extends TransformerClass {
   @Expose()
   brand?: string | null = null;
 
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Transform(({ value }) => transformers.toDatetime(value, { isNullable: true }), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value, { isNullable: true }), { toPlainOnly: true })
   @Expose()
   release?: string | null = null;
 
@@ -212,147 +365,6 @@ export class ShopOrderArticle extends TransformerClass {
   ShopArticles?: ShopArticle[] | null = null;
 }
 
-export class ShopDiscountCoupon extends TransformerClass {
-  @Expose()
-  reference: string | null = null;
-
-  @Expose()
-  sequentialId: number | null = null;
-
-  @Expose()
-  code: string | null = null;
-
-  @Expose()
-  description?: string | null = null;
-
-  @Expose()
-  discountType: string | null = null;
-
-  @Expose()
-  discountValue: number | null = null;
-
-  @Expose()
-  maxUses?: number | null = null;
-
-  @Expose()
-  minOrderValue?: number | null = null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Expose()
-  validFrom: string | null = null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Expose()
-  validUntil: string | null = null;
-
-  @Expose()
-  isAactive: boolean | null = null;
-
-  @Expose()
-  userLimit?: number | null = null;
-
-  @Expose()
-  isStackable: boolean | null = null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Expose()
-  createdAt: string | null = null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Expose()
-  updatedAt: string | null = null;
-}
-
-export class ShopUser extends TransformerClass {
-  @Expose()
-  reference: string | null = null;
-
-  @Expose()
-  sequentialId: number | null = null;
-
-  @Expose()
-  name: string | null = null;
-
-  @Expose()
-  birthday?: string | null = null;
-
-  @Expose()
-  email: string | null = null;
-
-  @Expose()
-  phoneNumber?: string | null = null;
-
-  @Expose()
-  password?: string | null = null;
-
-  @Expose()
-  salt?: string | null = null;
-
-  @Expose()
-  refreshtoken?: string | null = null;
-
-  @Expose()
-  systemAuthentication?: string | null = null;
-
-  @Expose()
-  systemRole?: string | null = null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Expose()
-  createdAt: string | null = null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Expose()
-  updatedAt: string | null = null;
-
-  @Type(() => ShopAddress)
-  @Expose()
-  userBillingAddress?: ShopAddress | null = null;
-
-  @Type(() => ShopAddress)
-  @Expose()
-  userBillingAddressArray?: ShopAddress[] | null = null;
-
-  @Type(() => ShopUserCompositeType)
-  @Expose()
-  userGetCompositeType?: ShopUserCompositeType | null = null;
-
-  @Type(() => ShopUserCompositeType)
-  @Expose()
-  userGetCompositeTypeArray?: ShopUserCompositeType[] | null = null;
-
-  @Expose()
-  userReferenceType?: string | null = null;
-
-  @Expose()
-  userReferenceTypeArray?: string[] | null = null;
-
-  @Type(() => ShopAddress)
-  @Expose()
-  userShippingAddress?: ShopAddress | null = null;
-}
-
-export class ShopPaymentMethodEnum extends TransformerClass {
-  @Expose()
-  paymentMethod: string | null = null;
-}
-
-export class ShopOrderStatusEnum extends TransformerClass {
-  @Expose()
-  orderStatus: string | null = null;
-}
-
-export class ShopOrderTypeEnum extends TransformerClass {
-  @Expose()
-  orderType: string | null = null;
-}
-
 export class ShopArticleDiscountCoupon extends TransformerClass {
   @Expose()
   reference: string | null = null;
@@ -391,45 +403,6 @@ export class ShopArticleDiscountCoupon extends TransformerClass {
   @Type(() => ShopDiscountCoupon)
   @Expose()
   ShopDiscountCoupons?: ShopDiscountCoupon[] | null = null;
-}
-
-export class ShopFile extends TransformerClass {
-  @Expose()
-  reference: string | null = null;
-
-  @Expose()
-  sequentialId: number | null = null;
-
-  @Expose()
-  key: string | null = null;
-
-  @Expose()
-  name: string | null = null;
-
-  @Expose()
-  bucket: string | null = null;
-
-  @Expose()
-  contentType: string | null = null;
-
-  @Expose()
-  isPublic?: boolean | null = null;
-
-  @Expose()
-  publicUrl?: string | null = null;
-
-  @Expose()
-  id: string | null = null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Expose()
-  createdAt: string | null = null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Expose()
-  updatedAt: string | null = null;
 }
 
 export class ShopSystemAuthenticationEnum extends TransformerClass {
@@ -507,6 +480,45 @@ export class ShopUserCompositeType extends TransformerClass {
 export class ShopSystemRoleEnum extends TransformerClass {
   @Expose()
   systemRole: string | null = null;
+}
+
+export class ShopFile extends TransformerClass {
+  @Expose()
+  reference: string | null = null;
+
+  @Expose()
+  sequentialId: number | null = null;
+
+  @Expose()
+  key: string | null = null;
+
+  @Expose()
+  name: string | null = null;
+
+  @Expose()
+  bucket: string | null = null;
+
+  @Expose()
+  contentType: string | null = null;
+
+  @Expose()
+  isPublic?: boolean | null = null;
+
+  @Expose()
+  publicUrl?: string | null = null;
+
+  @Expose()
+  id: string | null = null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Expose()
+  createdAt: string | null = null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Expose()
+  updatedAt: string | null = null;
 }
 
 export class ShopArticleCategory extends TransformerClass {

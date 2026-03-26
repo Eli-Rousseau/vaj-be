@@ -13,5 +13,9 @@ GRANT USAGE ON SCHEMA shop TO :username;
 -- Grant CRUD privileges on schema tables
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA shop TO :username;
 
+-- Grant usage on all sequence on schema
+GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA shop TO :username;
+ALTER DEFAULT PRIVILEGES IN SCHEMA shop GRANT USAGE, SELECT ON SEQUENCES TO :username;
+
 -- Apply default privileges for user
 ALTER DEFAULT PRIVILEGES IN SCHEMA shop GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO :username;

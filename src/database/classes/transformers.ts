@@ -1,3 +1,5 @@
+import { Transform } from 'class-transformer';
+
 type TransformerOptions = {
   isNullable?: boolean;
 };
@@ -8,6 +10,24 @@ class TransformerError extends Error {
         super(message);
         this.name = "TransfomerError";
     }
+}
+
+export function Default(defaultValue: any = null): PropertyDecorator {
+	return (target: Object, propertyKey: string | symbol) => {
+		Transform(({ value }) => {
+			if (value !== null && value !== undefined) return value;
+
+			if (typeof defaultValue === "function") return defaultValue();
+
+			if (Array.isArray(defaultValue)) return [...defaultValue];
+
+			if (typeof defaultValue === "object") {
+				return defaultValue === null ? null : { ...defaultValue };
+			}
+
+			return defaultValue;
+		})(target, propertyKey);
+	};
 }
 
 const EPOCH_PATTERN = /^\d+$/;

@@ -345,9 +345,11 @@ export async function buildTransformerClasses() {
   const dataBaseInfo = await getDataBaseInfo(true);
 
   const plate = `
+import "reflect-metadata";
 import { Transform, Expose, Type, plainToInstance, instanceToPlain } from "class-transformer";
 
 import * as transformers from "./transformers";
+import { Default } from "./transformers";
 
 export class TransformerClass {
   static fromPlain<T extends TransformerClass>(
