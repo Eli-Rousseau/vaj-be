@@ -1,9 +1,5 @@
 import { Transform } from 'class-transformer';
 
-type TransformerOptions = {
-  isNullable?: boolean;
-};
-
 class TransformerError extends Error {
     
     constructor(message: string) {
@@ -35,10 +31,9 @@ const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}$/;
 
 export const toDay = function (
-  value: any,
-  options: TransformerOptions = { isNullable: false }
+  value: any
 ) {
-  if (options?.isNullable && value === null) return null;
+  if (value === undefined || value === null) return null;
 
   if (value instanceof Date) return value;
 
@@ -60,10 +55,9 @@ export const toDay = function (
 };
 
 export const fromDay = function (
-  value: any,
-  options: TransformerOptions = { isNullable: false }
+  value: any
 ) {
-  if (options?.isNullable && value === null) return null;
+  if (value === undefined || value === null) return null;
 
   if (value instanceof Date) {
     return value.getDate().toString();
@@ -73,10 +67,9 @@ export const fromDay = function (
 };
 
 export const toDatetime = function (
-  value: any,
-  options: TransformerOptions = { isNullable: false }
+  value: any
 ) {
-  if (options?.isNullable && value === null) return null;
+  if (value === undefined || value === null) return null;
 
   if (value instanceof Date) return value;
 
@@ -112,10 +105,9 @@ export const toDatetime = function (
 };
 
 export const fromDatetime = function (
-  value: Date | null | undefined,
-  options: TransformerOptions = { isNullable: false }
-): string | null | undefined {
-  if (options?.isNullable && value === null) return null;
+  value: Date | null
+): string | null {
+  if (value === undefined || value === null) return null;
 
   if (value instanceof Date) {
     return value.getDate().toString();
@@ -125,10 +117,9 @@ export const fromDatetime = function (
 };
 
 export const toJSON = function (
-  value: any,
-  options: TransformerOptions = { isNullable: false }
+  value: any
 ) {
-  if (options?.isNullable && value === null) return null;
+  if (value === undefined || value === null) return null;
 
   if (typeof value === "string") {
     return JSON.parse(value);
@@ -138,10 +129,9 @@ export const toJSON = function (
 };
 
 export const fromJSON = function (
-  value: any,
-  options: TransformerOptions = { isNullable: false }
+  value: any
 ) {
-  if (options?.isNullable && value === null) return null;
+  if (value === undefined || value === null) return null;
 
   return JSON.stringify(value);
 };

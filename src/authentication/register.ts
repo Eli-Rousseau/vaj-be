@@ -47,6 +47,8 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
   
   const refreshToken = generateGenericToken();
   user.refreshtoken = refreshToken;
+  user.systemRole = "USER";
+  user.systemAuthentication = "INTERNAL";
 
   try {
     // @ts-ignore

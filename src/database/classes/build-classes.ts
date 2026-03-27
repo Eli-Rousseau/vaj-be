@@ -114,6 +114,7 @@ function buildCompositeTypeColumnField(
 ): string {
   return [
     buildTransformDecorators(column),
+    `${INDENT}@Default()`,
     `${INDENT}@Expose()`,
     buildPropertyDeclaration(schema, column),
   ]
@@ -182,6 +183,7 @@ function buildColumnField(schema: SchemaInfo, column: ColumnInfo): string {
   return [
     buildForeignKeyDecorator(schema, column),
     buildTransformDecorators(column),
+    `${INDENT}@Default()`,
     `${INDENT}@Expose()`,
     buildPropertyDeclaration(schema, column),
   ]
@@ -204,11 +206,9 @@ function buildTransformDecorators(
   const transformer = TRANSFORMER_MAPPER[column.dataType as PostgresType];
   if (!transformer) return null;
 
-  const nullable = column.isNullable ? ", { isNullable: true }" : "";
-
   return [
-    `${INDENT}@Transform(({ value }) => transformers.${transformer.to}(value${nullable}), { toClassOnly: true })`,
-    `${INDENT}@Transform(({ value }) => transformers.${transformer.from}(value${nullable}), { toPlainOnly: true })`,
+    `${INDENT}@Transform(({ value }) => transformers.${transformer.to}(value), { toClassOnly: true })`,
+    `${INDENT}@Transform(({ value }) => transformers.${transformer.from}(value), { toPlainOnly: true })`,
   ].join("\n");
 }
 
@@ -221,9 +221,7 @@ function buildPropertyDeclaration(
       ? `${capitalize(schema.name)}${capitalize((column as ColumnInfo).foreignKey!)}`
       : TYPE_MAPPER[column.dataType as PostgresType];
 
-  const optional = column.isNullable ? "?" : "";
-
-  return `${INDENT}${column.name}${optional}: ${type} | null = null;`;
+  return `${INDENT}${column.name}!: ${type} | null;`;
 }
 
 function buildForeignKeyCollections(
@@ -240,8 +238,9 @@ function buildForeignKeyCollections(
 
       return [
         `${INDENT}@Type(() => ${type})`,
+        `${INDENT}@Default()`,
         `${INDENT}@Expose()`,
-        `${INDENT}${plural(type)}?: ${type}[] | null = null;`,
+        `${INDENT}${plural(type)}!: ${type}[] | null;`,
       ].join("\n");
     })
     .join("\n\n");
@@ -273,7 +272,8 @@ function buildComputedField(
 
   const computedField = [
     `${INDENT}@Expose()`,
-    `${INDENT}${field.name}?: ${typeName}${array} | null = null;`,
+    `${INDENT}@Default()`,
+    `${INDENT}${field.name}!: ${typeName}${array} | null;`,
   ];
 
   if (decorators) computedField.unshift(decorators);
@@ -288,8 +288,8 @@ function buildComputedTransformDecorators(field: ComputedFieldInfo): string {
   if (!transformer) return "";
 
   return [
-    `${INDENT}@Transform(({ value }) => transformers.${transformer.to}(value, { isNullable: true }), { toClassOnly: true })`,
-    `${INDENT}@Transform(({ value }) => transformers.${transformer.from}(value, { isNullable: true }), { toPlainOnly: true })`,
+    `${INDENT}@Transform(({ value }) => transformers.${transformer.to}(value), { toClassOnly: true })`,
+    `${INDENT}@Transform(({ value }) => transformers.${transformer.from}(value), { toPlainOnly: true })`,
   ].join("\n");
 }
 
@@ -356,7 +356,7 @@ export class TransformerClass {
     this: new (...args: any[]) => T,
     plain: unknown
   ): T {
-    return plainToInstance(this, plain as object);
+    return plainToInstance(this, plain as object, { excludeExtraneousValues: true });
   }
 
   toPlain(): object {
