@@ -271,8 +271,8 @@ function buildComputedField(
   const array = field.returnCardinality === "ARRAY" ? "[]" : "";
 
   const computedField = [
-    `${INDENT}@Expose()`,
     `${INDENT}@Default()`,
+    `${INDENT}@Expose()`,
     `${INDENT}${field.name}!: ${typeName}${array} | null;`,
   ];
 
