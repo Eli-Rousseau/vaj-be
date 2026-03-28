@@ -51,7 +51,6 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
   user.systemAuthentication = "INTERNAL";
 
   try {
-    // @ts-ignore
     user = await createUser(user);
   } catch (error) {
     throw new DatabaseError(`CREATE_USER_FAILED:${error}`);

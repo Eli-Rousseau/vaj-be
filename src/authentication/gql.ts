@@ -2,11 +2,10 @@ import { ShopUser } from "../database/classes/transformer-classes";
 import { graphql } from "../utils/graphql";
 
 export async function findUsersByEmail(email: string): Promise<ShopUser[]> {
-  // @ts-ignore
   return await graphql.executeAndTransform(ShopUser, {
     query: `
 query findUsersByEmail($email: JSON) {
-  result: getShopUsers(
+  getShopUsers(
     where: {
       email: { eq: $email }
     }
@@ -20,11 +19,10 @@ query findUsersByEmail($email: JSON) {
 }
 
 export async function createUser(input: ShopUser) {
-    // @ts-ignore
     const user = (await graphql.executeAndTransform(ShopUser, {
         query: `
 mutation createUser($user: ShopUserMutationType!){
-  result: insertShopUser(
+  insertShopUser(
     data: $user
   ) {
     reference
@@ -37,9 +35,9 @@ mutation createUser($user: ShopUserMutationType!){
 }        
         `,
         variables: {
-            user: input.toPlain()
+            user: input.toPlain({ onlyMutables: true })
         }
-    }));
+    }))[0];
 
     return user;
 }

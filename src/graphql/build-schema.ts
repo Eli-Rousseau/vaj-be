@@ -248,15 +248,15 @@ input ${capitalize(schema) + capitalize(_table.name) + capitalize(table)}Mutatio
           pkTableMutationType,
         );
 
-        const getByReferenceQuery = `get${schemaTableName}ByReference(reference: ID!): ${schemaTableName}Type`;
+        const getByReferenceQuery = `get${schemaTableName}ByReference(reference: ID!): [${schemaTableName}Type!]!`;
         const getBulkQuery = `get${plural(schemaTableName)}(where: ${schemaTableName}WhereType, orderBy: [${schemaTableName}OrderByType!], limit: Int, offset: Int): [${schemaTableName}Type!]!`;
         queryTypes.push(getByReferenceQuery, getBulkQuery);
 
-        const singleInsertQuery = `insert${schemaTableName}(data: ${schemaTableName}MutationType!, onConflict: OnConflictType): ${schemaTableName}Type!`;
+        const singleInsertQuery = `insert${schemaTableName}(data: ${schemaTableName}MutationType!, onConflict: OnConflictType): [${schemaTableName}Type!]!`;
         const bulkInsertQuery = `insert${plural(schemaTableName)}(data: [${schemaTableName}MutationType!]!, onConflict: OnConflictType): [${schemaTableName}Type!]!`;
-        const singleUpdateQuery = `update${schemaTableName}(data: ${schemaTableName}MutationType!, set: [String]): ${schemaTableName}Type!`;
+        const singleUpdateQuery = `update${schemaTableName}(data: ${schemaTableName}MutationType!, set: [String]): [${schemaTableName}Type!]!`;
         const bulkUpdateQuery = `update${plural(schemaTableName)}(data: [${schemaTableName}MutationType!]!, set: [String]): [${schemaTableName}Type!]!`;
-        const singleDeleteQuery = `delete${schemaTableName}(data: ${schemaTableName}MutationType!): ${schemaTableName}Type!`;
+        const singleDeleteQuery = `delete${schemaTableName}(data: ${schemaTableName}MutationType!): [${schemaTableName}Type!]!`;
         const bulkDeleteQuery = `delete${plural(schemaTableName)}(data: [${schemaTableName}MutationType!]!): [${schemaTableName}Type!]!`;
         mutationTypes.push(
           singleInsertQuery,
@@ -362,7 +362,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             reference,
           );
           const res = await pgPool.query(query);
-          return res.rows[0];
+          return res.rows;
         };
         resolvers["Query"][`get${plural(schemaTableName)}`] = async (
           _,
@@ -390,7 +390,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             { data, onConflict },
           );
           const res = await pgPool.query(query);
-          return res.rows[0];
+          return res.rows;
         };
         resolvers["Mutation"][`insert${plural(schemaTableName)}`] = async (
           _,
@@ -414,7 +414,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             { data, set },
           );
           const res = await pgPool.query(query);
-          return res.rows[0];
+          return res.rows;
         };
         resolvers["Mutation"][`update${plural(schemaTableName)}`] = async (
           _,
@@ -438,7 +438,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             { data },
           );
           const res = await pgPool.query(query);
-          return res.rows[0];
+          return res.rows;
         };
         resolvers["Mutation"][`delete${plural(schemaTableName)}`] = async (
           __dirname,
@@ -482,7 +482,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
                   parent.user,
                 );
                 const res = await pgPool.query(query);
-                return res.rows[0];
+                return res.rows;
               }),
         );
 

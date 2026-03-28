@@ -183,6 +183,7 @@ function buildColumnField(schema: SchemaInfo, column: ColumnInfo): string {
   return [
     buildForeignKeyDecorator(schema, column),
     buildTransformDecorators(column),
+    `${INDENT}@Annotate("Mutable")`,
     `${INDENT}@Default()`,
     `${INDENT}@Expose()`,
     buildPropertyDeclaration(schema, column),
@@ -346,23 +347,10 @@ export async function buildTransformerClasses() {
 
   const plate = `
 import "reflect-metadata";
-import { Transform, Expose, Type, plainToInstance, instanceToPlain } from "class-transformer";
+import { Transform, Expose, Type } from "class-transformer";
 
 import * as transformers from "./transformers";
-import { Default } from "./transformers";
-
-export class TransformerClass {
-  static fromPlain<T extends TransformerClass>(
-    this: new (...args: any[]) => T,
-    plain: unknown
-  ): T {
-    return plainToInstance(this, plain as object, { excludeExtraneousValues: true });
-  }
-
-  toPlain(): object {
-    return instanceToPlain(this);
-  }
-}
+import { TransformerClass, Default, Annotate } from "./transformers";
     `
     .trim()
     .concat("\n\n");

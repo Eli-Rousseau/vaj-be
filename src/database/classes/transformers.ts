@@ -1,4 +1,4 @@
-import { Transform } from 'class-transformer';
+import { Transform, plainToInstance, instanceToPlain } from 'class-transformer';
 
 class TransformerError extends Error {
     
@@ -24,6 +24,79 @@ export function Default(defaultValue: any = null): PropertyDecorator {
 			return defaultValue;
 		})(target, propertyKey);
 	};
+}
+
+const annotationMetadata = new WeakMap<object, Map<string | symbol, symbol>>();
+
+export function Annotate(annotation: string): PropertyDecorator {
+  return (target: Object, propertyKey: string | symbol) => {
+    const valueKey = Symbol(`__${String(propertyKey)}_value`);
+    const annotationsKey = Symbol(`__${String(propertyKey)}_annotations`);
+
+    let map = annotationMetadata.get(target);
+    if (!map) {
+      map = new Map();
+      annotationMetadata.set(target, map);
+    }
+    map.set(propertyKey, annotationsKey);
+
+    Object.defineProperty(target, propertyKey, {
+      get: function () {
+        return this[valueKey];
+      },
+      set: function (newValue: any) {
+        this[valueKey] = newValue;
+
+        if (!this[annotationsKey]) {
+          this[annotationsKey] = [];
+        }
+
+        if (!this[annotationsKey].includes(annotation)) {
+          this[annotationsKey].push(annotation);
+        }
+      },
+      enumerable: true,
+      configurable: true,
+    });
+  };
+}
+
+type ToPlainOptions = {
+  onlyMutables?: boolean;
+}
+
+export class TransformerClass {
+  static fromPlain<T extends TransformerClass>(
+    this: new (...args: any[]) => T,
+    plain: unknown
+  ): T {
+    return plainToInstance(this, plain as object, { excludeExtraneousValues: true });
+  }
+
+  private getAnnotations(propertyKey: string | symbol): string[] {
+    const proto = Object.getPrototypeOf(this);
+    const map = annotationMetadata.get(proto);
+
+    if (!map) return [];
+
+    const annotationsKey = map.get(propertyKey);
+    if (!annotationsKey) return [];
+
+    const self = this as any;
+    return self[annotationsKey] || [];
+  }
+
+  toPlain(options?: ToPlainOptions): object {
+    let plain = instanceToPlain(this);
+
+    if (options?.onlyMutables) {
+      const allKeys = Object.keys(plain);
+      const nonMutableKeys = allKeys.filter((key) => !this.getAnnotations(key).includes("Mutable"));
+      nonMutableKeys.forEach((key) => { delete plain[key] });
+    }
+
+    return plain
+  }
 }
 
 const EPOCH_PATTERN = /^\d+$/;
