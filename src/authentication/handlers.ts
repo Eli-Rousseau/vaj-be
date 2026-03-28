@@ -11,6 +11,7 @@ export async function handleInternalRegister(
     const result = await registerUser({
       user: req.body?.user,
       jwtSecret: process.env.JWT_SECRET as string,
+      refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET as string
     });
 
     res.status(201).json(result).end();
@@ -43,5 +44,27 @@ export async function handleInternalRegister(
         errorMessage: `UNKNOWN_ERROR`,
       }).end();
     }
+  }
+}
+
+export async function handleInternalLogin(
+  req: Request,
+  res: Response
+) {
+  try {
+    
+  } catch (error) {
+
+  }
+}
+
+export async function handleRefreshToken(
+  req: Request,
+  res: Response
+) {
+  try {
+    
+  } catch (error) {
+
   }
 }

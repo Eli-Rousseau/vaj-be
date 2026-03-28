@@ -535,6 +535,7 @@ async function constructNestedUpdateClause(
   }
   tableValues = [...tableValues];
   tableValues.unshift("reference");
+  tableValues.unshift("sequentialId");
 
   updates = updates["data"];
 
@@ -651,6 +652,7 @@ async function constructNestedDeleteClause(
   }
   tableValues = [...tableValues];
   tableValues.unshift("reference");
+  tableValues.unshift("sequentialId");
 
   deletes = deletes["data"];
 

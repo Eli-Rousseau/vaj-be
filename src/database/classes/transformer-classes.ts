@@ -133,7 +133,7 @@ export class ShopUser extends TransformerClass {
   @Annotate("Mutable")
   @Default()
   @Expose()
-  refreshtoken!: string | null;
+  refreshToken!: string | null;
 
   @Annotate("Mutable")
   @Default()

@@ -18,7 +18,7 @@ query findUsersByEmail($email: JSON) {
   });
 }
 
-export async function createUser(input: ShopUser) {
+export async function createUser(data: ShopUser) {
     const user = (await graphql.executeAndTransform(ShopUser, {
         query: `
 mutation createUser($user: ShopUserMutationType!){
@@ -35,9 +35,30 @@ mutation createUser($user: ShopUserMutationType!){
 }        
         `,
         variables: {
-            user: input.toPlain({ onlyMutables: true })
+            user: data.toPlain({ onlyMutables: true })
         }
     }))[0];
 
     return user;
+}
+
+export async function updateUserRefreshToken(data: ShopUser) {
+  const user = (await graphql.executeAndTransform(ShopUser, {
+    query: `
+mutation updateUserRefreshToken($user: ShopUserMutationType!) {
+  updateShopUser(
+    set: ["refreshToken"]
+    data: $user
+  ) {
+    reference
+    refreshToken
+  }
+}
+    `,
+    variables: {
+      user: data.toPlain({ onlyMutables: true })
+    }
+  }))[0];
+
+  return user;
 }

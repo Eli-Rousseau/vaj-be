@@ -1,12 +1,13 @@
 import { BadRequestError, ConfigError, DatabaseError } from "../api/error-classes";
 import { ShopUser } from "../database/classes/transformer-classes";
 import { isValidEmail } from "../utils/validators";
-import { generateGenericToken, generateJWTToken } from "./common";
-import { createUser, findUsersByEmail } from "./gql";
+import { encrypt, generateGenericToken, generateJWTToken } from "./common";
+import { createUser, findUsersByEmail, updateUserRefreshToken } from "./gql";
 
 type RegisterInput = {
   user: unknown;
   jwtSecret: string;
+  refreshTokenSecret: string;
 };
 
 type RegisterResult = {
@@ -20,10 +21,14 @@ async function isEmailAlreadyAssigned(email: string) {
 }
 
 export async function registerUser(input: RegisterInput): Promise<RegisterResult> {
-  const { user: rawUser, jwtSecret } = input;
+  const { user: rawUser, jwtSecret, refreshTokenSecret } = input;
 
   if (!jwtSecret) {
     throw new ConfigError("CONFIG_MISSING_JWT_SECRET");
+  }
+
+  if (!refreshTokenSecret) {
+    throw new ConfigError("CONFIG_MISSING_REFRESH_TOKEN_SECRET");
   }
 
   let user: ShopUser;
@@ -44,9 +49,7 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
   } catch (error) {
     throw new DatabaseError(`FIND_USER_EMAIL_FAILED:${error}`);
   }
-  
-  const refreshToken = generateGenericToken();
-  user.refreshtoken = refreshToken;
+
   user.systemRole = "USER";
   user.systemAuthentication = "INTERNAL";
 
@@ -56,15 +59,16 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
     throw new DatabaseError(`CREATE_USER_FAILED:${error}`);
   }
 
-  const payload = {
-    reference: user.reference,
-    sequentialId: user.sequentialId,
-    email: user.email,
-    systemRole: user.systemRole,
-    systemAuthentication: user.systemAuthentication,
-  };
+  const refreshToken = encrypt(user.reference!, refreshTokenSecret);
+  user.refreshToken = refreshToken;
 
-  const accessToken = generateJWTToken(payload, jwtSecret, 30 * 60);
+  try {
+    await updateUserRefreshToken(user);
+  } catch (error) {
+    throw new DatabaseError(`UPDATE_USER_TOKEN_FAILED:${error}`);
+  }
+
+  const accessToken = generateJWTToken(user, jwtSecret, 30 * 60);
 
   return {
     accessToken,
