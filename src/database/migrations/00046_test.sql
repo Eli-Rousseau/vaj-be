@@ -1,11 +1,11 @@
 -- ===========================================
 --  Insert Users
 -- ===========================================
-INSERT INTO shop.user (name, birthday, email, "phoneNumber", password, salt, "systemAuthentication", "systemRole")
+INSERT INTO shop.user (name, birthday, email, "phoneNumber", password, "systemAuthentication", "systemRole")
 VALUES 
-('Eli',   '2000-01-01', 'eli@mail.com',    '04567890', 'secret', 'sugar', 'GOOGLE', 'DEVELOPER'),
-('Natan', '1988-02-21', 'nathan@mail.com', '09876789', 'very',   'sweet', 'INTERNAL', 'USER'),
-('Ester', '2009-10-03', 'ester@gcloud.com','09876543', 'newly',  'secret', 'INTERNAL', 'SUPERUSER');
+('Eli',   '2000-01-01', 'eli@mail.com',    '04567890', 'secret', 'GOOGLE', 'DEVELOPER'),
+('Natan', '1988-02-21', 'nathan@mail.com', '09876789', 'very', 'INTERNAL', 'USER'),
+('Ester', '2009-10-03', 'ester@gcloud.com','09876543', 'newly', 'INTERNAL', 'SUPERUSER');
 
 
 -- ===========================================

@@ -26,38 +26,17 @@ export function Default(defaultValue: any = null): PropertyDecorator {
 	};
 }
 
-const annotationMetadata = new WeakMap<object, Map<string | symbol, symbol>>();
-
 export function Annotate(annotation: string): PropertyDecorator {
-  return (target: Object, propertyKey: string | symbol) => {
-    const valueKey = Symbol(`__${String(propertyKey)}_value`);
-    const annotationsKey = Symbol(`__${String(propertyKey)}_annotations`);
-
-    let map = annotationMetadata.get(target);
-    if (!map) {
-      map = new Map();
-      annotationMetadata.set(target, map);
+  return (target: any, propertyKey: string | symbol) => {
+    let annotations = {} as Record<string, Set<string>>;
+    if (target?.annotations) {
+      annotations = target.annotations;
     }
-    map.set(propertyKey, annotationsKey);
 
-    Object.defineProperty(target, propertyKey, {
-      get: function () {
-        return this[valueKey];
-      },
-      set: function (newValue: any) {
-        this[valueKey] = newValue;
+    if (Object.keys(annotation).includes(String(propertyKey))) annotations[String(propertyKey)].add(annotation);
+    else annotations[String(propertyKey)] = new Set([annotation]);
 
-        if (!this[annotationsKey]) {
-          this[annotationsKey] = [];
-        }
-
-        if (!this[annotationsKey].includes(annotation)) {
-          this[annotationsKey].push(annotation);
-        }
-      },
-      enumerable: true,
-      configurable: true,
-    });
+    target["annotations"] = annotations;
   };
 }
 
@@ -73,17 +52,16 @@ export class TransformerClass {
     return plainToInstance(this, plain as object, { excludeExtraneousValues: true });
   }
 
-  private getAnnotations(propertyKey: string | symbol): string[] {
-    const proto = Object.getPrototypeOf(this);
-    const map = annotationMetadata.get(proto);
+  private getAnnotations(propertyKey: string | symbol): Set<string> {
+    const annotations = (this as any)?.annotations;
+    if (!annotations) return new Set();
 
-    if (!map) return [];
+    let propertyAnnotations = new Set<string>();
+    if (Object.keys(annotations).includes(String(propertyKey))) {
+      propertyAnnotations = annotations[String(propertyKey)] as Set<string>;
+    }
 
-    const annotationsKey = map.get(propertyKey);
-    if (!annotationsKey) return [];
-
-    const self = this as any;
-    return self[annotationsKey] || [];
+    return propertyAnnotations;
   }
 
   toPlain(options?: ToPlainOptions): object {
@@ -91,7 +69,7 @@ export class TransformerClass {
 
     if (options?.onlyMutables) {
       const allKeys = Object.keys(plain);
-      const nonMutableKeys = allKeys.filter((key) => !this.getAnnotations(key).includes("Mutable"));
+      const nonMutableKeys = allKeys.filter((key) => !this.getAnnotations(key).has("Mutable"));
       nonMutableKeys.forEach((key) => { delete plain[key] });
     }
 
@@ -183,7 +161,7 @@ export const fromDatetime = function (
   if (value === undefined || value === null) return null;
 
   if (value instanceof Date) {
-    return value.getDate().toString();
+    return value.toISOString();
   }
 
   throw new TransformerError(`Expected an Date instance. Recieved: ${value}`);

@@ -6,8 +6,6 @@ CREATE TABLE shop.user (
     email TEXT CONSTRAINT "userEmailNotNull" NOT NULL CONSTRAINT "userEmailKey" UNIQUE,
     "phoneNumber" TEXT DEFAULT NULL,
     password TEXT DEFAULT NULL,
-    salt TEXT DEFAULT NULL,
-    "refreshToken" TEXT DEFAULT NULL,
     "systemAuthentication" TEXT,
     CONSTRAINT "fkSystemAuthentication"
         FOREIGN KEY ("systemAuthentication") 

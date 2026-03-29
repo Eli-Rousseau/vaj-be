@@ -1,7 +1,7 @@
-import { ShopUser } from "../database/classes/transformer-classes";
+import { ShopRefreshToken, ShopUser } from "../database/classes/transformer-classes";
 import { graphql } from "../utils/graphql";
 
-export async function findUsersByEmail(email: string): Promise<ShopUser[]> {
+export async function findUsersByEmail(email: string) {
   return await graphql.executeAndTransform(ShopUser, {
     query: `
 query findUsersByEmail($email: JSON) {
@@ -11,6 +11,20 @@ query findUsersByEmail($email: JSON) {
     }
   ) {
     reference
+    sequentialId
+    name
+    email
+    systemRole
+    systemAuthentication
+    refreshTokens {
+      reference
+      sequentialId
+      tokenHash
+      user
+      expiresAt
+      revokedAt
+      replacedBy
+    }
   }
 }
     `,
@@ -42,23 +56,25 @@ mutation createUser($user: ShopUserMutationType!){
     return user;
 }
 
-export async function updateUserRefreshToken(data: ShopUser) {
-  const user = (await graphql.executeAndTransform(ShopUser, {
+export async function createRefreshToken(data: ShopRefreshToken) {
+  const refreshToken = (await graphql.executeAndTransform(ShopRefreshToken, {
     query: `
-mutation updateUserRefreshToken($user: ShopUserMutationType!) {
-  updateShopUser(
-    set: ["refreshToken"]
-    data: $user
+mutation createRefreshToken($refreshToken: ShopRefreshTokenMutationType!) {
+  insertShopRefreshToken(
+    data: $refreshToken
   ) {
     reference
-    refreshToken
+    sequentialId
+    user
+    expiresAt
+    tokenHash
   }
 }
     `,
     variables: {
-      user: data.toPlain({ onlyMutables: true })
+      refreshToken: data.toPlain({ onlyMutables: true })
     }
   }))[0];
 
-  return user;
+  return refreshToken
 }

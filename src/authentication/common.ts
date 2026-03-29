@@ -3,47 +3,47 @@ import { ShopUser } from "../database/classes/transformer-classes";
 import { AuthenicationError } from "../api/error-classes";
 
 export function generateGenericToken(): string {
-  return crypto.randomBytes(35).toString("hex");
+  return crypto.randomBytes(64).toString("hex");
 }
 
-export function encrypt(message: string, secret: string): string {
-  // 1. Derive a 32-byte key from the secret
-  const key = crypto.createHash("sha256").update(secret).digest();
+// export function encrypt(message: string, secret: string): string {
+//   // 1. Derive a 32-byte key from the secret
+//   const key = crypto.createHash("sha256").update(secret).digest();
 
-  // 2. Generate random IV (16 bytes for AES)
-  const iv = crypto.randomBytes(16);
+//   // 2. Generate random IV (16 bytes for AES)
+//   const iv = crypto.randomBytes(16);
 
-  // 3. Create cipher
-  const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
+//   // 3. Create cipher
+//   const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
 
-  // 4. Encrypt
-  const encrypted = Buffer.concat([
-    cipher.update(message, "utf8"),
-    cipher.final(),
-  ]);
+//   // 4. Encrypt
+//   const encrypted = Buffer.concat([
+//     cipher.update(message, "utf8"),
+//     cipher.final(),
+//   ]);
 
-  // 5. Return iv + encrypted (both needed for decryption)
-  return `${iv.toString("base64")}:${encrypted.toString("base64")}`;
-}
+//   // 5. Return iv + encrypted (both needed for decryption)
+//   return `${iv.toString("base64")}:${encrypted.toString("base64")}`;
+// }
 
-export function decrypt(data: string, secret: string): string {
-  const [ivBase64, encryptedBase64] = data.split(":");
+// export function decrypt(data: string, secret: string): string {
+//   const [ivBase64, encryptedBase64] = data.split(":");
 
-  const key = crypto.createHash("sha256").update(secret).digest();
-  const iv = Buffer.from(ivBase64, "base64");
-  const encrypted = Buffer.from(encryptedBase64, "base64");
+//   const key = crypto.createHash("sha256").update(secret).digest();
+//   const iv = Buffer.from(ivBase64, "base64");
+//   const encrypted = Buffer.from(encryptedBase64, "base64");
 
-  const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);
+//   const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);
 
-  const decrypted = Buffer.concat([
-    decipher.update(encrypted),
-    decipher.final(),
-  ]);
+//   const decrypted = Buffer.concat([
+//     decipher.update(encrypted),
+//     decipher.final(),
+//   ]);
 
-  return decrypted.toString("utf8");
-}
+//   return decrypted.toString("utf8");
+// }
 
-export function generateJWTToken(user: ShopUser, secret: string, expirationInSeconds?: number): string {
+export function generateJWTToken(user: ShopUser, secret: string, expirationInSeconds: number): string {
     const header = {
         alg: "HS256",
         typ: "JWT"
@@ -60,12 +60,9 @@ export function generateJWTToken(user: ShopUser, secret: string, expirationInSec
         email: user.email,
         systemRole: user.systemRole,
         systemAuthentication: user.systemAuthentication,
-        iat: now
+        iat: now,
+        exp: now + expirationInSeconds
     } as Record<string, any>;
-
-    if (expirationInSeconds) {
-        payload["exp"] = now + expirationInSeconds;
-    }
 
     const encodedPayload = Buffer
         .from(JSON.stringify(payload))

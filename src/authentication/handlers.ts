@@ -10,11 +10,18 @@ export async function handleInternalRegister(
   try {
     const result = await registerUser({
       user: req.body?.user,
-      jwtSecret: process.env.JWT_SECRET as string,
-      refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET as string
+      jwtSecret: process.env.JWT_SECRET as string
     });
 
-    res.status(201).json(result).end();
+    res.cookie("refreshToken", result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.STAGE === "prod",
+      sameSite: "strict",
+      path: "/auth/refreshToken",
+      maxAge: 1000 * 60 * 60 * 24 * 7 // One week
+    });
+
+    res.status(201).json({ "accessToken": result }).end();
   } catch (error) {
 
     if (error instanceof ConfigError) {
@@ -27,6 +34,13 @@ export async function handleInternalRegister(
     else if (error instanceof BadRequestError) {
       res.status(400).json({
         error: "Invalid request",
+        errorMessage: error.message,
+      }).end();
+    }
+
+    else if (error instanceof TypeError) {
+      res.status(500).json({
+        error: "Type error",
         errorMessage: error.message,
       }).end();
     }

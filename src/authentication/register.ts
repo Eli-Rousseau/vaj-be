@@ -1,45 +1,54 @@
 import { BadRequestError, ConfigError, DatabaseError } from "../api/error-classes";
-import { ShopUser } from "../database/classes/transformer-classes";
+import { ShopUser, ShopRefreshToken } from "../database/classes/transformer-classes";
 import { isValidEmail } from "../utils/validators";
-import { encrypt, generateGenericToken, generateJWTToken } from "./common";
-import { createUser, findUsersByEmail, updateUserRefreshToken } from "./gql";
+import { generateGenericToken, generateJWTToken } from "./common";
+import * as gql from "./gql";
 
-type RegisterInput = {
+type RegisterEvent = {
   user: unknown;
   jwtSecret: string;
-  refreshTokenSecret: string;
 };
 
 type RegisterResult = {
   accessToken: string;
-  refreshToken: string;
+  refreshToken: ShopRefreshToken
 };
 
 async function isEmailAlreadyAssigned(email: string) {
-    const users = await findUsersByEmail(email);
+    let users;
+    try {
+      users = await gql.findUsersByEmail(email);
+    } catch (error) {
+      throw new DatabaseError(`FIND_USERS_FAILED:${error}`);
+    }
+    
     return users.length > 0;
 }
 
-export async function registerUser(input: RegisterInput): Promise<RegisterResult> {
-  const { user: rawUser, jwtSecret, refreshTokenSecret } = input;
+export async function registerUser(input: RegisterEvent): Promise<RegisterResult> {
+  const { user: rawUser, jwtSecret } = input;
 
   if (!jwtSecret) {
     throw new ConfigError("CONFIG_MISSING_JWT_SECRET");
-  }
-
-  if (!refreshTokenSecret) {
-    throw new ConfigError("CONFIG_MISSING_REFRESH_TOKEN_SECRET");
   }
 
   let user: ShopUser;
   try {
     user = ShopUser.fromPlain(rawUser);
   } catch (error) {
-    throw new BadRequestError(`INVALID_USER:${error}`);
+    throw new TypeError(`UNABLE_TO_TRANSFORM_USER_TYPE:${error}`);
   }
 
   if (!user.email || !isValidEmail(user.email)) {
     throw new BadRequestError(`INVALID_EMAIL:${user.email}`);
+  }
+
+  if (!user.name) {
+    throw new BadRequestError(`INVALID_NAME:${user.name}`);
+  }
+
+  if (!user.password) {
+    throw new BadRequestError(`INVALID_PASSWORD:${user.password}`);
   }
 
   try {
@@ -54,24 +63,28 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
   user.systemAuthentication = "INTERNAL";
 
   try {
-    user = await createUser(user);
+    user = await gql.createUser(user);
   } catch (error) {
     throw new DatabaseError(`CREATE_USER_FAILED:${error}`);
   }
 
-  const refreshToken = encrypt(user.reference!, refreshTokenSecret);
-  user.refreshToken = refreshToken;
+  const expiration = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7); // One week
+  let refreshToken = ShopRefreshToken.fromPlain({
+    user: user.reference,
+    tokenHash: generateGenericToken(),
+    expiresAt: expiration
+  });
 
   try {
-    await updateUserRefreshToken(user);
+    refreshToken = await gql.createRefreshToken(refreshToken);
   } catch (error) {
-    throw new DatabaseError(`UPDATE_USER_TOKEN_FAILED:${error}`);
+    throw new DatabaseError(`CREATE_REFRESH_TOKEN_FAILED:${error}`);
   }
 
   const accessToken = generateJWTToken(user, jwtSecret, 30 * 60);
 
   return {
     accessToken,
-    refreshToken,
+    refreshToken
   };
 }

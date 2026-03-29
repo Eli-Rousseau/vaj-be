@@ -20,14 +20,14 @@ const LOGGER = logger.get({
 
 const INDENT = " ".repeat(2);
 
-type TypeScriptType = "number" | "boolean" | "string" | "any";
+type TypeScriptType = "number" | "boolean" | "string" | "Date" | "any";
 
 const TYPE_MAPPER: Record<PostgresType, TypeScriptType> = {
   bigint: "number",
   boolean: "boolean",
   character: "string",
   "character varying": "string",
-  date: "string",
+  date: "Date",
   "double precision": "number",
   integer: "number",
   json: "any",
@@ -36,9 +36,9 @@ const TYPE_MAPPER: Record<PostgresType, TypeScriptType> = {
   smallint: "number",
   text: "string",
   time: "string",
-  timestamp: "string",
-  "timestamp without time zone": "string",
-  "timestamp with time zone": "string",
+  timestamp: "Date",
+  "timestamp without time zone": "Date",
+  "timestamp with time zone": "Date",
   "USER-DEFINED": "string",
   uuid: "string",
 };
@@ -125,12 +125,22 @@ function buildCompositeTypeColumnField(
 function buildTableTransformerClasses(
   schemaInfo: SchemaInfo,
   tableInfo: TableInfo,
+  pkTableInfos: TableInfo[]
 ) {
   const className = `${capitalize(schemaInfo.name)}${capitalize(tableInfo.name)}`;
+
+  // Filter when field both in pk and fk
+  const fkTables = tableInfo.columns
+    .map((c) => c.foreignKey)
+    .filter(Boolean) as string[];
+  pkTableInfos = pkTableInfos.filter(
+    (_pkTableInfo) => !fkTables.includes(_pkTableInfo.name)
+  );
 
   const body = [
     buildColumnFields(schemaInfo, tableInfo),
     buildForeignKeyCollections(schemaInfo, tableInfo),
+    buildPrimaryKeyCollections(schemaInfo, pkTableInfos),
     buildComputedFields(schemaInfo, tableInfo),
   ]
     .filter(Boolean)
@@ -225,6 +235,26 @@ function buildPropertyDeclaration(
   return `${INDENT}${column.name}!: ${type} | null;`;
 }
 
+function buildPrimaryKeyCollections(
+  schema: SchemaInfo,
+  tableInfos: TableInfo[]
+): string {
+  const pkTables = tableInfos.map((t) => t.name);
+
+  return pkTables
+    .map((table) => {
+      const type = `${capitalize(schema.name)}${capitalize(table)}`;
+
+      return [
+        `${INDENT}@Type(() => ${type})`,
+        `${INDENT}@Default()`,
+        `${INDENT}@Expose()`,
+        `${INDENT}${plural(table)}!: ${type}[] | null;`,
+      ].join("\n");
+    })
+    .join("\n\n");
+}
+
 function buildForeignKeyCollections(
   schema: SchemaInfo,
   tableInfo: TableInfo,
@@ -241,7 +271,7 @@ function buildForeignKeyCollections(
         `${INDENT}@Type(() => ${type})`,
         `${INDENT}@Default()`,
         `${INDENT}@Expose()`,
-        `${INDENT}${plural(type)}!: ${type}[] | null;`,
+        `${INDENT}${plural(table)}!: ${type}[] | null;`,
       ].join("\n");
     })
     .join("\n\n");
@@ -294,9 +324,26 @@ function buildComputedTransformDecorators(field: ComputedFieldInfo): string {
   ].join("\n");
 }
 
+function getPkTablesInfos(schemaInfo: SchemaInfo, tableInfo: TableInfo) {
+  return schemaInfo.tables.filter(
+    (_tableInfo) => 
+      _tableInfo.columns.some(
+          (_columnInfo) => _columnInfo.foreignKey === tableInfo.name,
+        ) && !_tableInfo.isEnum,
+  );
+}
+
 function buildSchemaTransformerClasses(schemaInfo: SchemaInfo) {
   const buildClasses = new Set<string>();
   for (const tableInfo of schemaInfo.tables) {
+    const pkTablesInfos = getPkTablesInfos(schemaInfo, tableInfo);
+
+    for (const pkTableInfo of pkTablesInfos) {
+      if (!buildClasses.has(pkTableInfo.name))
+        buildTableTransformerClasses(schemaInfo, pkTableInfo, getPkTablesInfos(schemaInfo, pkTableInfo));
+      buildClasses.add(pkTableInfo.name);
+    }
+
     const fkTables: string[] = tableInfo.columns
       .filter((_column) => _column.foreignKey)
       .map((_column) => _column.foreignKey) as string[];
@@ -306,7 +353,7 @@ function buildSchemaTransformerClasses(schemaInfo: SchemaInfo) {
         (_table) => _table.name === fkTable,
       )[0];
       if (!buildClasses.has(fkTableInfo.name))
-        buildTableTransformerClasses(schemaInfo, fkTableInfo);
+        buildTableTransformerClasses(schemaInfo, fkTableInfo, getPkTablesInfos(schemaInfo, fkTableInfo));
       buildClasses.add(fkTableInfo.name);
     }
 
@@ -320,7 +367,7 @@ function buildSchemaTransformerClasses(schemaInfo: SchemaInfo) {
           (_table) => _table.name === returnType,
         )[0];
         if (!buildClasses.has(cfTableInfo.name))
-          buildTableTransformerClasses(schemaInfo, cfTableInfo);
+          buildTableTransformerClasses(schemaInfo, cfTableInfo, getPkTablesInfos(schemaInfo, cfTableInfo));
         buildClasses.add(cfTableInfo.name);
       } else if (computedFieldInfo.returnTypeKind === "COMPOSITE") {
         const returnType = computedFieldInfo.returnType.replace(
@@ -337,7 +384,7 @@ function buildSchemaTransformerClasses(schemaInfo: SchemaInfo) {
     }
 
     if (!buildClasses.has(tableInfo.name))
-      buildTableTransformerClasses(schemaInfo, tableInfo);
+      buildTableTransformerClasses(schemaInfo, tableInfo, pkTablesInfos);
     buildClasses.add(tableInfo.name);
   }
 }

@@ -4,6 +4,161 @@ import { Transform, Expose, Type } from "class-transformer";
 import * as transformers from "./transformers";
 import { TransformerClass, Default, Annotate } from "./transformers";
 
+export class ShopOrder extends TransformerClass {
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  reference!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  sequentialId!: number | null;
+
+  @Type(() => ShopUser)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  userByReference!: ShopUser | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  user!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  totalPrice!: number | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  paymentMethod!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  status!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  type!: string | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  rentalStartDate!: Date | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  rentalEndDate!: Date | null;
+
+  @Type(() => ShopDiscountCoupon)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  discountCouponByReference!: ShopDiscountCoupon | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  discountCoupon!: string | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  createdAt!: Date | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  updatedAt!: Date | null;
+
+  @Type(() => ShopUser)
+  @Default()
+  @Expose()
+  users!: ShopUser[] | null;
+
+  @Type(() => ShopDiscountCoupon)
+  @Default()
+  @Expose()
+  discountCoupons!: ShopDiscountCoupon[] | null;
+
+  @Type(() => ShopOrderArticle)
+  @Default()
+  @Expose()
+  orderArticles!: ShopOrderArticle[] | null;
+}
+
+export class ShopArticleDiscountCoupon extends TransformerClass {
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  reference!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  sequentialId!: number | null;
+
+  @Type(() => ShopArticle)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  articleByReference!: ShopArticle | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  article!: string | null;
+
+  @Type(() => ShopDiscountCoupon)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  discountCouponByReference!: ShopDiscountCoupon | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  discountCoupon!: string | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  createdAt!: Date | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  updatedAt!: Date | null;
+
+  @Type(() => ShopArticle)
+  @Default()
+  @Expose()
+  articles!: ShopArticle[] | null;
+
+  @Type(() => ShopDiscountCoupon)
+  @Default()
+  @Expose()
+  discountCoupons!: ShopDiscountCoupon[] | null;
+}
+
 export class ShopDiscountCoupon extends TransformerClass {
   @Annotate("Mutable")
   @Default()
@@ -50,14 +205,14 @@ export class ShopDiscountCoupon extends TransformerClass {
   @Annotate("Mutable")
   @Default()
   @Expose()
-  validFrom!: string | null;
+  validFrom!: Date | null;
 
   @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
   @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
   @Annotate("Mutable")
   @Default()
   @Expose()
-  validUntil!: string | null;
+  validUntil!: Date | null;
 
   @Annotate("Mutable")
   @Default()
@@ -79,14 +234,102 @@ export class ShopDiscountCoupon extends TransformerClass {
   @Annotate("Mutable")
   @Default()
   @Expose()
-  createdAt!: string | null;
+  createdAt!: Date | null;
 
   @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
   @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
   @Annotate("Mutable")
   @Default()
   @Expose()
-  updatedAt!: string | null;
+  updatedAt!: Date | null;
+
+  @Type(() => ShopOrder)
+  @Default()
+  @Expose()
+  orders!: ShopOrder[] | null;
+
+  @Type(() => ShopArticleDiscountCoupon)
+  @Default()
+  @Expose()
+  articleDiscountCoupons!: ShopArticleDiscountCoupon[] | null;
+}
+
+export class ShopOrderArticle extends TransformerClass {
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  reference!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  sequentialId!: number | null;
+
+  @Type(() => ShopOrder)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  orderByReference!: ShopOrder | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  order!: string | null;
+
+  @Type(() => ShopArticle)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  articleByReference!: ShopArticle | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  article!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  quantity!: number | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  articlePrice!: number | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  articleDiscount!: number | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  checkoutPrice!: number | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  createdAt!: Date | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  updatedAt!: Date | null;
+
+  @Type(() => ShopOrder)
+  @Default()
+  @Expose()
+  orders!: ShopOrder[] | null;
+
+  @Type(() => ShopArticle)
+  @Default()
+  @Expose()
+  articles!: ShopArticle[] | null;
 }
 
 export class ShopUser extends TransformerClass {
@@ -128,16 +371,6 @@ export class ShopUser extends TransformerClass {
   @Annotate("Mutable")
   @Default()
   @Expose()
-  salt!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  refreshToken!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
   systemAuthentication!: string | null;
 
   @Annotate("Mutable")
@@ -150,14 +383,34 @@ export class ShopUser extends TransformerClass {
   @Annotate("Mutable")
   @Default()
   @Expose()
-  createdAt!: string | null;
+  createdAt!: Date | null;
 
   @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
   @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
   @Annotate("Mutable")
   @Default()
   @Expose()
-  updatedAt!: string | null;
+  updatedAt!: Date | null;
+
+  @Type(() => ShopOrder)
+  @Default()
+  @Expose()
+  orders!: ShopOrder[] | null;
+
+  @Type(() => ShopAddress)
+  @Default()
+  @Expose()
+  addresses!: ShopAddress[] | null;
+
+  @Type(() => ShopFavorite)
+  @Default()
+  @Expose()
+  favorites!: ShopFavorite[] | null;
+
+  @Type(() => ShopRefreshToken)
+  @Default()
+  @Expose()
+  refreshTokens!: ShopRefreshToken[] | null;
 
   @Type(() => ShopAddress)
   @Default()
@@ -214,98 +467,6 @@ export class ShopOrderTypeEnum extends TransformerClass {
   orderType!: string | null;
 }
 
-export class ShopOrder extends TransformerClass {
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  reference!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  sequentialId!: number | null;
-
-  @Type(() => ShopUser)
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  userByReference!: ShopUser | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  user!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  totalPrice!: number | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  paymentMethod!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  status!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  type!: string | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  rentalStartDate!: string | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  rentalEndDate!: string | null;
-
-  @Type(() => ShopDiscountCoupon)
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  discountCouponByReference!: ShopDiscountCoupon | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  discountCoupon!: string | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  createdAt!: string | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  updatedAt!: string | null;
-
-  @Type(() => ShopUser)
-  @Default()
-  @Expose()
-  ShopUsers!: ShopUser[] | null;
-
-  @Type(() => ShopDiscountCoupon)
-  @Default()
-  @Expose()
-  ShopDiscountCoupons!: ShopDiscountCoupon[] | null;
-}
-
 export class ShopArticle extends TransformerClass {
   @Annotate("Mutable")
   @Default()
@@ -337,21 +498,21 @@ export class ShopArticle extends TransformerClass {
   @Annotate("Mutable")
   @Default()
   @Expose()
-  release!: string | null;
+  release!: Date | null;
 
   @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
   @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
   @Annotate("Mutable")
   @Default()
   @Expose()
-  createdAt!: string | null;
+  createdAt!: Date | null;
 
   @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
   @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
   @Annotate("Mutable")
   @Default()
   @Expose()
-  updatedAt!: string | null;
+  updatedAt!: Date | null;
 
   @Type(() => ShopArticleCategory)
   @Annotate("Mutable")
@@ -432,143 +593,27 @@ export class ShopArticle extends TransformerClass {
   @Type(() => ShopArticleCategory)
   @Default()
   @Expose()
-  ShopArticleCategorys!: ShopArticleCategory[] | null;
-}
+  articleCategorys!: ShopArticleCategory[] | null;
 
-export class ShopOrderArticle extends TransformerClass {
-  @Annotate("Mutable")
+  @Type(() => ShopOrderArticle)
   @Default()
   @Expose()
-  reference!: string | null;
+  orderArticles!: ShopOrderArticle[] | null;
 
-  @Annotate("Mutable")
+  @Type(() => ShopArticleDiscountCoupon)
   @Default()
   @Expose()
-  sequentialId!: number | null;
+  articleDiscountCoupons!: ShopArticleDiscountCoupon[] | null;
 
-  @Type(() => ShopOrder)
-  @Annotate("Mutable")
+  @Type(() => ShopFavorite)
   @Default()
   @Expose()
-  orderByReference!: ShopOrder | null;
+  favorites!: ShopFavorite[] | null;
 
-  @Annotate("Mutable")
+  @Type(() => ShopArticleImage)
   @Default()
   @Expose()
-  order!: string | null;
-
-  @Type(() => ShopArticle)
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  articleByReference!: ShopArticle | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  article!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  quantity!: number | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  articlePrice!: number | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  articleDiscount!: number | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  checkoutPrice!: number | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  createdAt!: string | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  updatedAt!: string | null;
-
-  @Type(() => ShopOrder)
-  @Default()
-  @Expose()
-  ShopOrders!: ShopOrder[] | null;
-
-  @Type(() => ShopArticle)
-  @Default()
-  @Expose()
-  ShopArticles!: ShopArticle[] | null;
-}
-
-export class ShopArticleDiscountCoupon extends TransformerClass {
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  reference!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  sequentialId!: number | null;
-
-  @Type(() => ShopArticle)
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  articleByReference!: ShopArticle | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  article!: string | null;
-
-  @Type(() => ShopDiscountCoupon)
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  discountCouponByReference!: ShopDiscountCoupon | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  discountCoupon!: string | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  createdAt!: string | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  updatedAt!: string | null;
-
-  @Type(() => ShopArticle)
-  @Default()
-  @Expose()
-  ShopArticles!: ShopArticle[] | null;
-
-  @Type(() => ShopDiscountCoupon)
-  @Default()
-  @Expose()
-  ShopDiscountCoupons!: ShopDiscountCoupon[] | null;
+  articleImages!: ShopArticleImage[] | null;
 }
 
 export class ShopSystemAuthenticationEnum extends TransformerClass {
@@ -650,19 +695,154 @@ export class ShopAddress extends TransformerClass {
   @Annotate("Mutable")
   @Default()
   @Expose()
-  createdAt!: string | null;
+  createdAt!: Date | null;
 
   @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
   @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
   @Annotate("Mutable")
   @Default()
   @Expose()
-  updatedAt!: string | null;
+  updatedAt!: Date | null;
 
   @Type(() => ShopUser)
   @Default()
   @Expose()
-  ShopUsers!: ShopUser[] | null;
+  users!: ShopUser[] | null;
+}
+
+export class ShopFavorite extends TransformerClass {
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  reference!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  sequentialId!: number | null;
+
+  @Type(() => ShopUser)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  userByReference!: ShopUser | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  user!: string | null;
+
+  @Type(() => ShopArticle)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  articleByReference!: ShopArticle | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  article!: string | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  createdAt!: Date | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  updatedAt!: Date | null;
+
+  @Type(() => ShopUser)
+  @Default()
+  @Expose()
+  users!: ShopUser[] | null;
+
+  @Type(() => ShopArticle)
+  @Default()
+  @Expose()
+  articles!: ShopArticle[] | null;
+}
+
+export class ShopRefreshToken extends TransformerClass {
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  reference!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  sequentialId!: number | null;
+
+  @Type(() => ShopUser)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  userByReference!: ShopUser | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  user!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  tokenHash!: string | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  revokedAt!: Date | null;
+
+  @Type(() => ShopRefreshToken)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  replacedByByReference!: ShopRefreshToken | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  replacedBy!: string | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  expiresAt!: Date | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  createdAt!: Date | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  updatedAt!: Date | null;
+
+  @Type(() => ShopUser)
+  @Default()
+  @Expose()
+  users!: ShopUser[] | null;
+
+  @Type(() => ShopRefreshToken)
+  @Default()
+  @Expose()
+  refreshTokens!: ShopRefreshToken[] | null;
 }
 
 export class ShopUserCompositeType extends TransformerClass {
@@ -679,11 +859,115 @@ export class ShopUserCompositeType extends TransformerClass {
   city!: string | null;
 }
 
+export class ShopSystemRolePermission extends TransformerClass {
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  reference!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  sequentialId!: number | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  systemRole!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  systemPermission!: string | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  createdAt!: Date | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  updatedAt!: Date | null;
+}
+
 export class ShopSystemRoleEnum extends TransformerClass {
   @Annotate("Mutable")
   @Default()
   @Expose()
   systemRole!: string | null;
+
+  @Type(() => ShopSystemRolePermission)
+  @Default()
+  @Expose()
+  systemRolePermissions!: ShopSystemRolePermission[] | null;
+}
+
+export class ShopArticleImage extends TransformerClass {
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  reference!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  sequentialId!: number | null;
+
+  @Type(() => ShopArticle)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  articleByReference!: ShopArticle | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  article!: string | null;
+
+  @Type(() => ShopFile)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  fileByReference!: ShopFile | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  file!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  isCover!: boolean | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  createdAt!: Date | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  updatedAt!: Date | null;
+
+  @Type(() => ShopArticle)
+  @Default()
+  @Expose()
+  articles!: ShopArticle[] | null;
+
+  @Type(() => ShopFile)
+  @Default()
+  @Expose()
+  files!: ShopFile[] | null;
 }
 
 export class ShopFile extends TransformerClass {
@@ -737,14 +1021,19 @@ export class ShopFile extends TransformerClass {
   @Annotate("Mutable")
   @Default()
   @Expose()
-  createdAt!: string | null;
+  createdAt!: Date | null;
 
   @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
   @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
   @Annotate("Mutable")
   @Default()
   @Expose()
-  updatedAt!: string | null;
+  updatedAt!: Date | null;
+
+  @Type(() => ShopArticleImage)
+  @Default()
+  @Expose()
+  articleImages!: ShopArticleImage[] | null;
 }
 
 export class ShopArticleCategory extends TransformerClass {
@@ -793,14 +1082,19 @@ export class ShopArticleCategory extends TransformerClass {
   @Annotate("Mutable")
   @Default()
   @Expose()
-  createdAt!: string | null;
+  createdAt!: Date | null;
 
   @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
   @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
   @Annotate("Mutable")
   @Default()
   @Expose()
-  updatedAt!: string | null;
+  updatedAt!: Date | null;
+
+  @Type(() => ShopArticle)
+  @Default()
+  @Expose()
+  articles!: ShopArticle[] | null;
 }
 
 export class ShopArticleBrandEnum extends TransformerClass {
@@ -859,167 +1153,10 @@ export class ShopArticleAvailabilityEnum extends TransformerClass {
   articleAvailability!: string | null;
 }
 
-export class ShopFavorite extends TransformerClass {
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  reference!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  sequentialId!: number | null;
-
-  @Type(() => ShopUser)
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  userByReference!: ShopUser | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  user!: string | null;
-
-  @Type(() => ShopArticle)
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  articleByReference!: ShopArticle | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  article!: string | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  createdAt!: string | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  updatedAt!: string | null;
-
-  @Type(() => ShopUser)
-  @Default()
-  @Expose()
-  ShopUsers!: ShopUser[] | null;
-
-  @Type(() => ShopArticle)
-  @Default()
-  @Expose()
-  ShopArticles!: ShopArticle[] | null;
-}
-
 export class ShopSystemPermissionEnum extends TransformerClass {
   @Annotate("Mutable")
   @Default()
   @Expose()
   systemPermission!: string | null;
-}
-
-export class ShopSystemRolePermission extends TransformerClass {
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  reference!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  sequentialId!: number | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  systemRole!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  systemPermission!: string | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  createdAt!: string | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  updatedAt!: string | null;
-}
-
-export class ShopArticleImage extends TransformerClass {
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  reference!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  sequentialId!: number | null;
-
-  @Type(() => ShopArticle)
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  articleByReference!: ShopArticle | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  article!: string | null;
-
-  @Type(() => ShopFile)
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  fileByReference!: ShopFile | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  file!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  isCover!: boolean | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  createdAt!: string | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  updatedAt!: string | null;
-
-  @Type(() => ShopArticle)
-  @Default()
-  @Expose()
-  ShopArticles!: ShopArticle[] | null;
-
-  @Type(() => ShopFile)
-  @Default()
-  @Expose()
-  ShopFiles!: ShopFile[] | null;
 }
 
