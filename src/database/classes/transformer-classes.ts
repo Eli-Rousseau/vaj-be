@@ -412,6 +412,11 @@ export class ShopUser extends TransformerClass {
   @Expose()
   refreshTokens!: ShopRefreshToken[] | null;
 
+  @Type(() => ShopRefreshToken)
+  @Default()
+  @Expose()
+  nonRevokedRefreshTokens!: ShopRefreshToken[] | null;
+
   @Type(() => ShopAddress)
   @Default()
   @Expose()

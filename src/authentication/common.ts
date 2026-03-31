@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { ShopUser } from "../database/classes/transformer-classes";
-import { AuthenicationError } from "../api/error-classes";
+import { AuthenticationError } from "../api/error-classes";
 
 export function generateGenericToken(): string {
   return crypto.randomBytes(64).toString("hex");
@@ -82,7 +82,7 @@ export function decodeJWTToken(token: string, secret: string) {
   const parts = token.split(".");
 
   if (parts.length !== 3) {
-    throw new AuthenicationError("INVALID_REFRESH_TOKEN");
+    throw new AuthenticationError("INVALID_REFRESH_TOKEN");
   }
 
   const [encodedHeader, encodedPayload, signature] = parts;
@@ -98,7 +98,7 @@ export function decodeJWTToken(token: string, secret: string) {
   );
 
   if (!isValid) {
-    throw new AuthenicationError("INCORRECT_REFRESH_TOKEN_SIGNATURE");
+    throw new AuthenticationError("INCORRECT_REFRESH_TOKEN_SIGNATURE");
   }
 
   const payload = JSON.parse(
@@ -108,7 +108,7 @@ export function decodeJWTToken(token: string, secret: string) {
   if (payload.exp) {
     const now = Math.floor(Date.now() / 1000);
     if (now >= payload.exp) {
-      throw new AuthenicationError("TOKEN_EXPIRED");
+      throw new AuthenticationError("TOKEN_EXPIRED");
     }
   }
 

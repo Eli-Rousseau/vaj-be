@@ -63,8 +63,23 @@ export async function loginUser(input: LoginEvent): Promise<LoginResult> {
     } catch (error) {
         throw new DatabaseError(`CREATE_REFRESH_TOKEN_FAILED:${error}`);
     }
+    
+    const refreshTokensToRevoke = user.nonRevokedRefreshTokens;
 
-    const refreshTokensToRevoke = user.refreshTokens!.filter(token => !token.revokedAt);
+    if (refreshTokensToRevoke && refreshTokensToRevoke.length > 0) {
+        const revokedAt = new Date(Date.now());
+        const replacedBy = refreshToken.reference;
+        refreshTokensToRevoke?.forEach((token) => {
+            token.revokedAt = revokedAt;
+            token.replacedBy = replacedBy;
+        });
+
+        try {
+            await gql.revokeRefreshTokens(refreshTokensToRevoke);
+        } catch (error) {
+            throw new DatabaseError(`REVOKE_REFRESH_TOKENS_FAILED:${error}`);
+        }
+    }
 
     const accessToken = generateJWTToken(user, jwtSecret, 30 * 60);
 

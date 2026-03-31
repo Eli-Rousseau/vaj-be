@@ -16,7 +16,7 @@ query findUsersByEmail($email: JSON) {
     email
     systemRole
     systemAuthentication
-    refreshTokens {
+    nonRevokedRefreshTokens {
       reference
       sequentialId
       tokenHash
@@ -77,4 +77,24 @@ mutation createRefreshToken($refreshToken: ShopRefreshTokenMutationType!) {
   }))[0];
 
   return refreshToken
+}
+
+export async function revokeRefreshTokens(data: ShopRefreshToken[]) {
+  const refreshTokens = await graphql.executeAndTransform(ShopRefreshToken, {
+    query: `
+mutation revokeRefreshToken($data: [ShopRefreshTokenMutationType!]!) {
+  updateShopRefreshTokens(
+    data: $data
+    set: ["revokedAt", "replacedBy"]
+  ) {
+    reference
+  }
+}
+    `,
+    variables: {
+      data: data.map(record => record.toPlain({ onlyMutables: true }))
+    }
+  });
+
+  return refreshTokens;
 }
