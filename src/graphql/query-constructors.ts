@@ -596,6 +596,7 @@ async function constructNestedUpdateClause(
   );
   const keys = `(${tableValuesWithNoByReference.map((value) => `"${value}"`).join(", ")})`;
   const definitions = tableValuesWithNoByReference
+    .filter((value) => value !== "reference")
     .map((value) => `"${value}" = "${parentId}"."${value}"`)
     .join(", ");
 
