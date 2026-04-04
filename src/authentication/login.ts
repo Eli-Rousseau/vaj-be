@@ -1,4 +1,4 @@
-import { BadRequestError, ConfigError, DatabaseError, DataInconsistencyError } from "../api/error-classes";
+import { AuthenticationError, BadRequestError, ConfigError, DatabaseError, DataInconsistencyError } from "../api/error-classes";
 import { ShopRefreshToken, ShopUser } from "../database/classes/transformer-classes";
 import { isValidEmail } from "../utils/validators";
 import { generateGenericToken, generateJWTToken } from "./common";
@@ -34,22 +34,24 @@ export async function loginUser(input: LoginEvent): Promise<LoginResult> {
         throw new ConfigError("CONFIG_MISSING_JWT_SECRET");
     }
 
-    let user: ShopUser;
+    let inputUser: ShopUser;
     try {
-        user = ShopUser.fromPlain(rawUser);
+        inputUser = ShopUser.fromPlain(rawUser);
     } catch (error) {
         throw new TypeError(`UNABLE_TO_TRANSFORM_USER_TYPE:${error}`);
     }
 
-    if (!user.email || !isValidEmail(user.email)) {
-        throw new BadRequestError(`INVALID_EMAIL:${user.email}`);
+    if (!inputUser.email || !isValidEmail(inputUser.email)) {
+        throw new BadRequestError(`INVALID_EMAIL:${inputUser.email}`);
     }
 
-    if (!user.password) {
-        throw new BadRequestError(`INVALID_PASSWORD:${user.password}`);
+    if (!inputUser.password) {
+        throw new BadRequestError(`MISSING_PASSWORD:${inputUser.password}`);
     }
 
-    user = await findUserByEmail(user.email);
+    const user = await findUserByEmail(inputUser.email);
+
+    if (inputUser.password !== user?.password) throw new AuthenticationError(`INCORRECT_USER_PASSWORD`);
 
     const expiration = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7); // One week
     let refreshToken = ShopRefreshToken.fromPlain({

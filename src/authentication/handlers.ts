@@ -14,16 +14,10 @@ export async function handleInternalRegister(
       jwtSecret: process.env.JWT_SECRET as string
     });
 
-    const maxAge = result.refreshToken.expiresAt!.getTime() - Date.now();
-    res.cookie("refreshToken", result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.STAGE === "prod",
-      sameSite: "strict",
-      path: "/auth/refreshToken",
-      maxAge: maxAge
-    });
-
-    res.status(201).json({ "accessToken": result }).end();
+    res.status(201).json({ 
+      "accessToken": result.accessToken,
+      "refreshToken": `${result.refreshToken!.reference}.${result.refreshToken.tokenHash}`
+    }).end();
   } catch (error) {
     handleAPIError(res, error);
   }
@@ -39,16 +33,10 @@ export async function handleInternalLogin(
       jwtSecret: process.env.JWT_SECRET as string
     });
 
-    const maxAge = result.refreshToken.expiresAt!.getTime() - Date.now();
-    res.cookie("refreshToken", result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.STAGE === "prod",
-      sameSite: "strict",
-      path: "/auth/refreshToken",
-      maxAge: maxAge
-    });
-
-    res.status(201).json({ "accessToken": result }).end();
+    res.status(201).json({ 
+      "accessToken": result.accessToken,
+      "refreshToken": `${result.refreshToken!.reference}.${result.refreshToken.tokenHash}`
+    }).end();
   } catch (error) {
     handleAPIError(res, error);
   }

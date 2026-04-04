@@ -14,6 +14,7 @@ query findUsersByEmail($email: JSON) {
     sequentialId
     name
     email
+    password
     systemRole
     systemAuthentication
     nonRevokedRefreshTokens {
