@@ -2,7 +2,7 @@ import path from "path";
 
 import { logger } from "../utils/logger";
 import { getDataBaseInfo } from "../database/database-info";
-import { ComputedFieldReturnType } from "../database/types";
+import { ComputedFieldReturnType, TableInfo } from "../database/types";
 
 const LOGGER = logger.get({
   source: "constructors",
@@ -10,7 +10,7 @@ const LOGGER = logger.get({
   module: path.basename(__filename),
 });
 
-function escapeLiteral(value: any): string {
+function escapeLiteral(value: any, column?: string, columnTypes?: Record<string, string>): string {
   if (value === null || value === undefined) {
     return "NULL";
   }
@@ -19,13 +19,11 @@ function escapeLiteral(value: any): string {
     return String(value);
   }
 
-  const str = String(value);
-
-  if (UUID_REGEX.test(str)) {
-    return `'${str}'::uuid`;
+  if (column && columnTypes && Object.keys(columnTypes).includes(column)) {
+    return `'${String(value).replace(/'/g, "''")}'::${columnTypes[column]}`;
   }
 
-  return `'${str.replace(/'/g, "''")}'`;
+  return `'${String(value).replace(/'/g, "''")}'`;
 }
 function constructLimitClause(limit?: number) {
   let limitClause = "";
@@ -91,9 +89,6 @@ type Operator =
   | "where";
 
 type WhereInput = Record<string, Partial<Record<Operator | string, any>>>;
-
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type NestedWhereResult = {
   nestedJoins: string;
@@ -343,10 +338,9 @@ function constructConflictClause(
   return conflictClause;
 }
 
-async function getTableValues(
+async function getTableInfo(
   schema: string,
-  table: string,
-  set: string[] | null = null,
+  table: string
 ) {
   try {
     const databaseInfo = await getDataBaseInfo();
@@ -361,23 +355,7 @@ async function getTableValues(
       throw new Error(`Table "${table}" not found in schema "${schema}"`);
     }
 
-    let allValues = tableInfo.columns.flatMap((column) => {
-      if (column.handleAutomaticUpdate) return [];
-
-      const values = [column.name];
-
-      if (column.foreignKey) {
-        values.push(`${column.name}ByReference`);
-      }
-
-      return values;
-    });
-
-    if (set) {
-      allValues = allValues.filter((value) => set.includes(value));
-    }
-
-    return allValues;
+    return tableInfo;
   } catch (error) {
     LOGGER.error(
       `Unable to retrieve database info for schema "${schema}" and table "${table}".`,
@@ -387,13 +365,41 @@ async function getTableValues(
   }
 }
 
+async function getTableValues(
+  tableInfo: TableInfo,
+  set: string[] | null = null,
+) {
+  let allValues = tableInfo.columns.flatMap((column) => {
+    if (column.handleAutomaticUpdate) return [];
+
+    const values = [column.name];
+
+    if (column.foreignKey) {
+      values.push(`${column.name}ByReference`);
+    }
+
+    return values;
+  });
+
+  if (set) {
+    allValues = allValues.filter((value) => set.includes(value));
+  }
+
+  return allValues;
+}
+
+function constructTableValuesTypes(tableInfo: TableInfo) {
+  return Object.fromEntries(tableInfo.columns.map(column => [column.name, column.dataType]));
+}
+
 async function constructNestedInsertClause(
   schema: string,
   table: string,
   inputs: Record<string, any>,
   parentId: string,
 ): Promise<nestedResult> {
-  const tableValues = await getTableValues(schema, table);
+  const tableInfo = await getTableInfo(schema, table);
+  const tableValues = await getTableValues(tableInfo);
   if (!tableValues) {
     throw new Error(`No table values found for table: ${table}`);
   }
@@ -529,12 +535,14 @@ async function constructNestedUpdateClause(
 ): Promise<nestedResult> {
   const set = updates?.set || null;
 
-  let tableValues = await getTableValues(schema, table, set);
+  const tableInfo = await getTableInfo(schema, table);
+  let tableValues = await getTableValues(tableInfo, set);
   if (!tableValues) {
     throw new Error(`No table values found for table: ${table}`);
   }
   tableValues = [...tableValues];
   tableValues.unshift("reference");
+  const tableValuesTypes = constructTableValuesTypes(tableInfo);
 
   updates = updates["data"];
 
@@ -577,7 +585,7 @@ async function constructNestedUpdateClause(
 
           record.push(escapeLiteral(value["data"]["reference"]));
         } else if (!/ByReference/.test(tableValue)) {
-          record.push(escapeLiteral(value));
+          record.push(escapeLiteral(value, tableValue, tableValuesTypes));
         }
       } else if (
         !/ByReference/.test(tableValue) &&
@@ -594,6 +602,7 @@ async function constructNestedUpdateClause(
   const tableValuesWithNoByReference = tableValues.filter(
     (value) => !/ByReference/.test(value),
   );
+
   const keys = `(${tableValuesWithNoByReference.map((value) => `"${value}"`).join(", ")})`;
   const definitions = tableValuesWithNoByReference
     .filter((value) => value !== "reference")
@@ -646,12 +655,14 @@ async function constructNestedDeleteClause(
   parentId: string,
   referenceColumn: string = "reference",
 ): Promise<nestedResult> {
-  let tableValues = await getTableValues(schema, table);
+  const tableInfo = await getTableInfo(schema, table);
+  let tableValues = await getTableValues(tableInfo);
   if (!tableValues) {
     throw new Error(`No table values found for table: ${table}`);
   }
   tableValues = [...tableValues];
   tableValues.unshift("reference");
+  const tableValuesTypes = constructTableValuesTypes(tableInfo);
 
   deletes = deletes["data"];
 
@@ -694,7 +705,7 @@ async function constructNestedDeleteClause(
 
           record.push(escapeLiteral(value["data"]["reference"]));
         } else if (!/ByReference/.test(tableValue)) {
-          record.push(escapeLiteral(value));
+          record.push(escapeLiteral(value, tableValue, tableValuesTypes));
         }
       } else if (
         !/ByReference/.test(tableValue) &&

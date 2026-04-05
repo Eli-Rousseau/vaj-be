@@ -90,16 +90,15 @@ export const toDay = function (
 
   if (typeof value == "string") {
 
-    if (DAY_PATTERN.test(value)) {
-        const [year, month, day] = value.split("-").map(Number);
-        return new Date(Date.UTC(year, month - 1, day));
-    }
-
     if (EPOCH_PATTERN.test(value)) {
         const timestamp = Number(value);
         return new Date(timestamp);
     }
 
+    if (DAY_PATTERN.test(value)) {
+        const [year, month, day] = value.split("-").map(Number);
+        return new Date(Date.UTC(year, month - 1, day));
+    }
   }
 
   throw new TransformerError(`Expected a day value. Received: ${value}`);
@@ -111,7 +110,7 @@ export const fromDay = function (
   if (value === undefined || value === null) return null;
 
   if (value instanceof Date) {
-    return value.getDate().toString();
+    return value.toLocaleDateString("en-CA");
   }
 
   throw new TransformerError(`Expected a Date instance. Recieved: ${value}`);
@@ -125,6 +124,10 @@ export const toDatetime = function (
   if (value instanceof Date) return value;
 
   if (typeof value === "string") {
+    if (EPOCH_PATTERN.test(value)) {
+        const timestamp = Number(value);
+        return new Date(timestamp);
+    }
 
     if (DATETIME_PATTERN.test(value)) {
         const splittedDatetime = value.split(" ");
@@ -144,12 +147,6 @@ export const toDatetime = function (
             )
         );
     }
-
-    if (EPOCH_PATTERN.test(value)) {
-        const timestamp = Number(value);
-        return new Date(timestamp);
-    }
-
   }
 
   throw new TransformerError(`Expected a day value. Received: ${value}`);
@@ -161,7 +158,9 @@ export const fromDatetime = function (
   if (value === undefined || value === null) return null;
 
   if (value instanceof Date) {
-    return value.toISOString();
+    return value.toISOString()
+      .replace("T", " ")
+      .replace("Z", "");
   }
 
   throw new TransformerError(`Expected an Date instance. Recieved: ${value}`);

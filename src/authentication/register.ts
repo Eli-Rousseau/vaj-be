@@ -1,4 +1,4 @@
-import { BadRequestError, ConfigError, DatabaseError } from "../api/error-classes";
+import { AuthenticationError, BadRequestError, ConfigError, DatabaseError } from "../api/error-classes";
 import { ShopUser, ShopRefreshToken } from "../database/classes/transformer-classes";
 import { isValidEmail } from "../utils/validators";
 import { generateGenericToken, generateJWTToken } from "./common";
@@ -39,25 +39,13 @@ export async function registerUser(input: RegisterEvent): Promise<RegisterResult
     throw new TypeError(`UNABLE_TO_TRANSFORM_USER_TYPE:${error}`);
   }
 
-  if (!user.email || !isValidEmail(user.email)) {
-    throw new BadRequestError(`INVALID_EMAIL:${user.email}`);
-  }
+  if (!user.email || !isValidEmail(user.email)) throw new BadRequestError(`INVALID_EMAIL:${user.email}`);
 
-  if (!user.name) {
-    throw new BadRequestError(`INVALID_NAME:${user.name}`);
-  }
+  if (!user.name) throw new BadRequestError(`INVALID_NAME:${user.name}`);
 
-  if (!user.password) {
-    throw new BadRequestError(`INVALID_PASSWORD:${user.password}`);
-  }
+  if (!user.password) throw new BadRequestError(`INVALID_PASSWORD:${user.password}`);
 
-  try {
-    if (await isEmailAlreadyAssigned(user.email)) {
-      throw new BadRequestError("EMAIL_ALREADY_IN_USE");
-    }
-  } catch (error) {
-    throw new DatabaseError(`FIND_USER_EMAIL_FAILED:${error}`);
-  }
+  if (await isEmailAlreadyAssigned(user.email)) throw new AuthenticationError("EMAIL_ALREADY_IN_USE");
 
   user.systemRole = "USER";
   user.systemAuthentication = "INTERNAL";

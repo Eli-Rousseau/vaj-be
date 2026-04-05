@@ -41,13 +41,9 @@ export async function loginUser(input: LoginEvent): Promise<LoginResult> {
         throw new TypeError(`UNABLE_TO_TRANSFORM_USER_TYPE:${error}`);
     }
 
-    if (!inputUser.email || !isValidEmail(inputUser.email)) {
-        throw new BadRequestError(`INVALID_EMAIL:${inputUser.email}`);
-    }
+    if (!inputUser.email || !isValidEmail(inputUser.email)) throw new BadRequestError(`INVALID_EMAIL:${inputUser.email}`);
 
-    if (!inputUser.password) {
-        throw new BadRequestError(`MISSING_PASSWORD:${inputUser.password}`);
-    }
+    if (!inputUser.password) throw new BadRequestError(`MISSING_PASSWORD:${inputUser.password}`);
 
     const user = await findUserByEmail(inputUser.email);
 
@@ -82,7 +78,7 @@ export async function loginUser(input: LoginEvent): Promise<LoginResult> {
             throw new DatabaseError(`REVOKE_REFRESH_TOKENS_FAILED:${error}`);
         }
     }
-
+    
     const accessToken = generateJWTToken(user, jwtSecret, 30 * 60);
 
     return {
