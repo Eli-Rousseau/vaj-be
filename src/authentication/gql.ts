@@ -1,5 +1,6 @@
 import { ShopRefreshToken, ShopUser } from "../database/classes/transformer-classes";
 import { graphql } from "../utils/graphql";
+import { refreshToken } from "./refresh";
 
 export async function findUsersByEmail(email: string) {
   return await graphql.executeAndTransform(ShopUser, {
@@ -98,4 +99,43 @@ mutation revokeRefreshToken($data: [ShopRefreshTokenMutationType!]!) {
   });
 
   return refreshTokens;
+}
+
+export async function findRefreshTokenByReference(tokenReference: string) {
+  const refreshToken = (await graphql.executeAndTransform(ShopRefreshToken, {
+    query: `
+query getRefreshTokenByReference($reference: ID!) {
+  getShopRefreshTokenByReference(
+    reference: $reference
+  ) {
+    reference
+    sequentialId
+    tokenHash
+    expiresAt
+    revokedAt
+    replacedBy
+    userByReference {
+      reference
+      sequentialId
+      email
+      systemRole
+      systemAuthentication
+      nonRevokedRefreshTokens {
+        reference
+        sequentialId
+        tokenHash
+        expiresAt
+        revokedAt
+        replacedBy
+      }
+    }
+  }
+}
+    `,
+    variables: {
+      reference: tokenReference
+    }
+  }))[0];
+
+  return refreshToken;
 }

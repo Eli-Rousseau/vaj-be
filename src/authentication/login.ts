@@ -27,12 +27,10 @@ async function findUserByEmail(email: string) {
     return users[0];
 }
 
-export async function loginUser(input: LoginEvent): Promise<LoginResult> {
-    const { user: rawUser, jwtSecret } = input;
+export async function loginUser(event: LoginEvent): Promise<LoginResult> {
+    const { user: rawUser, jwtSecret } = event;
 
-    if (!jwtSecret) {
-        throw new ConfigError("CONFIG_MISSING_JWT_SECRET");
-    }
+    if (!jwtSecret) throw new ConfigError("CONFIG_MISSING_JWT_SECRET");
 
     let inputUser: ShopUser;
     try {
@@ -78,7 +76,7 @@ export async function loginUser(input: LoginEvent): Promise<LoginResult> {
             throw new DatabaseError(`REVOKE_REFRESH_TOKENS_FAILED:${error}`);
         }
     }
-    
+
     const accessToken = generateJWTToken(user, jwtSecret, 30 * 60);
 
     return {

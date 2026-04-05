@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { registerUser } from "./register";
 import { handleAPIError } from "../api/error-classes";
 import { loginUser } from "./login";
+import { refreshToken } from "./refresh";
 
 export async function handleInternalRegister(
   req: Request, 
@@ -47,8 +48,16 @@ export async function handleRefreshToken(
   res: Response
 ) {
   try {
-    
-  } catch (error) {
+    const result = await refreshToken({
+      tokenReferenceAndHash: req.body?.refreshToken,
+      jwtSecret: process.env.JWT_SECRET as string
+    });
 
+    res.status(201).json({
+      "accessToken": result.accessToken,
+      "refreshToken": `${result.refreshToken!.reference}.${result.refreshToken.tokenHash}`
+    })
+  } catch (error) {
+    handleAPIError(res, error);
   }
 }

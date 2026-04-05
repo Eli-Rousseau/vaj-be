@@ -25,8 +25,8 @@ async function isEmailAlreadyAssigned(email: string) {
     return users.length > 0;
 }
 
-export async function registerUser(input: RegisterEvent): Promise<RegisterResult> {
-  const { user: rawUser, jwtSecret } = input;
+export async function registerUser(event: RegisterEvent): Promise<RegisterResult> {
+  const { user: rawUser, jwtSecret } = event;
 
   if (!jwtSecret) {
     throw new ConfigError("CONFIG_MISSING_JWT_SECRET");

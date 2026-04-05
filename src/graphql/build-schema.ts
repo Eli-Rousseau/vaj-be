@@ -482,7 +482,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
                   parent.user,
                 );
                 const res = await pgPool.query(query);
-                return res.rows;
+                return res.rows[0];
               }),
         );
 
