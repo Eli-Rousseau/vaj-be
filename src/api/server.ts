@@ -1,19 +1,26 @@
 import path from "path";
 
-import express from "express";
+import express, { Request, RequestHandler, Response } from "express";
 import { Express } from "express";
 
 import { loadStage } from "../utils/stage";
-import { rateLimiter, unhandeledRoutes } from "./middlewares";
 import { logger } from "../utils/logger";
 import * as routers from "./routes/index";
 import { setupShutdownHooks } from "../utils/shutdown";
+import { ShopUser } from "../database/classes/transformer-classes";
+import * as middleware from "../middleware/handlers";
 
 const LOGGER = logger.get({
     source: "src",
     service: "api",
     module: path.basename(__filename)
 })
+
+export interface ServerRequest extends Request {
+  user: ShopUser
+};
+
+export interface ServerResponse extends Response {};
 
 let app: Express | null = null;
 
@@ -33,14 +40,15 @@ async function startServer() {
 
   app = express();
 
-  app.use(rateLimiter);
+  app.use(middleware.handleValidateAccessToken as RequestHandler);
+
   app.use(express.json());
 
   // Adding the routers
   app.use("/api/graphql", await routers.getGraphQlRouter());
   app.use("/api/authentication", routers.authentication.default);
 
-  app.use(unhandeledRoutes);
+  app.use(middleware.unhandeledRoutes as RequestHandler);
 
   app.listen(port, () => {
     LOGGER.info(`Server listening at http://${host}:${port}`);

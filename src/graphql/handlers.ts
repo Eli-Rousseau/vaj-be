@@ -1,7 +1,7 @@
-import { Request, Response } from "express";
+import { ServerRequest, ServerResponse } from "../api/server";
 import { rebuildSchema } from "./yoga";
 
-export async function handleGraphQLUpdateSchema(req: Request, res: Response) {
+export async function handleGraphQLUpdateSchema(req: ServerRequest, res: ServerResponse) {
   await rebuildSchema(true);
-  res.status(200).end();
+  res.status(200);
 }

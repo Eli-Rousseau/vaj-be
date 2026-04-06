@@ -1,6 +1,8 @@
 import { Response } from "express";
+import { ServerResponse } from "./server";
 
 export class AuthenticationError extends Error {}
+export class AuthorizationError extends Error {}
 export class BadRequestError extends Error {}
 export class ConfigError extends Error {}
 export class DatabaseError extends Error {}
@@ -18,6 +20,11 @@ const DEFAULT_ERROR_CONFIG: ErrorConfig[] = [
     classes: [AuthenticationError],
     statusCode: 401,
     message: "Failed authentication",
+  },
+  {
+    classes: [AuthorizationError],
+    statusCode: 401,
+    message: "Failed authorization",
   },
   {
     classes: [BadRequestError],
@@ -51,7 +58,7 @@ type HandleAPIErrorOptions = {
 };
 
 export function handleAPIError(
-  res: Response,
+  res: ServerResponse,
   error: unknown,
   options?: HandleAPIErrorOptions
 ) {

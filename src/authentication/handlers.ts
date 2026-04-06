@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { ServerRequest, ServerResponse } from "../api/server";
 
 import { registerUser } from "./register";
 import { handleAPIError } from "../api/error-classes";
@@ -6,8 +6,8 @@ import { loginUser } from "./login";
 import { refreshToken } from "./refresh";
 
 export async function handleInternalRegister(
-  req: Request, 
-  res: Response
+  req: ServerRequest, 
+  res: ServerResponse
 ) {
   try {
     const result = await registerUser({
@@ -18,15 +18,15 @@ export async function handleInternalRegister(
     res.status(201).json({ 
       "accessToken": result.accessToken,
       "refreshToken": `${result.refreshToken!.reference}.${result.refreshToken.tokenHash}`
-    }).end();
+    });
   } catch (error) {
     handleAPIError(res, error);
   }
 }
 
 export async function handleInternalLogin(
-  req: Request,
-  res: Response
+  req: ServerRequest,
+  res: ServerResponse
 ) {
   try {
     const result = await loginUser({
@@ -37,15 +37,15 @@ export async function handleInternalLogin(
     res.status(201).json({ 
       "accessToken": result.accessToken,
       "refreshToken": `${result.refreshToken!.reference}.${result.refreshToken.tokenHash}`
-    }).end();
+    });
   } catch (error) {
     handleAPIError(res, error);
   }
 }
 
 export async function handleRefreshToken(
-  req: Request,
-  res: Response
+  req: ServerRequest,
+  res: ServerResponse
 ) {
   try {
     const result = await refreshToken({

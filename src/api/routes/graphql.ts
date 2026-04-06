@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { yoga, initSchema } from "../../graphql/yoga";
-import { handleGraphQLUpdateSchema } from "../../graphql/handlers";
+import * as handlers from "../../graphql/handlers";
+import * as middleware from "../../middleware/handlers";
 
 export async function getGraphQlRouter() {
   const router = Router();
@@ -8,7 +9,16 @@ export async function getGraphQlRouter() {
   // Ensure schema is built before any request hits Yoga
   await initSchema();
 
-  router.post("/update-schema", handleGraphQLUpdateSchema);
+  router.use("/update-schema", middleware.handleAuthorization(["DEVELOPER"]));
+  router.post("/update-schema", handlers.handleGraphQLUpdateSchema);
+  router.use(
+    middleware.handleAuthorization([
+      "DEVELOPER",
+      "ADMINISTRATOR",
+      "SUPERUSER",
+      "USER",
+    ]),
+  );
   router.use(yoga);
 
   return router;
