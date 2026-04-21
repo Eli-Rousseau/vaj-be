@@ -1,5 +1,6 @@
 import { Response } from "express";
-import { ServerResponse } from "./server";
+import { logger } from "../utils/logger";
+import path from "path";
 
 export class AuthenticationError extends Error {}
 export class AuthorizationError extends Error {}
@@ -14,6 +15,11 @@ type ErrorConfig = {
   statusCode: number;
   message: string;
 };
+
+const LOGGER = logger.get({
+  source: "api",
+  module: path.basename(__filename)
+});
 
 const DEFAULT_ERROR_CONFIG: ErrorConfig[] = [
   {
@@ -58,11 +64,13 @@ type HandleAPIErrorOptions = {
 };
 
 export function handleAPIError(
-  res: ServerResponse,
+  res: Response,
   error: unknown,
   options?: HandleAPIErrorOptions
 ) {
   const configs = [...(options?.otherErrorClasses || []), ...DEFAULT_ERROR_CONFIG];
+
+  LOGGER.error((error as any).message);
 
   for (const config of configs) {
     if (config.classes.some(cls => error instanceof cls)) {

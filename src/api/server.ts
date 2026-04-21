@@ -1,7 +1,5 @@
 import path from "path";
-
-import express, { Request, RequestHandler, Response } from "express";
-import { Express } from "express";
+import express, { NextFunction, Request, RequestHandler, Response, Express } from "express";
 
 import { loadStage } from "../utils/stage";
 import { logger } from "../utils/logger";
@@ -15,12 +13,6 @@ const LOGGER = logger.get({
     service: "api",
     module: path.basename(__filename)
 })
-
-export interface ServerRequest extends Request {
-  user: ShopUser
-};
-
-export interface ServerResponse extends Response {};
 
 let app: Express | null = null;
 
@@ -40,7 +32,8 @@ async function startServer() {
 
   app = express();
 
-  app.use(middleware.handleValidateAccessToken as RequestHandler);
+  app.use(middleware.handleCreationOfRequestContext);
+  app.use(middleware.handleValidateAccessToken);
 
   app.use(express.json());
 
@@ -48,7 +41,7 @@ async function startServer() {
   app.use("/api/graphql", await routers.getGraphQlRouter());
   app.use("/api/authentication", routers.authentication.default);
 
-  app.use(middleware.unhandeledRoutes as RequestHandler);
+  app.use(middleware.unhandeledRoutes);
 
   app.listen(port, () => {
     LOGGER.info(`Server listening at http://${host}:${port}`);

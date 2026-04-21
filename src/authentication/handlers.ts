@@ -1,4 +1,4 @@
-import { ServerRequest, ServerResponse } from "../api/server";
+import { Request, Response } from "express";
 
 import { registerUser } from "./register";
 import { handleAPIError } from "../api/error-classes";
@@ -6,8 +6,8 @@ import { loginUser } from "./login";
 import { refreshToken } from "./refresh";
 
 export async function handleInternalRegister(
-  req: ServerRequest, 
-  res: ServerResponse
+  req: Request, 
+  res: Response
 ) {
   try {
     const result = await registerUser({
@@ -25,8 +25,8 @@ export async function handleInternalRegister(
 }
 
 export async function handleInternalLogin(
-  req: ServerRequest,
-  res: ServerResponse
+  req: Request,
+  res: Response
 ) {
   try {
     const result = await loginUser({
@@ -44,8 +44,8 @@ export async function handleInternalLogin(
 }
 
 export async function handleRefreshToken(
-  req: ServerRequest,
-  res: ServerResponse
+  req: Request,
+  res: Response
 ) {
   try {
     const result = await refreshToken({
