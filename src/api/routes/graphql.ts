@@ -11,14 +11,6 @@ export async function getGraphQlRouter() {
 
   router.use("/update-schema", middleware.handleAuthorization(["DEVELOPER"]));
   router.post("/update-schema", handlers.handleGraphQLUpdateSchema);
-  router.use(
-    middleware.handleAuthorization([
-      "DEVELOPER",
-      "ADMINISTRATOR",
-      "SUPERUSER",
-      "USER",
-    ]),
-  );
   router.use(yoga);
 
   return router;

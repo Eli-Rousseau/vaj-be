@@ -53,7 +53,6 @@ export const handleAuthorization = (roles: string[]): RequestHandler => {
   )
 };
 
-
 export function unhandeledRoutes(req: Request, res: Response, next: NextFunction) {
   withHandler(
     {

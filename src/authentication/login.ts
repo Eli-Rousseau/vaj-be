@@ -1,4 +1,4 @@
-import { AuthenticationError, BadRequestError, ConfigError, DatabaseError, DataInconsistencyError } from "../api/api-errors";
+import { AuthenticationError, BadRequestError, ConfigError, DatabaseError, DataInconsistencyError } from "../utils/errors";
 import { ShopRefreshToken, ShopUser } from "../database/classes/transformer-classes";
 import { isValidEmail } from "../utils/validators";
 import { generateGenericToken, generateJWTToken } from "./common";
