@@ -1,28 +1,19 @@
-import { randomUUID, randomBytes } from "crypto";
+import { randomUUID } from "crypto";
 import { AsyncLocalStorage } from "async_hooks";
 
 export function generateTraceId(): string {
     return randomUUID();
 }
 
-export function generateSpanId() {
-    return randomBytes(8).toString('hex');
-}
-
-
 const asyncLocalStorage = new AsyncLocalStorage();
 
 export class Context {
     traceId: string;
-    spanId: string;
-    parentSpanId: string;
     startTime: number;
     attributes: Record<string, any>;
 
-    constructor(traceId: string, spanId: string, parentSpanId: string) {
+    constructor(traceId: string) {
         this.traceId = traceId;
-        this.spanId = spanId;
-        this.parentSpanId = parentSpanId;
         this.startTime = Date.now();
         this.attributes = {};
     }
@@ -37,9 +28,9 @@ export class Context {
 }
 
 export function runWithContext(context: Context, fn: () => unknown) {
-    return asyncLocalStorage.run(context, fn);
+    return asyncLocalStorage.run(context, fn as any);
 }
 
 export function getCurrentContext() {
-    return asyncLocalStorage.getStore();
+    return asyncLocalStorage.getStore() as any;
 }

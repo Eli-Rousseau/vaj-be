@@ -1,11 +1,11 @@
 import crypto from "crypto";
 
 import { ShopUser } from "../database/classes/transformer-classes";
-import { AuthorizationError, ConfigError } from "../api/error-classes";
+import { AuthorizationError, ConfigError } from "../utils/errors";
 
 type ValidateAccessTokenEvent = {
     accessToken: string;
-    jwtSecret: string
+    jwtSecret: string;
 }
 
 type ValidateAccessTokenResult = {

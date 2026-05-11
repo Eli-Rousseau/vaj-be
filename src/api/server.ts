@@ -1,11 +1,10 @@
 import path from "path";
-import express, { NextFunction, Request, RequestHandler, Response, Express } from "express";
+import express, { Express } from "express";
 
 import { loadStage } from "../utils/stage";
 import { logger } from "../utils/logger";
 import * as routers from "./routes/index";
 import { setupShutdownHooks } from "../utils/shutdown";
-import { ShopUser } from "../database/classes/transformer-classes";
 import * as middleware from "../middleware/handlers";
 
 const LOGGER = logger.get({
@@ -32,7 +31,7 @@ async function startServer() {
 
   app = express();
 
-  app.use(middleware.handleCreationOfRequestContext);
+  app.use(middleware.handleSetupRequestContext);
   app.use(middleware.handleValidateAccessToken);
 
   app.use(express.json());

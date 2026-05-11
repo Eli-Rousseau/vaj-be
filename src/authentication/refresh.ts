@@ -1,4 +1,4 @@
-import { AuthenticationError, BadRequestError, ConfigError, DatabaseError } from "../api/error-classes";
+import { AuthenticationError, BadRequestError, ConfigError, DatabaseError } from "../api/api-errors";
 import { ShopRefreshToken } from "../database/classes/transformer-classes";
 import { generateGenericToken, generateJWTToken } from "./common";
 import * as gql from "./gql";

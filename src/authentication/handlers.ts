@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 
 import { registerUser } from "./register";
-import { handleAPIError } from "../api/error-classes";
+import { handleAPIError } from "../api/api-errors";
 import { loginUser } from "./login";
 import { refreshToken } from "./refresh";
 

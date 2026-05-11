@@ -1,14 +1,7 @@
 import { Response } from "express";
 import { logger } from "../utils/logger";
 import path from "path";
-
-export class AuthenticationError extends Error {}
-export class AuthorizationError extends Error {}
-export class BadRequestError extends Error {}
-export class ConfigError extends Error {}
-export class DatabaseError extends Error {}
-export class DataInconsistencyError extends Error {}
-export class CustomTypeError extends Error {}
+import * as errors from "../utils/errors";
 
 type ErrorConfig = {
   classes: Array<new (...args: any[]) => Error>;
@@ -23,37 +16,37 @@ const LOGGER = logger.get({
 
 const DEFAULT_ERROR_CONFIG: ErrorConfig[] = [
   {
-    classes: [AuthenticationError],
+    classes: [errors.AuthenticationError],
     statusCode: 401,
     message: "Failed authentication",
   },
   {
-    classes: [AuthorizationError],
+    classes: [errors.AuthorizationError],
     statusCode: 401,
     message: "Failed authorization",
   },
   {
-    classes: [BadRequestError],
+    classes: [errors.BadRequestError],
     statusCode: 400,
     message: "Invalid request",
   },
   {
-    classes: [ConfigError],
+    classes: [errors.ConfigError],
     statusCode: 500,
     message: "Incorrect configuration",
   },
   {
-    classes: [DatabaseError],
+    classes: [errors.DatabaseError],
     statusCode: 500,
     message: "Database error",
   },
   {
-    classes: [DataInconsistencyError],
+    classes: [errors.DataInconsistencyError],
     statusCode: 500,
     message: "Data inconsistency detected",
   },
   {
-    classes: [CustomTypeError],
+    classes: [errors.CustomTypeError],
     statusCode: 400,
     message: "Incorrect data type",
   },
