@@ -9,7 +9,7 @@ export async function getGraphQlRouter() {
   // Ensure schema is built before any request hits Yoga
   await initSchema();
 
-  router.use("/update-schema", middleware.handleAuthorization(["DEVELOPER"]));
+  router.use("/update-schema", (req, res, next) => middleware.handleAuthorization(req, res, next, ["DEVELOPER"]));
   router.post("/update-schema", handlers.handleGraphQLUpdateSchema);
   router.use(yoga);
 

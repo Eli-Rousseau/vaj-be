@@ -1,14 +1,14 @@
-import { NextFunction, RequestHandler, Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { authorization, validateAccessToken } from "./authorization";
 import { runWithContext } from "./context";
 import { withHandler } from "../api/wrapper";
 
-export function handleSetupRequestContext(req: Request, res: Response, next: NextFunction) {
-  withHandler(
+export async function handleSetupRequestContext(req: Request, res: Response, next: NextFunction) {
+  await withHandler(
+    req, res, next,
     {
       handlerName: "handleSetupRequestContext",
       service: "middleware",
-      logBody: true,
       setupContext: true
     },
     (req, res, next, context) => {
@@ -18,11 +18,11 @@ export function handleSetupRequestContext(req: Request, res: Response, next: Nex
 }
 
 export async function handleValidateAccessToken(req: Request, res: Response, next: NextFunction) {
-  withHandler(
+  await withHandler(
+    req, res, next,
     {
       handlerName: "handleValidateAccessToken",
-      service: "middleware",
-      logBody: true
+      service: "middleware"
     },
     (req, res, next, context) => {
       const result = validateAccessToken({
@@ -36,12 +36,12 @@ export async function handleValidateAccessToken(req: Request, res: Response, nex
   )
 }
 
-export const handleAuthorization = (roles: string[]): RequestHandler => {
-  return withHandler(
+export async function handleAuthorization(req: Request, res: Response, next: NextFunction, roles: string[]) {
+  await withHandler(
+    req, res, next,
     {
       handlerName: "handleAuthorization",
-      service: "middleware",
-      logBody: true
+      service: "middleware"
     },
     (req, res, next, context) => {
       authorization({
@@ -53,12 +53,12 @@ export const handleAuthorization = (roles: string[]): RequestHandler => {
   )
 };
 
-export function unhandeledRoutes(req: Request, res: Response, next: NextFunction) {
-  withHandler(
+export async function unhandeledRoutes(req: Request, res: Response, next: NextFunction) {
+  await withHandler(
+    req, res, next,
     {
       handlerName: "unhandeledRoutes",
-      service: "middleware",
-      logBody: true
+      service: "middleware"
     },
     (req, res, next, context) => {
       res.status(404).json({ error: `Route '${req.originalUrl}' not found.` });

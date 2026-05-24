@@ -1,7 +1,7 @@
-import { AuthenticationError, BadRequestError, ConfigError, DatabaseError } from "../api/api-errors";
-import { ShopRefreshToken } from "../database/classes/transformer-classes";
-import { generateGenericToken, generateJWTToken } from "./common";
-import * as gql from "./gql";
+import { AuthenticationError, BadRequestError, ConfigError, DatabaseError } from "@/src/utils/errors";
+import { ShopRefreshToken } from "@/src/database/classes/transformer-classes";
+import { generateGenericToken, generateJWTToken } from "@/src/authentication/common";
+import * as gql from "@/src/authentication/gql";
 
 type RefreshTokenEvent = {
     tokenReferenceAndHash: string;

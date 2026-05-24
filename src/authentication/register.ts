@@ -1,8 +1,8 @@
-import { AuthenticationError, BadRequestError, ConfigError, DatabaseError } from "../api/api-errors";
-import { ShopUser, ShopRefreshToken } from "../database/classes/transformer-classes";
-import { isValidEmail } from "../utils/validators";
-import { generateGenericToken, generateJWTToken } from "./common";
-import * as gql from "./gql";
+import { AuthenticationError, BadRequestError, ConfigError, DatabaseError } from "@/src/utils/errors";
+import { ShopUser, ShopRefreshToken } from "@/src/database/classes/transformer-classes";
+import { isValidEmail } from "@/src/utils/validators";
+import { generateGenericToken, generateJWTToken } from "@/src/authentication/common";
+import * as gql from "@/src/authentication/gql";
 
 type RegisterEvent = {
   user: unknown;
