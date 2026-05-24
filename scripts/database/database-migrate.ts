@@ -2,12 +2,13 @@ import path from "path";
 import { cwd } from "process";
 import { readdir, readFile, writeFile } from "fs/promises";
 
-import { loadStage } from "../../src/utils/stage";
-import { logger } from "../../src/utils/logger";
-import { postgres } from "../../src/utils/postgres";
-import { setupShutdownHooks } from "../../src/utils/shutdown";
-import { askQuestion } from "../../src/utils/prompt";
-import { buildTransformerClasses } from "../../src/database/classes/build-classes";
+import { loadStage } from "@/src/utils/stage";
+import { logger } from "@/src/utils/logger";
+import { postgres } from "@/src/utils/postgres";
+import { setupShutdownHooks } from "@/src/utils/shutdown";
+import { askQuestion } from "@/src/utils/prompt";
+import { buildTransformerClasses } from "@/src/database/classes/build-classes";
+import { AuthInternalApi } from "@/src/authentication/auth";
 
 const LOGGER = logger.get({
   source: "scripts",
@@ -145,17 +146,41 @@ async function applyMigrations(scripts: string[]) {
 
 async function rebuildGraphQLSchema() {
   const applicationUrl = process.env.APPLICATION_URL;
+  const userName = process.env.DEFAULT_USER_NAME;
+  const userEmail = process.env.DEFAULT_USER_EMAIL;
+  const userPassword = process.env.DEFAULT_USER_PASSWORD;
 
-  if (!applicationUrl) {
-    LOGGER.error("Missing required environment variables: APPLICATION_URL.");
+  if (!applicationUrl || !userName || !userEmail || !userPassword) {
+    LOGGER.error("Missing required environment variables: APPLICATION_URL, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, or DEFAULT_USER_PASSWORD.");
     process.exit(1);
   }
 
   try {
+
+    const loginUser = {
+      name: userName,
+      email: userEmail,
+      password: userPassword
+    }
+
+    const auth = new AuthInternalApi(loginUser);
+    
+    let tokens = await auth.connect({ enableRegister: true });
+    tokens = await auth.assignUserRole("DEVELOPER");
+    const accessToken = tokens?.accessToken;
+
+    if (!accessToken) {
+      throw new Error("Failed to retrieve access token.");
+    }
+    
     const url = `${applicationUrl}/api/graphql/update-schema`;
+    const headers = {
+      Authorization: accessToken
+    }
 
     const response = await fetch(url, {
       method: "POST",
+      headers
     });
 
     if (!response.ok) {
@@ -208,6 +233,8 @@ async function main() {
   setupShutdownHooks();
 
   await loadStage();
+
+  await rebuildGraphQLSchema();
 
   const appliedMigrations = await getCurrentMigrations();
   const migrationScripts = await getMigrationScripts();

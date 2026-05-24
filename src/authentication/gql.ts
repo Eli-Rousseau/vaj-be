@@ -139,3 +139,28 @@ query getRefreshTokenByReference($reference: ID!) {
 
   return refreshToken;
 }
+
+export async function updateUserRole(data: ShopUser) {
+    const user = (await graphql.executeAndTransform(ShopUser, {
+        query: `
+mutation updateUserRole($user: ShopUserMutationType!) {
+  updateShopUser(
+    data: $user,
+    set: ["role"]
+  ) {
+    reference
+    sequentialId
+    name
+    email
+    systemRole
+    systemAuthentication
+  }
+}  
+        `,
+        variables: {
+            user: data.toPlain({ onlyMutables: true })
+        }
+    }))[0];
+
+    return user;
+}
