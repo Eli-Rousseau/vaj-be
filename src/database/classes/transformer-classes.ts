@@ -519,17 +519,6 @@ export class ShopArticle extends TransformerClass {
   @Expose()
   updatedAt!: Date | null;
 
-  @Type(() => ShopArticleCategory)
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  categoryByReference!: ShopArticleCategory | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  category!: string | null;
-
   @Annotate("Mutable")
   @Default()
   @Expose()
@@ -595,11 +584,6 @@ export class ShopArticle extends TransformerClass {
   @Expose()
   rentalPrice!: number | null;
 
-  @Type(() => ShopArticleCategory)
-  @Default()
-  @Expose()
-  articleCategorys!: ShopArticleCategory[] | null;
-
   @Type(() => ShopOrderArticle)
   @Default()
   @Expose()
@@ -619,6 +603,11 @@ export class ShopArticle extends TransformerClass {
   @Default()
   @Expose()
   articleImages!: ShopArticleImage[] | null;
+
+  @Type(() => ShopArticleCategories)
+  @Default()
+  @Expose()
+  articleCategorieses!: ShopArticleCategories[] | null;
 }
 
 export class ShopSystemAuthenticationEnum extends TransformerClass {
@@ -1041,6 +1030,64 @@ export class ShopFile extends TransformerClass {
   articleImages!: ShopArticleImage[] | null;
 }
 
+export class ShopArticleCategories extends TransformerClass {
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  reference!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  sequentialId!: number | null;
+
+  @Type(() => ShopArticle)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  articleByReference!: ShopArticle | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  article!: string | null;
+
+  @Type(() => ShopArticleCategory)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  articleCategoryByReference!: ShopArticleCategory | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  articleCategory!: string | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  createdAt!: Date | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  updatedAt!: Date | null;
+
+  @Type(() => ShopArticle)
+  @Default()
+  @Expose()
+  articles!: ShopArticle[] | null;
+
+  @Type(() => ShopArticleCategory)
+  @Default()
+  @Expose()
+  articleCategorys!: ShopArticleCategory[] | null;
+}
+
 export class ShopArticleCategory extends TransformerClass {
   @Annotate("Mutable")
   @Default()
@@ -1096,10 +1143,10 @@ export class ShopArticleCategory extends TransformerClass {
   @Expose()
   updatedAt!: Date | null;
 
-  @Type(() => ShopArticle)
+  @Type(() => ShopArticleCategories)
   @Default()
   @Expose()
-  articles!: ShopArticle[] | null;
+  articleCategorieses!: ShopArticleCategories[] | null;
 }
 
 export class ShopArticleBrandEnum extends TransformerClass {

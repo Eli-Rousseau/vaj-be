@@ -15,12 +15,6 @@ CREATE TABLE shop.article(
 	"updatedAt" TIMESTAMP CONSTRAINT "articleUpdatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
 	-- Product Attributes
-	category UUID,
-	CONSTRAINT "fkArticleCategory"
-        FOREIGN KEY (category) 
-        REFERENCES shop."articleCategory"(reference)
-		ON UPDATE CASCADE
-		ON DELETE SET NULL,
 	gender TEXT,
 	CONSTRAINT "fkGender"
         FOREIGN KEY (gender) 
