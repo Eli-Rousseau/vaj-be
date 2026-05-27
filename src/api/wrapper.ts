@@ -8,7 +8,7 @@ import path from "path";
 
 type WrapperOptions = {
   handlerName: string;
-  service?: string;
+  service: string;
   setupContext?: boolean;
 }
 
@@ -41,7 +41,8 @@ export const withHandler = async function(
       context = getCurrentContext();
   }
 
-  const user = (context.getAttribute("user") as ShopUser)?.toPlain({ onlyMutables: true}) || null;
+  const shopUser = context?.getAttribute("user") as ShopUser | undefined;
+  const user = shopUser?.toPlain({ onlyMutables: true }) ?? null;
 
   const requestLogger = LOGGER.child({
     traceId: context.traceId,
@@ -55,7 +56,7 @@ export const withHandler = async function(
   const startedAt = Date.now();
 
   try {
-    requestLogger.info("START", {
+    requestLogger.info(`${context.traceId} - START - ${options.service} - ${options.handlerName}`, {
       params: req.params,
       query: req.query,
       body: req.body
@@ -63,12 +64,12 @@ export const withHandler = async function(
 
     await handler(req, res, next, context);
 
-    requestLogger.info("END", {
+    requestLogger.info(`${context.traceId} - END - ${options.service} - ${options.handlerName}`, {
       statusCode: res.statusCode,
       durationMs: Date.now() - startedAt
     });
   } catch (error: any) {
-    requestLogger.error("FAILED", {
+    requestLogger.error(`${context.traceId} - FAILED - ${options.service} - ${options.handlerName}`, {
       durationMs: Date.now() - startedAt,
       error: {
         name: error?.name,

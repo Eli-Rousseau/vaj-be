@@ -234,8 +234,6 @@ async function main() {
 
   await loadStage();
 
-  await rebuildGraphQLSchema();
-
   const appliedMigrations = await getCurrentMigrations();
   const migrationScripts = await getMigrationScripts();
 

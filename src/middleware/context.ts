@@ -23,7 +23,7 @@ export class Context {
     }
 
     getAttribute(key: string) {
-        return this.attributes[key];
+        return this.attributes?.[key];
     }
 }
 

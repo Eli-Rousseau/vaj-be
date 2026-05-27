@@ -45,7 +45,7 @@ export async function handleAuthorization(req: Request, res: Response, next: Nex
     },
     (req, res, next, context) => {
       authorization({
-        userRole: (req as any)?.user?.systemRole as string,
+        userRole: context.getAttribute("user")?.systemRole as string,
         authorizedRoles: roles
       });
       next();

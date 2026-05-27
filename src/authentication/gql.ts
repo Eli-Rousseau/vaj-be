@@ -146,7 +146,7 @@ export async function updateUserRole(data: ShopUser) {
 mutation updateUserRole($user: ShopUserMutationType!) {
   updateShopUser(
     data: $user,
-    set: ["role"]
+    set: ["systemRole"]
   ) {
     reference
     sequentialId

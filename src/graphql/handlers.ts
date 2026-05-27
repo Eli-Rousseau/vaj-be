@@ -12,7 +12,7 @@ export async function handleGraphQLUpdateSchema(req: Request, res: Response, nex
     },
     async (req, res, next, context) => {
       await rebuildSchema(true);
-      res.status(200);
+      res.sendStatus(200);
     }
   )
 }

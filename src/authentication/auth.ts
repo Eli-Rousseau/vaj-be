@@ -35,7 +35,7 @@ export class AuthInternalApi extends Auth<InternalApiCredentials> {
             );
 
             if (!response.ok) {
-                LOGGER.error(
+                LOGGER.warn(
                     `Request failed: ${response.status} ${response.statusText}`
                 );
 
@@ -44,7 +44,7 @@ export class AuthInternalApi extends Auth<InternalApiCredentials> {
 
             return (await response.json()) as TResponse;
         } catch (error) {
-            LOGGER.error("HTTP request failed.", error);
+            LOGGER.warn("HTTP request failed.", error);
 
             return null;
         }
@@ -78,7 +78,7 @@ export class AuthInternalApi extends Auth<InternalApiCredentials> {
 
     async refresh(): Promise<Tokens | null> {
         if (!this.tokens?.refreshToken) {
-            LOGGER.error("Missing refresh token.");
+            LOGGER.warn("Missing refresh token.");
 
             return null;
         }
