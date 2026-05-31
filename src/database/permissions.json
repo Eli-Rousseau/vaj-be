@@ -1,0 +1,74 @@
+{
+    "order": {
+        "USER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": [
+                "user: { \"eq\": $userReference }"
+            ]
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": [
+                "user: { \"eq\": $userReference }"
+            ]
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": []
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": []
+        }
+    },
+    "systemAuthenticationEnum": {
+        "USER": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": []
+        },
+        "SUPERUSER": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": []
+        },
+        "ADMINISTRATOR": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": []
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": []
+        }
+    }
+}
