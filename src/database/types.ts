@@ -20,11 +20,21 @@ export type ComputedFieldInfo = {
     returnTypeKind: ComputedFieldReturnType;
 };
 
+export type RolePermissions = {
+    select: boolean;
+    insert: boolean;
+    update: boolean;
+    delete: boolean;
+    columnsToExclude: string[];
+    filters: any;
+}
+
 export type TableInfo = {
     name: string;
     isEnum: boolean;
     columns: ColumnInfo[];
     computedFields: ComputedFieldInfo[];
+    permissions: Record<string, RolePermissions>
 };
 
 export type CompositeTypeColumnInfo = {

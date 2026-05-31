@@ -6,9 +6,9 @@
             "update": true,
             "delete": true,
             "columnsToExclude": [],
-            "filters": [
-                "user: { \"eq\": $userReference }"
-            ]
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
         },
         "SUPERUSER": {
             "select": true,
@@ -16,9 +16,9 @@
             "update": true,
             "delete": true,
             "columnsToExclude": [],
-            "filters": [
-                "user: { \"eq\": $userReference }"
-            ]
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
         },
         "ADMINISTRATOR": {
             "select": true,
@@ -26,7 +26,7 @@
             "update": true,
             "delete": true,
             "columnsToExclude": [],
-            "filters": []
+            "filters": {}
         },
         "DEVELOPER": {
             "select": true,
@@ -34,7 +34,7 @@
             "update": true,
             "delete": true,
             "columnsToExclude": [],
-            "filters": []
+            "filters": {}
         }
     },
     "systemAuthenticationEnum": {
@@ -44,7 +44,7 @@
             "update": false,
             "delete": false,
             "columnsToExclude": [],
-            "filters": []
+            "filters": {}
         },
         "SUPERUSER": {
             "select": false,
@@ -52,7 +52,7 @@
             "update": false,
             "delete": false,
             "columnsToExclude": [],
-            "filters": []
+            "filters": {}
         },
         "ADMINISTRATOR": {
             "select": false,
@@ -60,7 +60,7 @@
             "update": false,
             "delete": false,
             "columnsToExclude": [],
-            "filters": []
+            "filters": {}
         },
         "DEVELOPER": {
             "select": true,
@@ -68,7 +68,7 @@
             "update": true,
             "delete": true,
             "columnsToExclude": [],
-            "filters": []
+            "filters": {}
         }
     }
 }
