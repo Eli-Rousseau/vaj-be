@@ -7,7 +7,6 @@ VALUES
 ('Natan', '1988-02-21', 'nathan@mail.com', '09876789', 'very', 'INTERNAL', 'USER'),
 ('Ester', '2009-10-03', 'ester@gcloud.com','09876543', 'newly', 'INTERNAL', 'SUPERUSER');
 
-
 -- ===========================================
 --  Insert Addresses for Each User
 -- ===========================================
@@ -71,6 +70,96 @@ SELECT
     TRUE AS shipping,
     TRUE AS billing
 FROM users;
+
+INSERT INTO shop."article" 
+(title, description, brand, gender, size, color, material, "condition", season, price, availability, "forSale", "forRent")
+VALUES 
+('Blue jeans', 'Timeless jeans', 'Dior', 'WOMENSWEAR', 'M', 'BLUE', 'DENIM', 'GREAT', 'SPRING', 100.00, 'AVAILABLE', true, false),
+('Leather jacket', 'Black leather biker jacket', 'Gucci', 'MENSWEAR', 'L', 'BLACK', 'LEATHER', 'GREAT', 'AUTUMN', 250.00, 'AVAILABLE', true, false),
+('White summer dress', 'Light cotton summer dress', 'Channel', 'WOMENSWEAR', 'S', 'WHITE', 'COTTON', 'NEW', 'SUMMER', 180.00, 'AVAILABLE', true, true),
+('Wool coat', 'Warm long wool coat', 'Blumarine', 'WOMENSWEAR', 'M', 'BEIGE', 'WOOL', 'GREAT', 'WINTER', 300.00, 'AVAILABLE', false, true),
+('Sneakers', 'Limited edition casual sneakers', 'Fendi', 'MENSWEAR', 'M', 'RED', 'NYLON', 'MODERATE', 'SPRING', 120.00, 'AVAILABLE', true, false);
+
+INSERT INTO shop."order"
+("user", "paymentMethod", "totalPrice", status, type)
+SELECT 
+  reference,
+  'PAYPAL',
+  200.00,
+  'CONFIRMED',
+  'PURCHASE'
+FROM shop."user"
+WHERE name = 'Eli'
+
+UNION ALL
+
+SELECT 
+  reference,
+  'PAYPAL',
+  60.00,
+  'PAID',
+  'RENTAL'
+FROM shop."user"
+WHERE name = 'Eli'
+
+UNION ALL
+
+SELECT 
+  reference,
+  'PAYPAL',
+  953.53,
+  'SHIPPED',
+  'RETURN'
+FROM shop."user"
+WHERE name = 'Natan'
+
+UNION ALL
+
+SELECT 
+  reference,
+  'PAYPAL',
+  89.00,
+  'PAID',
+  'EXCHANGE'
+FROM shop."user"
+WHERE name = 'Ester';
+
+INSERT INTO shop."orderArticle"
+("order", article, "articlePrice")
+SELECT 
+  reference,
+  (SELECT reference FROM shop.article WHERE "sequentialId" = 1),
+  "totalPrice"
+FROM shop.order
+WHERE "sequentialId" = 1
+
+UNION ALL
+
+SELECT 
+  reference,
+  (SELECT reference FROM shop.article WHERE "sequentialId" = 2),
+  "totalPrice"
+FROM shop.order
+WHERE "sequentialId" = 2
+
+UNION ALL
+
+SELECT 
+  reference,
+  (SELECT reference FROM shop.article WHERE "sequentialId" = 3),
+  "totalPrice"
+FROM shop.order
+WHERE "sequentialId" = 3
+
+UNION ALL
+
+SELECT 
+  reference,
+  (SELECT reference FROM shop.article WHERE "sequentialId" = 4),
+  "totalPrice"
+FROM shop.order
+WHERE "sequentialId" = 4
+;
 
 CREATE OR REPLACE FUNCTION shop."userReferenceType"("user" shop."user")
 RETURNS TEXT

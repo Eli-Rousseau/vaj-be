@@ -28,7 +28,7 @@ CREATE TABLE shop.order (
         ON DELETE SET NULL,
     "rentalStartDate" TIMESTAMP DEFAULT NULL,
     "rentalEndDate" TIMESTAMP DEFAULT NULL,
-    "discountCoupon" UUID,
+    "discountCoupon" UUID DEFAULT NULL,
     CONSTRAINT "fkDiscountCoupon"
         FOREIGN KEY ("discountCoupon") 
         REFERENCES shop."discountCoupon"("reference") 
