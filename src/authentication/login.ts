@@ -1,8 +1,9 @@
-import { AuthenticationError, BadRequestError, ConfigError, DatabaseError, DataInconsistencyError } from "../utils/errors";
-import { ShopRefreshToken, ShopUser } from "../database/classes/transformer-classes";
-import { isValidEmail } from "../utils/validators";
-import { generateGenericToken, generateJWTToken } from "./common";
-import * as gql from "./gql";
+import { AuthenticationError, BadRequestError, ConfigError, DatabaseError, DataInconsistencyError } from "@/src/utils/errors";
+import { ShopRefreshToken, ShopUser } from "@/src/database/classes/transformer-classes";
+import { isValidEmail } from "@/src/utils/validators";
+import { generateGenericToken } from "@/src/authentication/common";
+import * as gql from "@/src/authentication/gql";
+import { generateJWTToken } from "@/src/utils/jwt";
 
 type LoginEvent = {
   user: unknown;
