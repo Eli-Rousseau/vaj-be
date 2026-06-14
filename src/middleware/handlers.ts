@@ -25,11 +25,14 @@ export async function handleValidateAccessToken(req: Request, res: Response, nex
       service: "middleware"
     },
     (req, res, next, context) => {
+      const accessToken = req.header("Authorization") as string;
+
       const result = validateAccessToken({
-        accessToken: req.header("Authorization") as string,
+        accessToken: accessToken,
         jwtSecret: process.env.JWT_SECRET as string
       });
 
+      context.setAttribute("accessToken", accessToken);
       context.setAttribute("user", result.user);
       next();
     }

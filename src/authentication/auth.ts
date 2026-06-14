@@ -1,6 +1,6 @@
 import path from "path";
 import { logger } from "@/src/utils/logger";
-import { decodeJWTToken } from "@/src/middleware/authorization";
+import { decodeJWTToken } from "@/src/utils/jwt";
 import { Auth, Tokens } from "@/src/utils/auth";
 import * as gql from "@/src/authentication/gql";
 

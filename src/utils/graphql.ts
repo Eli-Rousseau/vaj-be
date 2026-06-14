@@ -1,7 +1,8 @@
 import path from "path";
 
-import { logger } from "./logger";
-import { TransformerClass } from "../database/classes/transformers";
+import { logger } from "@/src/utils/logger";
+import { TransformerClass } from "@/src/database/classes/transformers";
+import { getCurrentContext } from "@/src/middleware/context";
 
 const LOGGER = logger.get({
     source: "utils",
@@ -14,6 +15,11 @@ type GraphQLParams = {
 }
 
 class GraphQLClient {
+
+    private findAuthorization(): string {
+        const authorization = getCurrentContext().getAttribute('accessToken');
+        return authorization || "";
+    }
 
     async execute(params: GraphQLParams) {
         const baseUrl = process.env.APPLICATION_URL;
@@ -30,7 +36,10 @@ class GraphQLClient {
         try {
             const response = await fetch(url,{
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": this.findAuthorization()
+                },
                 body: JSON.stringify({ query, variables })
             })
 

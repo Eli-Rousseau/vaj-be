@@ -1,4 +1,4 @@
-import path, { parse } from "path";
+import path from "path";
 import { readFile } from "fs/promises";
 import { cwd } from "process";
 
