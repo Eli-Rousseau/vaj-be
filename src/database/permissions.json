@@ -39,7 +39,7 @@
     },
     "systemAuthenticationEnum": {
         "USER": {
-            "select": false,
+            "select": true,
             "insert": false,
             "update": false,
             "delete": false,
@@ -47,7 +47,7 @@
             "filters": {}
         },
         "SUPERUSER": {
-            "select": false,
+            "select": true,
             "insert": false,
             "update": false,
             "delete": false,
@@ -55,10 +55,10 @@
             "filters": {}
         },
         "ADMINISTRATOR": {
-            "select": false,
-            "insert": false,
-            "update": false,
-            "delete": false,
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
             "columnsToExclude": [],
             "filters": {}
         },

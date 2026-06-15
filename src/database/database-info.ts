@@ -260,7 +260,40 @@ function getTablePermissions(permissionsConfig: Record<string, Record<string, Ro
         return tablePermissions;
     } catch (error) {
         LOGGER.warn(`Failed to parse permissions for table ${tableName}; ${error}`);
-        return {} as Record<string, RolePermissions> // TO DO: turn this into exception
+        return {
+            USER: {
+                select: true,
+                insert: true,
+                update: true,
+                delete: true,
+                columnsToExclude: [],
+                filters: {}
+            },
+            SUPERUSER: {
+                select: true,
+                insert: true,
+                update: true,
+                delete: true,
+                columnsToExclude: [],
+                filters: {}
+            },
+            ADMINISTRATOR: {
+                select: true,
+                insert: true,
+                update: true,
+                delete: true,
+                columnsToExclude: [],
+                filters: {}
+            },
+            DEVELOPER: {
+                select: true,
+                insert: true,
+                update: true,
+                delete: true,
+                columnsToExclude: [],
+                filters: {}
+            },
+        } as Record<string, RolePermissions> // TO DO: turn this into exception
     }
 }
 

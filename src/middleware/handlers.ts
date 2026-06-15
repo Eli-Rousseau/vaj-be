@@ -64,43 +64,6 @@ export async function handleAuthorization(req: Request, res: Response, next: Nex
   )
 };
 
-/**
- * Useful for assigning the accessToken on the context or local storage for each request.
- * This is especially important for making requests on the graphql server for instance as 
- * it can pass down the access token for downstream authorization.
- */
-export async function setAccessTokenOnContext(req: Request, res: Response, next: NextFunction) {
-  await withHandler(
-    req, res, next,
-    {
-      handlerName: "setAccessTokenOnContext",
-      service: "middleware"
-    },
-    (req, res, next, context) => {
-      let accessToken = context.getAttribute("accessToken");
-      if (!accessToken) {
-        const jwtSecret = process.env.JWT_SECRET;
-        if (!jwtSecret) throw new ConfigError("CONFIG_MISSING_JWT_SECRET");
-
-        const userEmail = process.env.DEFAULT_USER_EMAIL;
-        if (!userEmail) throw new ConfigError("CONFIG_MISSING_DEFAULT_USER_EMAIL");
-
-        const user = ShopUser.fromPlain({
-          reference: crypto.randomBytes(16).toString("hex"),
-          sequentialId: 0,
-          email: userEmail,
-          systemRole: "ADMINISTRATOR",
-          systemAuthentication: "INTERNAL"
-
-        });
-        
-        accessToken = generateJWTToken(user, jwtSecret, 600);
-        context.setAttribute("accessToken", accessToken);
-      }
-    }
-  )
-}
-
 export async function unhandeledRoutes(req: Request, res: Response, next: NextFunction) {
   await withHandler(
     req, res, next,

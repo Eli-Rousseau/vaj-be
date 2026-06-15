@@ -16,7 +16,7 @@ type InternalApiCredentials = {
     password: string;
 };
 
-export class AuthInternalApi extends Auth<InternalApiCredentials> {
+export class AuthVAJ extends Auth<InternalApiCredentials> {
 
     protected async post<TRequest, TResponse>(
         endpoint: string,

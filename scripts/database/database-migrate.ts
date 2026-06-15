@@ -8,7 +8,7 @@ import { postgres } from "@/src/utils/postgres";
 import { setupShutdownHooks } from "@/src/utils/shutdown";
 import { askQuestion } from "@/src/utils/prompt";
 import { buildTransformerClasses } from "@/src/database/classes/build-classes";
-import { AuthInternalApi } from "@/src/authentication/auth";
+import { AuthVAJ } from "@/src/authentication/auth";
 
 const LOGGER = logger.get({
   source: "scripts",
@@ -163,7 +163,7 @@ async function rebuildGraphQLSchema() {
       password: userPassword
     }
 
-    const auth = new AuthInternalApi(loginUser);
+    const auth = new AuthVAJ(loginUser);
     
     let tokens = await auth.connect({ enableRegister: true });
     tokens = await auth.assignUserRole("DEVELOPER");

@@ -324,9 +324,10 @@ function getRequestPermissions(
   secret: string,
   permissions: Record<string, RolePermissions>
 ): RolePermissions {
-  const accessToken = context.request.headers.get("Authorization");
+  const accessToken = context.request.headers.get("authorization");
   try {
     const user = decodeJWTToken(accessToken, secret);
+    console.log(user);
     return user.systemRole ? permissions[user.systemRole] : permissions["USER"];
   } catch (error) {
     return permissions["USER"];
@@ -518,6 +519,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
           (_table) =>
             (resolvers[`${schemaTableName}Type`][plural(_table.name)] = async (
               parent,
+              args,
               context
             ) => {
               const rolePermissions = getRequestPermissions(context, jwtSecret, tablePermissions);
@@ -538,6 +540,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
           (_table) =>
             (resolvers[`${schemaTableName}Type`][`${_table.name}ByReference`] = async (
               parent,
+              args,
               context
             ) => {
               const rolePermissions = getRequestPermissions(context, jwtSecret, tablePermissions);
@@ -558,6 +561,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
           (_computedField) =>
             (resolvers[`${schemaTableName}Type`][_computedField.name] = async (
               parent,
+              args,
               context
             ) => {
               const rolePermissions = getRequestPermissions(context, jwtSecret, tablePermissions);

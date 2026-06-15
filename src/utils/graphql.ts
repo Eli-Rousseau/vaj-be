@@ -17,7 +17,7 @@ type GraphQLParams = {
 class GraphQLClient {
 
     private findAuthorization(): string {
-        const authorization = getCurrentContext().getAttribute('accessToken');
+        const authorization = getCurrentContext().getAttribute("accessToken");
         return authorization || "";
     }
 
