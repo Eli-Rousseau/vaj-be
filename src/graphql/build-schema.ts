@@ -327,7 +327,6 @@ function getRequestPermissions(
   const accessToken = context.request.headers.get("authorization");
   try {
     const user = decodeJWTToken(accessToken, secret);
-    console.log(user);
     return user.systemRole ? permissions[user.systemRole] : permissions["USER"];
   } catch (error) {
     return permissions["USER"];
