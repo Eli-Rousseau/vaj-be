@@ -15,7 +15,8 @@
             "sourceMaps": true,
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "runtimeVersion": "25"
+            "runtimeVersion": "25",
+            "preLaunchTask": "tsc: build - tsconfig.json"
         }
     ]
 }

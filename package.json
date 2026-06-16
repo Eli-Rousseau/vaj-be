@@ -4,7 +4,8 @@
   "description": "vintage archive jungle - backend project",
   "main": "index.js",
   "scripts": {
-    "server": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/src/api/server.js",
+    "dev": "nodemon",
+    "run:file": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register",
     "postgres": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/scripts/database/postgres.js",
     "database-setup": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/scripts/database/database-setup.js",
     "database-backup": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/scripts/database/database-backup.js",
@@ -20,7 +21,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "graphql-yoga": "^5.17.1",
-    "nodemailer": "^7.0.5",
+    "nodemailer": "^9.0.0",
     "pg": "^8.16.3",
     "redis": "^5.11.0",
     "reflect-metadata": "^0.2.2",
@@ -32,6 +33,7 @@
     "@types/node": "^24.0.15",
     "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.15.4",
+    "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "vitest": "^4.0.16"

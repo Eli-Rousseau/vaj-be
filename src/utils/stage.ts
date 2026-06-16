@@ -28,6 +28,10 @@ export const loadStage = async function (
 ) {
   if (process.env.STAGE) return;
 
+  for (const [key, value] of Object.entries(Stages)) {
+    if (process.argv.includes(value)) stage = value as Stages;
+  }
+
   if (!stage)
     stage = (await dropDown(
       "Please, select your environment:",
