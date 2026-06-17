@@ -179,7 +179,7 @@ ${schemaCompositeType.columns.map((_columnInfo) => `\t${_columnInfo.name}: ${Pos
         const tableType = `
 
 type ${schemaTableName}Type {
-${columnInfos.map((_columnInfo) => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable ? "" : "!"}`).join("\n")}
+${columnInfos.map((_columnInfo) => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}`).join("\n")}
 ${fkTables.map((_table) => `\t${_table.name}ByReference: ${capitalize(schema) + capitalize(_table.foreignKey!)}Type`).join("\n")}
 ${pkTables.map((_table) => `\t${plural(_table.name)}: [${capitalize(schema) + capitalize(_table.name)}Type!]!`).join("\n")}
 ${computedFields.map((_computedField) => `\t${_computedField.name}: ${computedField(schema, _computedField)}`).join("\n")}
@@ -272,7 +272,7 @@ input ${capitalize(schema) + capitalize(_table.name) + capitalize(table)}Mutatio
         const tableType = `
 
 type ${schemaTableName}Type {
-${columnInfos.map((_columnInfo) => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable ? "" : "!"}`).join("\n")}
+${columnInfos.map((_columnInfo) => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}`).join("\n")}
 ${fkTables.map((_table) => `\t${_table.name}ByReference: ${capitalize(schema) + capitalize(_table.foreignKey!)}Type`).join("\n")}
 }
 
@@ -281,7 +281,7 @@ ${fkTables.map((_table) => `\t${_table.name}ByReference: ${capitalize(schema) + 
         const tableMutationType = `
 
 input ${schemaTableName}MutationType {
-${columnInfos.map((_columnInfo) => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}${_columnInfo.isNullable || _columnInfo.hasDefault || _columnInfo.isPrimaryKey || _columnInfo.handleAutomaticUpdate ? "" : "!"}`).join("\n")}
+${columnInfos.map((_columnInfo) => `\t${_columnInfo.name}: ${PostgresYogaTypesMap[_columnInfo.dataType as PostgresType]}`).join("\n")}
 ${fkTables.map((_table) => `\t${_table.name}ByReference: ${schemaTableName}${capitalize(_table.foreignKey!)}MutationType`).join("\n")}
 }
 
@@ -327,7 +327,8 @@ function getRequestPermissions(
   const accessToken = context.request.headers.get("authorization");
   try {
     const user = decodeJWTToken(accessToken, secret);
-    return user.systemRole ? permissions[user.systemRole] : permissions["USER"];
+    return user.systemRole && Object.keys(permissions).includes(user.systemRole) 
+      ? permissions[user.systemRole] : permissions["USER"];
   } catch (error) {
     return permissions["USER"];
   }
@@ -403,9 +404,12 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
           const rolePermissions = getRequestPermissions(context, jwtSecret, tablePermissions);
           if (!isRequestPermitted(rolePermissions, "select")) return [];
           
-          const query = constructors.constructGetQuery(
+          const { columnsToExclude, filters } = rolePermissions;
+          const query = await constructors.constructGetQuery(
             schema,
             table,
+            columnsToExclude,
+            filters,
             where,
             orderBy,
             limit,
@@ -610,7 +614,8 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
           const rolePermissions = getRequestPermissions(context, jwtSecret, tablePermissions);
           if (!isRequestPermitted(rolePermissions, "select")) return [];
           
-          const query = constructors.constructGetQuery(schema, table);
+          const { columnsToExclude, filters } = rolePermissions;
+          const query = await constructors.constructGetQuery(schema, table, columnsToExclude, filters);
           const res = await pgPool.query(query);
           return res.rows;
         };

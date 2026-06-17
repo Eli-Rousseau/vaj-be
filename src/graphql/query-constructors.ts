@@ -1,8 +1,8 @@
 import path from "path";
 
-import { logger } from "../utils/logger";
-import { getDataBaseInfo } from "../database/database-info";
-import { ComputedFieldReturnType, TableInfo } from "../database/types";
+import { logger } from "@/src/utils/logger";
+import { getDataBaseInfo } from "@/src/database/database-info";
+import { ComputedFieldReturnType, TableInfo } from "@/src/database/types";
 
 const LOGGER = logger.get({
   source: "constructors",
@@ -119,6 +119,20 @@ function constructJSONPath(contains: object, path: string) {
   } else {
     return "";
   }
+}
+
+async function constructSelectedColumns(
+  schema: string,
+  table: string,
+  columnsToExclude: string[]
+) {
+  const tableInfo = await getTableInfo(schema, table);
+  const selectedColumns = tableInfo.columns.map((column) => {
+    if (columnsToExclude.includes(column.name)) return `NULL AS "${column.name}"`;
+    else return `"${column.name}"`;
+  });
+  return selectedColumns.join(", ");
+  
 }
 
 function constructNestedWhereClause(
@@ -268,20 +282,23 @@ function constructWhereClause(
   return `${joins} WHERE ${wheres}`;
 }
 
-export function constructGetQuery(
+export async function constructGetQuery(
   schema: string,
   table: string,
+  columnsToExclude: string[],
+  filters: any,
   where?: WhereInput,
   orderBy?: Record<string, string>[],
   limit?: number,
-  offset?: number,
-): string {
+  offset?: number
+) {
+  const selectedColumns = await constructSelectedColumns(schema, table, columnsToExclude);
   const whereClause = constructWhereClause(schema, table, where);
   const orderByClause = constructOrderByClause(table, orderBy);
   const limitClause = constructLimitClause(limit);
   const offsetClause = constructOffsetClause(offset);
 
-  const query = `SELECT * FROM "${schema}"."${table}" ${whereClause} ${orderByClause} ${limitClause} ${offsetClause} ;`;
+  const query = `SELECT ${selectedColumns} FROM "${schema}"."${table}" ${whereClause} ${orderByClause} ${limitClause} ${offsetClause} ;`;
   return query;
 }
 
