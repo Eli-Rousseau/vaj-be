@@ -319,6 +319,18 @@ ${mutationTypes.map((line) => `\t${line}`).join("\n")}
   return typeDefs;
 }
 
+function getRequestUser(
+  context: any,
+  secret: string
+) {
+  const accessToken = context.request.headers.get("authorization");
+  try {
+    return decodeJWTToken(accessToken, secret);
+  } catch (error) {
+    return null;
+  }
+}
+
 function getRequestPermissions(
   context: any,
   secret: string,
@@ -401,10 +413,12 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
           { where, orderBy, limit, offset },
           context
         ) => {
+          const user = getRequestUser(context, jwtSecret);
           const rolePermissions = getRequestPermissions(context, jwtSecret, tablePermissions);
           if (!isRequestPermitted(rolePermissions, "select")) return [];
           
           const { columnsToExclude, filters } = rolePermissions;
+          const args = { user }
           const query = await constructors.constructGetQuery(
             schema,
             table,
@@ -414,6 +428,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             orderBy,
             limit,
             offset,
+            args
           );
           const res = await pgPool.query(query);
           return res.rows;

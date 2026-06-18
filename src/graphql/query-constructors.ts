@@ -10,7 +10,35 @@ const LOGGER = logger.get({
   module: path.basename(__filename),
 });
 
-function escapeLiteral(value: any, column?: string, columnTypes?: Record<string, string>): string {
+type EscapeLiteralOptions = {
+  column?: string;
+  columnTypes?: Record<string, string>;
+  args?: Record<string, any>;
+}
+
+function resolveDollarPath(value: any, args: any) {
+  if (typeof value !== "string" || !value.startsWith("$")) {
+    return value;
+  }
+
+  const path = value.slice(1).split(".");
+  let current = args;
+
+  for (const key of path) {
+    if (current == null || typeof current !== "object" || !(key in current)) {
+      return value; // fallback if path is invalid
+    }
+    current = current[key];
+  }
+
+  return current;
+}
+
+function escapeLiteral(
+  value: any, 
+  options: EscapeLiteralOptions = {}
+): string {
+  const { column, columnTypes, args } = options;
   if (value === null || value === undefined) {
     return "NULL";
   }
@@ -19,12 +47,15 @@ function escapeLiteral(value: any, column?: string, columnTypes?: Record<string,
     return String(value);
   }
 
+  value = resolveDollarPath(value, args);
+
   if (column && columnTypes && Object.keys(columnTypes).includes(column)) {
     return `'${String(value).replace(/'/g, "''")}'::${columnTypes[column]}`;
   }
 
   return `'${String(value).replace(/'/g, "''")}'`;
 }
+
 function constructLimitClause(limit?: number) {
   let limitClause = "";
   if (Number.isInteger(limit) && limit! > 0) {
@@ -139,6 +170,7 @@ function constructNestedWhereClause(
   schema: string,
   table: string,
   where: WhereInput,
+  args: Record<string, any>
 ): NestedWhereResult {
   let joins: string[] = [];
   let wheres: string[] = [];
@@ -165,6 +197,7 @@ function constructNestedWhereClause(
         schema,
         relation,
         nestedWhere,
+        args
       );
       joins = joins.concat(nestedJoins);
       wheres = wheres.concat(nestedWheres);
@@ -176,6 +209,7 @@ function constructNestedWhereClause(
             schema,
             table,
             nestedWhere,
+            args
           );
           conditionalWheres.push(nestedWhereResult["nestedWheres"]);
           joins.push(nestedWhereResult["nestedJoins"]);
@@ -190,6 +224,7 @@ function constructNestedWhereClause(
             schema,
             table,
             nestedWhere,
+            args
           );
           conditionalWheres.push(nestedWhereResult["nestedWheres"]);
           joins.push(nestedWhereResult["nestedJoins"]);
@@ -204,6 +239,7 @@ function constructNestedWhereClause(
             schema,
             table,
             nestedWhere,
+            args
           );
           conditionalWheres.push(nestedWhereResult["nestedWheres"]);
           joins.push(nestedWhereResult["nestedJoins"]);
@@ -218,32 +254,32 @@ function constructNestedWhereClause(
           wheres.push(
             value == null
               ? `${col} IS NULL`
-              : `${col} = ${escapeLiteral(value)}`,
+              : `${col} = ${escapeLiteral(value, { args })}`,
           );
         } else if (operator === "neq") {
           wheres.push(
             value == null
               ? `${col} IS NOT NULL`
-              : `${col} <> ${escapeLiteral(value)}`,
+              : `${col} <> ${escapeLiteral(value, { args })}`,
           );
         } else if (operator === "gt") {
-          wheres.push(`${col} > ${escapeLiteral(value)}`);
+          wheres.push(`${col} > ${escapeLiteral(value, { args })}`);
         } else if (operator === "gte") {
-          wheres.push(`${col} >= ${escapeLiteral(value)}`);
+          wheres.push(`${col} >= ${escapeLiteral(value, { args })}`);
         } else if (operator === "lt") {
-          wheres.push(`${col} < ${escapeLiteral(value)}`);
+          wheres.push(`${col} < ${escapeLiteral(value, { args })}`);
         } else if (operator === "lte") {
-          wheres.push(`${col} <= ${escapeLiteral(value)}`);
+          wheres.push(`${col} <= ${escapeLiteral(value, { args })}`);
         } else if (operator === "in") {
           if (Array.isArray(value) && value.length) {
             wheres.push(
-              `${col} IN (${value.map((v) => escapeLiteral(v)).join(", ")})`,
+              `${col} IN (${value.map((v) => escapeLiteral(v, { args })).join(", ")})`,
             );
           }
         } else if (operator === "nin") {
           if (Array.isArray(value) && value.length) {
             wheres.push(
-              `${col} NOT IN (${value.map((v) => escapeLiteral(v)).join(", ")})`,
+              `${col} NOT IN (${value.map((v) => escapeLiteral(v, { args })).join(", ")})`,
             );
           }
         } else if (operator === "hasKey") {
@@ -268,15 +304,76 @@ function constructNestedWhereClause(
   };
 }
 
+function mergeFilterToWhereClause(
+  filters: Record<string, any> = {},
+  where: Record<string, any> = {}
+): Record<string, any> {
+  const cloned = structuredClone(where || {});
+  return apply(cloned, filters);
+}
+
+function apply(node: any, filters: any): any {
+  if (!isObject(node)) return node;
+
+  // 1. merge direct matches
+  for (const [key, filterValue] of Object.entries(filters)) {
+    if (key in node) {
+      node[key] = mergeValues(node[key], filterValue);
+    }
+    else if (!["and", "or", "not"].includes(key)) {
+      node[key] = filterValue;
+    }
+  }
+
+  // 2. recurse into logical operators
+  for (const op of ["and", "or", "not"]) {
+    if (Array.isArray(node[op])) {
+      node[op] = node[op].map((child: any) =>
+        apply(child, filters)
+      );
+    }
+  }
+
+  return node;
+}
+
+function mergeValues(target: any, source: any): any {
+  // both objects → deep merge operators
+  if (isObject(target) && isObject(source)) {
+    const result = { ...target };
+
+    for (const [k, v] of Object.entries(source)) {
+      if (k in result && isObject(result[k]) && isObject(v)) {
+        result[k] = mergeValues(result[k], v);
+      } else {
+        result[k] = v;
+      }
+    }
+
+    return result;
+  }
+
+  // fallback overwrite
+  return source;
+}
+
+function isObject(v: any): v is Record<string, any> {
+  return v !== null && typeof v === "object" && !Array.isArray(v);
+}
+
 function constructWhereClause(
   schema: string,
   table: string,
+  filters: any,
   where?: WhereInput,
+  args?: Record<string, any>
 ): string {
+  where = mergeFilterToWhereClause(filters, where);
   if (!where || Object.keys(where).length === 0) return "";
 
+  args = args || {};
   const { nestedJoins: joins, nestedWheres: wheres } =
-    constructNestedWhereClause(schema, table, where);
+    constructNestedWhereClause(schema, table, where, args);
 
   if (!wheres) return "";
   return `${joins} WHERE ${wheres}`;
@@ -290,10 +387,11 @@ export async function constructGetQuery(
   where?: WhereInput,
   orderBy?: Record<string, string>[],
   limit?: number,
-  offset?: number
+  offset?: number,
+  args?: Record<string, any>
 ) {
   const selectedColumns = await constructSelectedColumns(schema, table, columnsToExclude);
-  const whereClause = constructWhereClause(schema, table, where);
+  const whereClause = constructWhereClause(schema, table, filters, where, args);
   const orderByClause = constructOrderByClause(table, orderBy);
   const limitClause = constructLimitClause(limit);
   const offsetClause = constructOffsetClause(offset);
@@ -602,7 +700,7 @@ async function constructNestedUpdateClause(
 
           record.push(escapeLiteral(value["data"]["reference"]));
         } else if (!/ByReference/.test(tableValue)) {
-          record.push(escapeLiteral(value, tableValue, tableValuesTypes));
+          record.push(escapeLiteral(value, { column: tableValue, columnTypes: tableValuesTypes }));
         }
       } else if (
         !/ByReference/.test(tableValue) &&
@@ -722,7 +820,7 @@ async function constructNestedDeleteClause(
 
           record.push(escapeLiteral(value["data"]["reference"]));
         } else if (!/ByReference/.test(tableValue)) {
-          record.push(escapeLiteral(value, tableValue, tableValuesTypes));
+          record.push(escapeLiteral(value, { column: tableValue, columnTypes: tableValuesTypes }));
         }
       } else if (
         !/ByReference/.test(tableValue) &&
