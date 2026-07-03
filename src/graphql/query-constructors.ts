@@ -49,6 +49,10 @@ function escapeLiteral(
 
   value = resolveDollarPath(value, args);
 
+  if (typeof value === "function") {
+    value = value();
+  }
+
   if (column && columnTypes && Object.keys(columnTypes).includes(column)) {
     return `'${String(value).replace(/'/g, "''")}'::${columnTypes[column]}`;
   }
@@ -400,13 +404,19 @@ export async function constructGetQuery(
   return query;
 }
 
-export function constructGetOnColumnQuery(
+export async function constructGetOnColumnQuery(
   schema: string,
   table: string,
   column: string,
   reference: string,
-): string {
-  const query = `SELECT * FROM "${schema}"."${table}" WHERE "${column}" = ${escapeLiteral(reference)} ;`;
+  columnsToExclude: string[],
+  filters: any,
+  args?: Record<string, any>
+) {
+  const selectedColumns = await constructSelectedColumns(schema, table, columnsToExclude);
+  const where = { [column]: { eq: reference } };
+  const whereClause = constructWhereClause(schema, table, filters, where, args);
+  const query = `SELECT ${selectedColumns} FROM "${schema}"."${table}" ${whereClause} ;`;
   return query;
 }
 
