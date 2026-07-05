@@ -308,61 +308,78 @@ function constructNestedWhereClause(
   };
 }
 
-function mergeFilterToWhereClause(
+const RELATIONAL_OPERATORS = [
+    "and", "or", "not"
+];
+
+export function mergeFilterToWhereClause(
   filters: Record<string, any> = {},
-  where: Record<string, any> = {}
+  where: Record<string, any> = {},
 ): Record<string, any> {
-  const cloned = structuredClone(where || {});
-  return apply(cloned, filters);
-}
+  const hasFilters = Object.keys(filters).length > 0;
+  const hasWhere = Object.keys(where).length > 0;
+  if (!hasFilters && !hasWhere) return {};
+  if (!hasFilters) return structuredClone(where);
+  if (!hasWhere) return structuredClone(filters);
 
-function apply(node: any, filters: any): any {
-  if (!isObject(node)) return node;
+  const result = structuredClone(where);
+  const remaining = structuredClone(filters);
 
-  // 1. merge direct matches
-  for (const [key, filterValue] of Object.entries(filters)) {
-    if (key in node) {
-      node[key] = mergeValues(node[key], filterValue);
+  const isObject = (v: unknown): v is Record<string, any> =>
+    typeof v === "object" && v !== null && !Array.isArray(v);
+
+  // Fold one branch object into a list of branches: merge into the first branch
+  // that shares a top-level field, otherwise append it.
+  const foldBranch = (branches: any[], branch: any): any[] => {
+    const idx = branches.findIndex(
+      (b) => isObject(b) && Object.keys(branch).some((k) => k in b),
+    );
+    if (idx === -1) return [...branches, structuredClone(branch)];
+    const next = branches.slice();
+    next[idx] = mergeFilterToWhereClause(branch, branches[idx]);
+    return next;
+  };
+
+  for (const operator of RELATIONAL_OPERATORS) {
+    const filterArr = Array.isArray(remaining[operator]) ? remaining[operator] : null;
+    const whereArr = Array.isArray(result[operator]) ? result[operator] : null;
+
+    // Same relational operator on both sides -> flatten both arrays into one
+    // branch list, coalescing branches that constrain the same field.
+    //   { or:[A,B] } + { or:[C,D] }  ->  { or:[A,B,C,D] }  (C,D folded in)
+    if (filterArr && whereArr) {
+      let branches = whereArr.map((b: any) => structuredClone(b));
+      for (const fBranch of filterArr) branches = foldBranch(branches, fBranch);
+      result[operator] = branches;
+      delete remaining[operator];
+      continue;
     }
-    else if (!["and", "or", "not"].includes(key)) {
-      node[key] = filterValue;
-    }
-  }
 
-  // 2. recurse into logical operators
-  for (const op of ["and", "or", "not"]) {
-    if (Array.isArray(node[op])) {
-      node[op] = node[op].map((child: any) =>
-        apply(child, filters)
-      );
-    }
-  }
-
-  return node;
-}
-
-function mergeValues(target: any, source: any): any {
-  // both objects → deep merge operators
-  if (isObject(target) && isObject(source)) {
-    const result = { ...target };
-
-    for (const [k, v] of Object.entries(source)) {
-      if (k in result && isObject(result[k]) && isObject(v)) {
-        result[k] = mergeValues(result[k], v);
-      } else {
-        result[k] = v;
+    // Operator only on the where side -> fold the remaining plain filters in as
+    // a single branch.
+    if (whereArr) {
+      const plain: Record<string, any> = { ...remaining };
+      for (const op of RELATIONAL_OPERATORS) delete plain[op];
+      if (Object.keys(plain).length > 0) {
+        result[operator] = foldBranch(
+          result[operator].map((b: any) => structuredClone(b)),
+          plain,
+        );
+        for (const k of Object.keys(plain)) delete remaining[k];
       }
     }
-
-    return result;
   }
 
-  // fallback overwrite
-  return source;
-}
+  // Merge any remaining plain keys.
+  for (const [key, value] of Object.entries(remaining)) {
+    if (key in result && isObject(result[key]) && isObject(value)) {
+      result[key] = { ...result[key], ...value };
+    } else {
+      result[key] = value;
+    }
+  }
 
-function isObject(v: any): v is Record<string, any> {
-  return v !== null && typeof v === "object" && !Array.isArray(v);
+  return result;
 }
 
 function constructWhereClause(
