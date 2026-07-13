@@ -1,4 +1,43 @@
 {
+    "article": {
+        "USER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {
+                "or": [
+                    { "release": { "lte": "$now" } },
+                    { "release": { "eq": null } }
+                ]
+            }
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
     "order": {
         "USER": {
             "select": true,

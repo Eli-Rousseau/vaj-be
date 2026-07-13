@@ -72,13 +72,13 @@ SELECT
 FROM users;
 
 INSERT INTO shop."article" 
-(title, description, brand, gender, size, color, material, "condition", season, price, availability, "forSale", "forRent")
+(title, description, brand, gender, size, color, material, "condition", season, price, availability, "forSale", "forRent", "release")
 VALUES 
-('Blue jeans', 'Timeless jeans', 'Dior', 'WOMENSWEAR', 'M', 'BLUE', 'DENIM', 'GREAT', 'SPRING', 100.00, 'AVAILABLE', true, false),
-('Leather jacket', 'Black leather biker jacket', 'Gucci', 'MENSWEAR', 'L', 'BLACK', 'LEATHER', 'GREAT', 'AUTUMN', 250.00, 'AVAILABLE', true, false),
-('White summer dress', 'Light cotton summer dress', 'Channel', 'WOMENSWEAR', 'S', 'WHITE', 'COTTON', 'NEW', 'SUMMER', 180.00, 'AVAILABLE', true, true),
-('Wool coat', 'Warm long wool coat', 'Blumarine', 'WOMENSWEAR', 'M', 'BEIGE', 'WOOL', 'GREAT', 'WINTER', 300.00, 'AVAILABLE', false, true),
-('Sneakers', 'Limited edition casual sneakers', 'Fendi', 'MENSWEAR', 'M', 'RED', 'NYLON', 'MODERATE', 'SPRING', 120.00, 'AVAILABLE', true, false);
+('Blue jeans', 'Timeless jeans', 'Dior', 'WOMENSWEAR', 'M', 'BLUE', 'DENIM', 'GREAT', 'SPRING', 100.00, 'AVAILABLE', true, false, NULL),
+('Leather jacket', 'Black leather biker jacket', 'Gucci', 'MENSWEAR', 'L', 'BLACK', 'LEATHER', 'GREAT', 'AUTUMN', 250.00, 'AVAILABLE', true, false, NULL),
+('White summer dress', 'Light cotton summer dress', 'Channel', 'WOMENSWEAR', 'S', 'WHITE', 'COTTON', 'NEW', 'SUMMER', 180.00, 'AVAILABLE', true, true, NULL),
+('Wool coat', 'Warm long wool coat', 'Blumarine', 'WOMENSWEAR', 'M', 'BEIGE', 'WOOL', 'GREAT', 'WINTER', 300.00, 'AVAILABLE', false, true, NULL),
+('Sneakers', 'Limited edition casual sneakers', 'Fendi', 'MENSWEAR', 'M', 'RED', 'NYLON', 'MODERATE', 'SPRING', 120.00, 'AVAILABLE', true, false, CURRENT_TIMESTAMP + INTERVAL '1 week');
 
 INSERT INTO shop."order"
 ("user", "paymentMethod", "totalPrice", status, type)
