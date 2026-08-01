@@ -239,25 +239,22 @@ async function main() {
 
   const diffs = computeMigrationsDiff(appliedMigrations, migrationScripts);
 
-  if (diffs.length === 0) {
-    LOGGER.info("All migrations applied. Shutting down ...");
-    process.exit(1);
-  }
+  if (diffs.length !== 0) {
+    LOGGER.info(
+      `${diffs.length} new migration(s) found:\n\t${diffs.join("\n\t")}`,
+    );
+    const proceed = await askQuestion(
+      "Do you want to proceed with the new migrations",
+      "no",
+    );
+    if (!/y|yes/.test(proceed.toLowerCase())) {
+      LOGGER.info("No migrations applied. Shutting down ...");
+      process.exit(1);
+    }
 
-  LOGGER.info(
-    `${diffs.length} new migration(s) found:\n\t${diffs.join("\n\t")}`,
-  );
-  const proceed = await askQuestion(
-    "Do you want to proceed with the new migrations",
-    "no",
-  );
-  if (!/y|yes/.test(proceed.toLowerCase())) {
-    LOGGER.info("No migrations applied. Shutting down ...");
-    process.exit(1);
+    await applyMigrations(diffs);
+    LOGGER.info("All migrations applied.");
   }
-
-  await applyMigrations(diffs);
-  LOGGER.info("All migrations applied.");
 
   await rebuildGraphQLSchema();
 

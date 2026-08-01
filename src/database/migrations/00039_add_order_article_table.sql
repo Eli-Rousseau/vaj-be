@@ -13,6 +13,12 @@ CREATE TABLE shop."orderArticle" (
         REFERENCES shop.article(reference) 
         ON UPDATE CASCADE 
         ON DELETE SET NULL,
+    "user" UUID,
+    CONSTRAINT "fkUser" 
+        FOREIGN KEY ("user") 
+        REFERENCES shop.user(reference)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL,
     quantity INT CONSTRAINT "orderArticleQuantityNotNull" NOT NULL DEFAULT 1,
     "articlePrice" FLOAT CONSTRAINT "orderArticleArticlePriceNotNull" NOT NULL,
     "articleDiscount" FLOAT DEFAULT NULL,
