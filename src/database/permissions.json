@@ -983,19 +983,23 @@
     "user": {
         "USER": {
             "select": true,
-            "insert": true,
-            "update": true,
-            "delete": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
             "columnsToExclude": [],
-            "filters": {}
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
         },
         "SUPERUSER": {
             "select": true,
-            "insert": true,
-            "update": true,
-            "delete": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
             "columnsToExclude": [],
-            "filters": {}
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
         },
         "ADMINISTRATOR": {
             "select": true,
