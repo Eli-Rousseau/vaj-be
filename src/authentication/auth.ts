@@ -1,7 +1,6 @@
 import path from "path";
 import { logger } from "@/src/utils/logger";
 import { decodeJWTToken } from "@/src/utils/jwt";
-import { Auth, Tokens } from "@/src/utils/auth";
 import * as gql from "@/src/authentication/gql";
 
 const LOGGER = logger.get({
@@ -16,7 +15,30 @@ type InternalApiCredentials = {
     password: string;
 };
 
-export class AuthVAJ extends Auth<InternalApiCredentials> {
+type Tokens = {
+    accessToken: string;
+    refreshToken: string;
+};
+
+export class AuthVAJ {
+
+    protected readonly credentials: InternalApiCredentials;
+    protected tokens: Tokens | null = null;
+    protected readonly applicationUrl: string;
+
+    constructor(credentials: InternalApiCredentials) {
+        this.credentials = credentials;
+
+        const applicationUrl = process.env.APPLICATION_URL;
+
+        if (!applicationUrl) {
+            throw new Error(
+                "Missing required environment variable: APPLICATION_URL"
+            );
+        }
+
+        this.applicationUrl = applicationUrl;
+    }
 
     protected async post<TRequest, TResponse>(
         endpoint: string,
@@ -95,6 +117,24 @@ export class AuthVAJ extends Auth<InternalApiCredentials> {
         return tokens;
     }
 
+    async connect(): Promise<Tokens | null> {
+        let tokens: Tokens | null = null;
+
+        const accessToken = this.tokens?.accessToken;
+
+        if (!accessToken) {
+
+            tokens = await this.login();
+
+        } else {
+
+            if (await this.accessTokenIsValid()) tokens = this.tokens;
+            else tokens = await this.refresh();
+        }
+
+        return tokens;
+    };
+
     async accessTokenIsValid(): Promise<boolean> {
         const accessToken = this.tokens?.accessToken;
 
@@ -106,21 +146,5 @@ export class AuthVAJ extends Auth<InternalApiCredentials> {
         } catch (error) {
             return false
         }
-    }
-
-    async assignUserRole(role: string) {
-        const accessToken = this.tokens?.accessToken;
-
-        if (!accessToken) return null;
-
-        const user = decodeJWTToken(accessToken, process.env.JWT_SECRET as string);
-        
-        if (user.systemRole !== role) {
-            user.systemRole = role;
-            await gql.updateUserRole(user);
-            await this.refresh();
-        }
-        
-        return await this.connect();
     }
 }

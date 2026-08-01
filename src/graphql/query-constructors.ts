@@ -53,6 +53,8 @@ function escapeLiteral(
     value = value();
   }
 
+  if (!value) return value;
+
   if (column && columnTypes && Object.keys(columnTypes).includes(column)) {
     return `'${String(value).replace(/'/g, "''")}'::${columnTypes[column]}`;
   }

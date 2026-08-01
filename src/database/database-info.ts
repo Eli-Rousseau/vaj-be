@@ -259,7 +259,8 @@ function getTablePermissions(permissionsConfig: Record<string, Record<string, Ro
 
         return tablePermissions;
     } catch (error) {
-        throw Error(`Failed to parse permissions for table ${tableName}; ${error}`);
+        LOGGER.error(`Failed to parse permissions for table ${tableName}`);
+        throw error;
     }
 }
 
