@@ -1,11 +1,7 @@
-import crypto from "crypto";
 import { NextFunction, Request, Response } from "express";
 import { authorization, validateAccessToken } from "@/src/middleware/authorization";
 import { runWithContext } from "@/src/middleware/context";
 import { withHandler } from "@/src/api/wrapper";
-import { generateJWTToken } from "@/src/utils/jwt";
-import { ConfigError } from "@/src/utils/errors";
-import { ShopUser } from "@/src/database/classes/transformer-classes";
 
 export async function handleSetupRequestContext(req: Request, res: Response, next: NextFunction) {
   await withHandler(

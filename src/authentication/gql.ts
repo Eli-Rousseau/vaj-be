@@ -1,6 +1,5 @@
-import { ShopRefreshToken, ShopUser } from "../database/classes/transformer-classes";
-import { graphql } from "../utils/graphql";
-import { refreshToken } from "./refresh";
+import { ShopRefreshToken, ShopUser } from "@/src/database/classes/transformer-classes";
+import { graphql } from "@/src/utils/graphql";
 
 export async function findUsersByEmail(email: string) {
   return await graphql.executeAndTransform(ShopUser, {
@@ -138,29 +137,4 @@ query getRefreshTokenByReference($reference: ID!) {
   }))[0];
 
   return refreshToken;
-}
-
-export async function updateUserRole(data: ShopUser) {
-    const user = (await graphql.executeAndTransform(ShopUser, {
-        query: `
-mutation updateUserRole($user: ShopUserMutationType!) {
-  updateShopUser(
-    data: $user,
-    set: ["systemRole"]
-  ) {
-    reference
-    sequentialId
-    name
-    email
-    systemRole
-    systemAuthentication
-  }
-}  
-        `,
-        variables: {
-            user: data.toPlain({ onlyMutables: true })
-        }
-    }))[0];
-
-    return user;
 }

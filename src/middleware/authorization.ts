@@ -1,6 +1,6 @@
 import { ShopUser } from "@/src/database/classes/transformer-classes";
 import { decodeJWTToken } from "@/src/utils/jwt";
-import { AuthorizationError, ConfigError } from "../utils/errors";
+import { AuthorizationError, ConfigError } from "@/src/utils/errors";
 
 type ValidateAccessTokenEvent = {
     accessToken: string;

@@ -32,7 +32,7 @@ export async function refreshToken(event: RefreshTokenEvent): Promise<RefreshTok
         throw new DatabaseError(`FIND_REFRESH_TOKEN_FAILED:${error}`);
     }
 
-    const expiration = new Date(Date.now())
+    const expiration = new Date(Date.now());
     if (
         refreshToken.tokenHash !== tokenHash
         || refreshToken.revokedAt !== null
@@ -64,10 +64,12 @@ export async function refreshToken(event: RefreshTokenEvent): Promise<RefreshTok
 
     const user = refreshToken.userByReference!;
 
+    const newExpiration = new Date(expiration);
+    newExpiration.setDate(newExpiration.getDate() + 7); // 7 days
     let newRefreshToken = ShopRefreshToken.fromPlain({
         user: user.reference,
         tokenHash: generateGenericToken(),
-        expiresAt: expiration
+        expiresAt: newExpiration
     });
 
     try {

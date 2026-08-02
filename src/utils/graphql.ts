@@ -2,7 +2,7 @@ import path from "path";
 
 import { logger } from "@/src/utils/logger";
 import { TransformerClass } from "@/src/database/classes/transformers";
-import { getCurrentContext } from "@/src/middleware/context";
+import { AuthVAJ } from "../api/auth";
 
 const LOGGER = logger.get({
     source: "utils",
@@ -16,8 +16,8 @@ type GraphQLParams = {
 
 class GraphQLClient {
 
-    private findAuthorization(): string {
-        return getCurrentContext().getAttribute("accessToken") || "";
+    private async findAuthorization(): Promise<string> {
+        return (await AuthVAJ.connectAsDefaultUser())?.accessToken || "";
     }
 
     async execute(params: GraphQLParams) {
@@ -37,7 +37,7 @@ class GraphQLClient {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
-                    "Authorization": this.findAuthorization()
+                    "Authorization": await this.findAuthorization()
                 },
                 body: JSON.stringify({ query, variables })
             })

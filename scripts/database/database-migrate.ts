@@ -8,7 +8,7 @@ import { postgres } from "@/src/utils/postgres";
 import { setupShutdownHooks } from "@/src/utils/shutdown";
 import { askQuestion } from "@/src/utils/prompt";
 import { buildTransformerClasses } from "@/src/database/classes/build-classes";
-import { AuthVAJ } from "@/src/authentication/auth";
+import { AuthVAJ } from "@/src/api/auth";
 
 const LOGGER = logger.get({
   source: "scripts",
@@ -156,7 +156,6 @@ async function rebuildGraphQLSchema() {
   }
 
   try {
-
     const loginUser = {
       name: userName,
       email: userEmail,
@@ -165,8 +164,7 @@ async function rebuildGraphQLSchema() {
 
     const auth = new AuthVAJ(loginUser);
     
-    let tokens = await auth.connect({ enableRegister: true });
-    tokens = await auth.assignUserRole("DEVELOPER");
+    let tokens = await auth.connect();
     const accessToken = tokens?.accessToken;
 
     if (!accessToken) {
@@ -257,7 +255,6 @@ async function main() {
   }
 
   await rebuildGraphQLSchema();
-
   await updateTranformerClasses();
 
   process.exit(0);
