@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { yoga, initSchema } from "../../graphql/yoga";
-import * as handlers from "../../graphql/handlers";
-import * as middleware from "../../middleware/handlers";
+import { yoga, initSchema } from "@/src/graphql/yoga";
+import * as handlers from "@/src/graphql/handlers";
+import * as middleware from "@/src/middleware/handlers";
 
 export async function getGraphQlRouter() {
   const router = Router();

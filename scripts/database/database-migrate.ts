@@ -8,7 +8,7 @@ import { postgres } from "@/src/utils/postgres";
 import { setupShutdownHooks } from "@/src/utils/shutdown";
 import { askQuestion } from "@/src/utils/prompt";
 import { buildTransformerClasses } from "@/src/database/classes/build-classes";
-import { AuthInternalApi } from "@/src/authentication/auth";
+import { AuthVAJ } from "@/src/api/auth";
 
 const LOGGER = logger.get({
   source: "scripts",
@@ -156,17 +156,15 @@ async function rebuildGraphQLSchema() {
   }
 
   try {
-
     const loginUser = {
       name: userName,
       email: userEmail,
       password: userPassword
     }
 
-    const auth = new AuthInternalApi(loginUser);
+    const auth = new AuthVAJ(loginUser);
     
-    let tokens = await auth.connect({ enableRegister: true });
-    tokens = await auth.assignUserRole("DEVELOPER");
+    let tokens = await auth.connect();
     const accessToken = tokens?.accessToken;
 
     if (!accessToken) {
@@ -239,28 +237,24 @@ async function main() {
 
   const diffs = computeMigrationsDiff(appliedMigrations, migrationScripts);
 
-  if (diffs.length === 0) {
-    LOGGER.info("All migrations applied. Shutting down ...");
-    process.exit(1);
-  }
+  if (diffs.length !== 0) {
+    LOGGER.info(
+      `${diffs.length} new migration(s) found:\n\t${diffs.join("\n\t")}`,
+    );
+    const proceed = await askQuestion(
+      "Do you want to proceed with the new migrations",
+      "no",
+    );
+    if (!/y|yes/.test(proceed.toLowerCase())) {
+      LOGGER.info("No migrations applied. Shutting down ...");
+      process.exit(1);
+    }
 
-  LOGGER.info(
-    `${diffs.length} new migration(s) found:\n\t${diffs.join("\n\t")}`,
-  );
-  const proceed = await askQuestion(
-    "Do you want to proceed with the new migrations",
-    "no",
-  );
-  if (!/y|yes/.test(proceed.toLowerCase())) {
-    LOGGER.info("No migrations applied. Shutting down ...");
-    process.exit(1);
+    await applyMigrations(diffs);
+    LOGGER.info("All migrations applied.");
   }
-
-  await applyMigrations(diffs);
-  LOGGER.info("All migrations applied.");
 
   await rebuildGraphQLSchema();
-
   await updateTranformerClasses();
 
   process.exit(0);

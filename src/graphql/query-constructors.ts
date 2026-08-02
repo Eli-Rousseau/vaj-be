@@ -1,8 +1,8 @@
 import path from "path";
 
-import { logger } from "../utils/logger";
-import { getDataBaseInfo } from "../database/database-info";
-import { ComputedFieldReturnType, TableInfo } from "../database/types";
+import { logger } from "@/src/utils/logger";
+import { getDataBaseInfo } from "@/src/database/database-info";
+import { ComputedFieldReturnType, TableInfo } from "@/src/database/types";
 
 const LOGGER = logger.get({
   source: "constructors",
@@ -10,7 +10,35 @@ const LOGGER = logger.get({
   module: path.basename(__filename),
 });
 
-function escapeLiteral(value: any, column?: string, columnTypes?: Record<string, string>): string {
+type EscapeLiteralOptions = {
+  column?: string;
+  columnTypes?: Record<string, string>;
+  args?: Record<string, any>;
+}
+
+function resolveDollarPath(value: any, args: any) {
+  if (typeof value !== "string" || !value.startsWith("$")) {
+    return value;
+  }
+
+  const path = value.slice(1).split(".");
+  let current = args;
+
+  for (const key of path) {
+    if (current == null || typeof current !== "object" || !(key in current)) {
+      return value; // fallback if path is invalid
+    }
+    current = current[key];
+  }
+
+  return current;
+}
+
+function escapeLiteral(
+  value: any, 
+  options: EscapeLiteralOptions = {}
+): string {
+  const { column, columnTypes, args } = options;
   if (value === null || value === undefined) {
     return "NULL";
   }
@@ -19,12 +47,21 @@ function escapeLiteral(value: any, column?: string, columnTypes?: Record<string,
     return String(value);
   }
 
+  value = resolveDollarPath(value, args);
+
+  if (typeof value === "function") {
+    value = value();
+  }
+
+  if (!value) return value;
+
   if (column && columnTypes && Object.keys(columnTypes).includes(column)) {
     return `'${String(value).replace(/'/g, "''")}'::${columnTypes[column]}`;
   }
 
   return `'${String(value).replace(/'/g, "''")}'`;
 }
+
 function constructLimitClause(limit?: number) {
   let limitClause = "";
   if (Number.isInteger(limit) && limit! > 0) {
@@ -121,10 +158,25 @@ function constructJSONPath(contains: object, path: string) {
   }
 }
 
+async function constructSelectedColumns(
+  schema: string,
+  table: string,
+  columnsToExclude: string[]
+) {
+  const tableInfo = await getTableInfo(schema, table);
+  const selectedColumns = tableInfo.columns.map((column) => {
+    if (columnsToExclude.includes(column.name)) return `NULL AS "${column.name}"`;
+    else return `"${column.name}"`;
+  });
+  return selectedColumns.join(", ");
+  
+}
+
 function constructNestedWhereClause(
   schema: string,
   table: string,
   where: WhereInput,
+  args: Record<string, any>
 ): NestedWhereResult {
   let joins: string[] = [];
   let wheres: string[] = [];
@@ -151,6 +203,7 @@ function constructNestedWhereClause(
         schema,
         relation,
         nestedWhere,
+        args
       );
       joins = joins.concat(nestedJoins);
       wheres = wheres.concat(nestedWheres);
@@ -162,6 +215,7 @@ function constructNestedWhereClause(
             schema,
             table,
             nestedWhere,
+            args
           );
           conditionalWheres.push(nestedWhereResult["nestedWheres"]);
           joins.push(nestedWhereResult["nestedJoins"]);
@@ -176,6 +230,7 @@ function constructNestedWhereClause(
             schema,
             table,
             nestedWhere,
+            args
           );
           conditionalWheres.push(nestedWhereResult["nestedWheres"]);
           joins.push(nestedWhereResult["nestedJoins"]);
@@ -190,6 +245,7 @@ function constructNestedWhereClause(
             schema,
             table,
             nestedWhere,
+            args
           );
           conditionalWheres.push(nestedWhereResult["nestedWheres"]);
           joins.push(nestedWhereResult["nestedJoins"]);
@@ -204,32 +260,32 @@ function constructNestedWhereClause(
           wheres.push(
             value == null
               ? `${col} IS NULL`
-              : `${col} = ${escapeLiteral(value)}`,
+              : `${col} = ${escapeLiteral(value, { args })}`,
           );
         } else if (operator === "neq") {
           wheres.push(
             value == null
               ? `${col} IS NOT NULL`
-              : `${col} <> ${escapeLiteral(value)}`,
+              : `${col} <> ${escapeLiteral(value, { args })}`,
           );
         } else if (operator === "gt") {
-          wheres.push(`${col} > ${escapeLiteral(value)}`);
+          wheres.push(`${col} > ${escapeLiteral(value, { args })}`);
         } else if (operator === "gte") {
-          wheres.push(`${col} >= ${escapeLiteral(value)}`);
+          wheres.push(`${col} >= ${escapeLiteral(value, { args })}`);
         } else if (operator === "lt") {
-          wheres.push(`${col} < ${escapeLiteral(value)}`);
+          wheres.push(`${col} < ${escapeLiteral(value, { args })}`);
         } else if (operator === "lte") {
-          wheres.push(`${col} <= ${escapeLiteral(value)}`);
+          wheres.push(`${col} <= ${escapeLiteral(value, { args })}`);
         } else if (operator === "in") {
           if (Array.isArray(value) && value.length) {
             wheres.push(
-              `${col} IN (${value.map((v) => escapeLiteral(v)).join(", ")})`,
+              `${col} IN (${value.map((v) => escapeLiteral(v, { args })).join(", ")})`,
             );
           }
         } else if (operator === "nin") {
           if (Array.isArray(value) && value.length) {
             wheres.push(
-              `${col} NOT IN (${value.map((v) => escapeLiteral(v)).join(", ")})`,
+              `${col} NOT IN (${value.map((v) => escapeLiteral(v, { args })).join(", ")})`,
             );
           }
         } else if (operator === "hasKey") {
@@ -254,44 +310,132 @@ function constructNestedWhereClause(
   };
 }
 
+const RELATIONAL_OPERATORS = [
+    "and", "or", "not"
+];
+
+export function mergeFilterToWhereClause(
+  filters: Record<string, any> = {},
+  where: Record<string, any> = {},
+): Record<string, any> {
+  const hasFilters = Object.keys(filters).length > 0;
+  const hasWhere = Object.keys(where).length > 0;
+  if (!hasFilters && !hasWhere) return {};
+  if (!hasFilters) return structuredClone(where);
+  if (!hasWhere) return structuredClone(filters);
+
+  const result = structuredClone(where);
+  const remaining = structuredClone(filters);
+
+  const isObject = (v: unknown): v is Record<string, any> =>
+    typeof v === "object" && v !== null && !Array.isArray(v);
+
+  // Fold one branch object into a list of branches: merge into the first branch
+  // that shares a top-level field, otherwise append it.
+  const foldBranch = (branches: any[], branch: any): any[] => {
+    const idx = branches.findIndex(
+      (b) => isObject(b) && Object.keys(branch).some((k) => k in b),
+    );
+    if (idx === -1) return [...branches, structuredClone(branch)];
+    const next = branches.slice();
+    next[idx] = mergeFilterToWhereClause(branch, branches[idx]);
+    return next;
+  };
+
+  for (const operator of RELATIONAL_OPERATORS) {
+    const filterArr = Array.isArray(remaining[operator]) ? remaining[operator] : null;
+    const whereArr = Array.isArray(result[operator]) ? result[operator] : null;
+
+    // Same relational operator on both sides -> flatten both arrays into one
+    // branch list, coalescing branches that constrain the same field.
+    //   { or:[A,B] } + { or:[C,D] }  ->  { or:[A,B,C,D] }  (C,D folded in)
+    if (filterArr && whereArr) {
+      let branches = whereArr.map((b: any) => structuredClone(b));
+      for (const fBranch of filterArr) branches = foldBranch(branches, fBranch);
+      result[operator] = branches;
+      delete remaining[operator];
+      continue;
+    }
+
+    // Operator only on the where side -> fold the remaining plain filters in as
+    // a single branch.
+    if (whereArr) {
+      const plain: Record<string, any> = { ...remaining };
+      for (const op of RELATIONAL_OPERATORS) delete plain[op];
+      if (Object.keys(plain).length > 0) {
+        result[operator] = foldBranch(
+          result[operator].map((b: any) => structuredClone(b)),
+          plain,
+        );
+        for (const k of Object.keys(plain)) delete remaining[k];
+      }
+    }
+  }
+
+  // Merge any remaining plain keys.
+  for (const [key, value] of Object.entries(remaining)) {
+    if (key in result && isObject(result[key]) && isObject(value)) {
+      result[key] = { ...result[key], ...value };
+    } else {
+      result[key] = value;
+    }
+  }
+
+  return result;
+}
+
 function constructWhereClause(
   schema: string,
   table: string,
+  filters: any,
   where?: WhereInput,
+  args?: Record<string, any>
 ): string {
+  where = mergeFilterToWhereClause(filters, where);
   if (!where || Object.keys(where).length === 0) return "";
 
+  args = args || {};
   const { nestedJoins: joins, nestedWheres: wheres } =
-    constructNestedWhereClause(schema, table, where);
+    constructNestedWhereClause(schema, table, where, args);
 
   if (!wheres) return "";
   return `${joins} WHERE ${wheres}`;
 }
 
-export function constructGetQuery(
+export async function constructGetQuery(
   schema: string,
   table: string,
+  columnsToExclude: string[],
+  filters: any,
   where?: WhereInput,
   orderBy?: Record<string, string>[],
   limit?: number,
   offset?: number,
-): string {
-  const whereClause = constructWhereClause(schema, table, where);
+  args?: Record<string, any>
+) {
+  const selectedColumns = await constructSelectedColumns(schema, table, columnsToExclude);
+  const whereClause = constructWhereClause(schema, table, filters, where, args);
   const orderByClause = constructOrderByClause(table, orderBy);
   const limitClause = constructLimitClause(limit);
   const offsetClause = constructOffsetClause(offset);
 
-  const query = `SELECT * FROM "${schema}"."${table}" ${whereClause} ${orderByClause} ${limitClause} ${offsetClause} ;`;
+  const query = `SELECT ${selectedColumns} FROM "${schema}"."${table}" ${whereClause} ${orderByClause} ${limitClause} ${offsetClause} ;`;
   return query;
 }
 
-export function constructGetOnColumnQuery(
+export async function constructGetOnColumnQuery(
   schema: string,
   table: string,
   column: string,
   reference: string,
-): string {
-  const query = `SELECT * FROM "${schema}"."${table}" WHERE "${column}" = ${escapeLiteral(reference)} ;`;
+  columnsToExclude: string[],
+  filters: any,
+  args?: Record<string, any>
+) {
+  const selectedColumns = await constructSelectedColumns(schema, table, columnsToExclude);
+  const where = { [column]: { eq: reference } };
+  const whereClause = constructWhereClause(schema, table, filters, where, args);
+  const query = `SELECT ${selectedColumns} FROM "${schema}"."${table}" ${whereClause} ;`;
   return query;
 }
 
@@ -585,7 +729,7 @@ async function constructNestedUpdateClause(
 
           record.push(escapeLiteral(value["data"]["reference"]));
         } else if (!/ByReference/.test(tableValue)) {
-          record.push(escapeLiteral(value, tableValue, tableValuesTypes));
+          record.push(escapeLiteral(value, { column: tableValue, columnTypes: tableValuesTypes }));
         }
       } else if (
         !/ByReference/.test(tableValue) &&
@@ -705,7 +849,7 @@ async function constructNestedDeleteClause(
 
           record.push(escapeLiteral(value["data"]["reference"]));
         } else if (!/ByReference/.test(tableValue)) {
-          record.push(escapeLiteral(value, tableValue, tableValuesTypes));
+          record.push(escapeLiteral(value, { column: tableValue, columnTypes: tableValuesTypes }));
         }
       } else if (
         !/ByReference/.test(tableValue) &&

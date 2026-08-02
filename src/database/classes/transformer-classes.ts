@@ -287,6 +287,17 @@ export class ShopOrderArticle extends TransformerClass {
   @Expose()
   article!: string | null;
 
+  @Type(() => ShopUser)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  userByReference!: ShopUser | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  user!: string | null;
+
   @Annotate("Mutable")
   @Default()
   @Expose()
@@ -330,6 +341,11 @@ export class ShopOrderArticle extends TransformerClass {
   @Default()
   @Expose()
   articles!: ShopArticle[] | null;
+
+  @Type(() => ShopUser)
+  @Default()
+  @Expose()
+  users!: ShopUser[] | null;
 }
 
 export class ShopUser extends TransformerClass {
@@ -396,6 +412,11 @@ export class ShopUser extends TransformerClass {
   @Default()
   @Expose()
   orders!: ShopOrder[] | null;
+
+  @Type(() => ShopOrderArticle)
+  @Default()
+  @Expose()
+  orderArticles!: ShopOrderArticle[] | null;
 
   @Type(() => ShopAddress)
   @Default()

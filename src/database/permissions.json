@@ -1,0 +1,1021 @@
+{
+    "address": {
+        "USER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "article": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {
+                "or": [
+                    { "release": { "lte": "$now" } },
+                    { "release": { "eq": null } }
+                ]
+            }
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "articleImage": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "articleAvailabilityEnum": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "articleBrandEnum": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "articleCategory": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "articleCategories": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "articleDiscountCoupon": {
+        "USER": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "articleGenderEnum": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "articleColorEnum": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "articleConditionEnum": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "articleMaterialEnum": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "articleSeasonEnum": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "articleSizeEnum": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "discountCoupon": {
+        "USER": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": ["code"],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "favorite": {
+        "USER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "file": {
+        "USER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "order": {
+        "USER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "orderArticle": {
+        "USER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "orderArticleTable": {
+        "USER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "orderStatusEnum": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "orderTypeEnum": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "paymentMethodEnum": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "refreshToken": {
+        "USER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "systemAuthenticationEnum": {
+        "USER": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "systemPermissionEnum": {
+        "USER": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "systemRoleEnum": {
+        "USER": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "systemRolePermission": {
+        "USER": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "SUPERUSER": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "ADMINISTRATOR": {
+            "select": false,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    },
+    "user": {
+        "USER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {
+                "reference": { "eq": "$user.reference" }
+            }
+        },
+        "SUPERUSER": {
+            "select": true,
+            "insert": false,
+            "update": false,
+            "delete": false,
+            "columnsToExclude": [],
+            "filters": {
+                "user": { "eq": "$user.reference" }
+            }
+        },
+        "ADMINISTRATOR": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        },
+        "DEVELOPER": {
+            "select": true,
+            "insert": true,
+            "update": true,
+            "delete": true,
+            "columnsToExclude": [],
+            "filters": {}
+        }
+    }
+}

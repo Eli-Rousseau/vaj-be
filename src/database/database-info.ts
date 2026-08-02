@@ -1,8 +1,19 @@
 import path from "path";
+import { readFile } from "fs/promises";
+import { cwd } from "process";
 
-import { logger } from "../utils/logger";
-import { postgres } from "../utils/postgres";
-import { DataBaseInfo, ColumnInfo, ComputedFieldInfo, TableInfo, CompositeTypeColumnInfo, CompositeTypeInfo, SchemaInfo } from "./types";
+import { logger } from "@/src/utils/logger";
+import { postgres } from "@/src/utils/postgres";
+import { 
+    DataBaseInfo,
+    ColumnInfo, 
+    ComputedFieldInfo, 
+    TableInfo, 
+    CompositeTypeColumnInfo, 
+    CompositeTypeInfo, 
+    SchemaInfo,
+    RolePermissions
+} from "@/src/database/types";
 
 const LOGGER = logger.get({
     source: "src",
@@ -13,6 +24,21 @@ const LOGGER = logger.get({
 let dataBaseInfo: DataBaseInfo | null = null;
 
 export const SCHEMAS_TO_FILTER: string[] = ["shop"];
+export const ROLES = new Set(["USER", "SUPERUSER", "ADMINISTRATOR", "DEVELOPER"]);
+
+async function readPermissionsConfig() {
+    const configPath = `${cwd()}/src/database/permissions.json`;
+    let parsedConfig: Record<string, Record<string, RolePermissions>>;
+    try {
+        const fileContent = await readFile(configPath, { encoding: "utf-8" });
+        parsedConfig = JSON.parse(fileContent);
+    } catch (error) {
+        LOGGER.error(`Failed to read database permissions at: ${configPath}`);
+        throw error
+    }
+
+    return parsedConfig;
+}
 
 async function getColumnInfo(schema: string, table: string) {
     const pgPool = postgres.getPool("default");
@@ -179,6 +205,65 @@ ORDER BY function_name;
     return computedFieldInfos;
 }
 
+function getTablePermissions(permissionsConfig: Record<string, Record<string, RolePermissions>>, tableName: string) {
+    try {
+        if (
+            typeof permissionsConfig !== "object" 
+            && !Object.keys(permissionsConfig).includes(tableName)
+        ) throw Error("Missing table configuration.");
+
+        const tablePermissions = permissionsConfig[tableName];
+        if (typeof tablePermissions !== "object")
+            throw Error("Invalid table configuration.");
+
+        const configRoles = new Set(Object.keys(tablePermissions));
+        const rolesDiff = new Set(
+            [...configRoles].filter(role => !ROLES.has(role))
+        );
+        if (rolesDiff.size > 0) throw Error(`Unrecognized role(s): ${rolesDiff}.`);
+
+        for (const role of [...ROLES]) {
+
+            if (!Object.keys(tablePermissions).includes(role)) throw Error("Missing role configuration.");
+
+            const permissions = tablePermissions[role];
+            if (typeof permissions !== "object")
+                throw Error(`Invalid configuration for ${role}.`);
+            
+            const permissionsKeys = Object.keys(permissions);
+            if (
+                !permissionsKeys.includes("select") || 
+                typeof permissions?.select !== "boolean" 
+            ) throw Error(`${role} incorrect configuration for select.`);
+            if (
+                !permissionsKeys.includes("insert") || 
+                typeof permissions?.insert !== "boolean" 
+            ) throw Error(`${role} incorrect configuration for insert.`);
+            if (
+                !permissionsKeys.includes("update") || 
+                typeof permissions?.update !== "boolean" 
+            ) throw Error(`${role} incorrect configuration for update.`);
+            if (
+                !permissionsKeys.includes("delete") || 
+                typeof permissions?.delete !== "boolean" 
+            ) throw Error(`${role} incorrect configuration for delete.`);
+            if (
+                !permissionsKeys.includes("columnsToExclude") || 
+                !Array.isArray(permissions?.columnsToExclude)
+            ) throw Error(`${role} incorrect configuration for columnsToExclude.`);
+            if (
+                !permissionsKeys.includes("filters") || 
+                typeof permissions?.filters !== "object" 
+            ) throw Error(`${role} incorrect configuration for filters.`);
+        }
+
+        return tablePermissions;
+    } catch (error) {
+        LOGGER.error(`Failed to parse permissions for table ${tableName}`);
+        throw error;
+    }
+}
+
 async function getTableInfo(schema: string) {
     const pgPool = postgres.getPool("default");
     const query = `
@@ -194,18 +279,21 @@ WHERE table_schema = '${schema}';
     const tableInfos: TableInfo[] = [];
     try {
         const tableDetails = (await pgPool.query(query)).rows;
+        const permissionsConfig = await readPermissionsConfig();
 
         for (const tableDetail of tableDetails) {
             const tableName = tableDetail["table_name"];
             const isEnum = tableDetail["is_enum"];
             const columnInfos = await getColumnInfo(schema, tableName);
             const computedFields = await getComputedFields(schema, tableName);
+            const permissions = getTablePermissions(permissionsConfig, tableName);
 
             const tableInfo: TableInfo = { 
                 name: tableName,
                 columns: columnInfos, 
                 isEnum,
-                computedFields
+                computedFields,
+                permissions
             };
             tableInfos.push(tableInfo);
         }
