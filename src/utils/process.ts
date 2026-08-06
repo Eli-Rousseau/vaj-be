@@ -6,7 +6,7 @@ import { logger } from "./logger";
 
 const LOGGER = logger.get({
   source: "utils",
-  module: path.basename(__filename)
+  module: path.basename(__filename),
 });
 
 const execAsync = promisify(exec);

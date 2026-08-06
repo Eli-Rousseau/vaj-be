@@ -12,7 +12,9 @@
     "database-restore": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/scripts/database/database-restore.js",
     "database-migrate": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/scripts/database/database-migrate.js",
     "redis": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/scripts/redis/redis.js",
-    "test": "vitest"
+    "test": "vitest",
+    "format": "prettier . --write",
+    "lint": "eslint . --fix"
   },
   "author": "",
   "license": "ISC",
@@ -29,13 +31,19 @@
     "winston": "^3.18.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.15",
     "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.15.4",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.9.0",
     "nodemon": "^3.1.14",
+    "prettier": "^3.9.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
+    "typescript-eslint": "^8.66.0",
     "vitest": "^4.0.16"
   }
 }

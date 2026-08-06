@@ -4,45 +4,50 @@ import { cwd } from "process";
 
 import { logger } from "@/src/utils/logger";
 import { postgres } from "@/src/utils/postgres";
-import { 
-    DataBaseInfo,
-    ColumnInfo, 
-    ComputedFieldInfo, 
-    TableInfo, 
-    CompositeTypeColumnInfo, 
-    CompositeTypeInfo, 
-    SchemaInfo,
-    RolePermissions
+import {
+  DataBaseInfo,
+  ColumnInfo,
+  ComputedFieldInfo,
+  TableInfo,
+  CompositeTypeColumnInfo,
+  CompositeTypeInfo,
+  SchemaInfo,
+  RolePermissions,
 } from "@/src/database/types";
 
 const LOGGER = logger.get({
-    source: "src",
-    service: "database",
-    module: path.basename(__filename)
+  source: "src",
+  service: "database",
+  module: path.basename(__filename),
 });
 
 let dataBaseInfo: DataBaseInfo | null = null;
 
 export const SCHEMAS_TO_FILTER: string[] = ["shop"];
-export const ROLES = new Set(["USER", "SUPERUSER", "ADMINISTRATOR", "DEVELOPER"]);
+export const ROLES = new Set([
+  "USER",
+  "SUPERUSER",
+  "ADMINISTRATOR",
+  "DEVELOPER",
+]);
 
 async function readPermissionsConfig() {
-    const configPath = `${cwd()}/src/database/permissions.json`;
-    let parsedConfig: Record<string, Record<string, RolePermissions>>;
-    try {
-        const fileContent = await readFile(configPath, { encoding: "utf-8" });
-        parsedConfig = JSON.parse(fileContent);
-    } catch (error) {
-        LOGGER.error(`Failed to read database permissions at: ${configPath}`);
-        throw error
-    }
+  const configPath = `${cwd()}/src/database/permissions.json`;
+  let parsedConfig: Record<string, Record<string, RolePermissions>>;
+  try {
+    const fileContent = await readFile(configPath, { encoding: "utf-8" });
+    parsedConfig = JSON.parse(fileContent);
+  } catch (error) {
+    LOGGER.error(`Failed to read database permissions at: ${configPath}`);
+    throw error;
+  }
 
-    return parsedConfig;
+  return parsedConfig;
 }
 
 async function getColumnInfo(schema: string, table: string) {
-    const pgPool = postgres.getPool("default");
-    const query = `
+  const pgPool = postgres.getPool("default");
+  const query = `
 SELECT
     c.column_name,
     c.data_type,
@@ -95,41 +100,43 @@ GROUP BY
 ORDER BY c.ordinal_position;
 `;
 
-    const columnInfos: ColumnInfo[] = [];
-    try {
-        const columnDetails = (await pgPool.query(query)).rows;
+  const columnInfos: ColumnInfo[] = [];
+  try {
+    const columnDetails = (await pgPool.query(query)).rows;
 
-        for (const columnDetail of columnDetails) {
-            const columnName = columnDetail["column_name"];
-            const columnDataType = columnDetail["data_type"];
-            const isNullable = columnDetail["is_nullable"];
-            const hasDefault = columnDetail["has_default"];
-            const isPrimaryKey = columnDetail["is_primary_key"];
-            const foreignKey = columnDetail["foreign_key"];
-            const handleAutomaticUpdate = columnDetail["handle_automatic_update"];
+    for (const columnDetail of columnDetails) {
+      const columnName = columnDetail["column_name"];
+      const columnDataType = columnDetail["data_type"];
+      const isNullable = columnDetail["is_nullable"];
+      const hasDefault = columnDetail["has_default"];
+      const isPrimaryKey = columnDetail["is_primary_key"];
+      const foreignKey = columnDetail["foreign_key"];
+      const handleAutomaticUpdate = columnDetail["handle_automatic_update"];
 
-            const columnInfo: ColumnInfo = {
-                name: columnName,
-                dataType: columnDataType,
-                isNullable,
-                hasDefault,
-                isPrimaryKey,
-                foreignKey,
-                handleAutomaticUpdate
-            }
-            columnInfos.push(columnInfo);
-        }
-    } catch (error) {
-        LOGGER.error(`Failed to query the database column details for schema "${schema}" and table ${table}: ${error}`);
-        throw error;
+      const columnInfo: ColumnInfo = {
+        name: columnName,
+        dataType: columnDataType,
+        isNullable,
+        hasDefault,
+        isPrimaryKey,
+        foreignKey,
+        handleAutomaticUpdate,
+      };
+      columnInfos.push(columnInfo);
     }
+  } catch (error) {
+    LOGGER.error(
+      `Failed to query the database column details for schema "${schema}" and table ${table}: ${error}`,
+    );
+    throw error;
+  }
 
-    return columnInfos;
+  return columnInfos;
 }
 
 async function getComputedFields(schema: string, table: string) {
-    const pgPool = postgres.getPool("default");
-    const query = `
+  const pgPool = postgres.getPool("default");
+  const query = `
 SELECT
     p.proname                               AS function_name,
     m.schema_name || '.' || m.type_name     AS argument,
@@ -176,97 +183,108 @@ WHERE n.nspname = '${schema}'
 ORDER BY function_name;
 `;
 
-    const computedFieldInfos: ComputedFieldInfo[] = [];
-    try {
-        const computedFieldDetails = (await pgPool.query(query)).rows;
-        
-        for (const computedFieldDetail of computedFieldDetails) {
-            const fnName = computedFieldDetail["function_name"];
-            const argType = computedFieldDetail["argument"];
-            const returnType = computedFieldDetail["return_type"];
-            const returnCardinality = computedFieldDetail["return_cardinality"];
-            const returnTypeKind = computedFieldDetail["return_type_kind"];
+  const computedFieldInfos: ComputedFieldInfo[] = [];
+  try {
+    const computedFieldDetails = (await pgPool.query(query)).rows;
 
-            const computedFieldInfo: ComputedFieldInfo = {
-                name: fnName,
-                arg: { name: table, type: argType },
-                returnType: returnType,
-                returnCardinality,
-                returnTypeKind
-            };
-            computedFieldInfos.push(computedFieldInfo);
-        }
+    for (const computedFieldDetail of computedFieldDetails) {
+      const fnName = computedFieldDetail["function_name"];
+      const argType = computedFieldDetail["argument"];
+      const returnType = computedFieldDetail["return_type"];
+      const returnCardinality = computedFieldDetail["return_cardinality"];
+      const returnTypeKind = computedFieldDetail["return_type_kind"];
 
-    } catch (error) {
-        LOGGER.error(`Failed to query the database tables computed functions details: ${error}`);
-        throw error;
+      const computedFieldInfo: ComputedFieldInfo = {
+        name: fnName,
+        arg: { name: table, type: argType },
+        returnType: returnType,
+        returnCardinality,
+        returnTypeKind,
+      };
+      computedFieldInfos.push(computedFieldInfo);
     }
+  } catch (error) {
+    LOGGER.error(
+      `Failed to query the database tables computed functions details: ${error}`,
+    );
+    throw error;
+  }
 
-    return computedFieldInfos;
+  return computedFieldInfos;
 }
 
-function getTablePermissions(permissionsConfig: Record<string, Record<string, RolePermissions>>, tableName: string) {
-    try {
-        if (
-            typeof permissionsConfig !== "object" 
-            && !Object.keys(permissionsConfig).includes(tableName)
-        ) throw Error("Missing table configuration.");
+function getTablePermissions(
+  permissionsConfig: Record<string, Record<string, RolePermissions>>,
+  tableName: string,
+) {
+  try {
+    if (
+      typeof permissionsConfig !== "object" &&
+      !Object.keys(permissionsConfig).includes(tableName)
+    )
+      throw Error("Missing table configuration.");
 
-        const tablePermissions = permissionsConfig[tableName];
-        if (typeof tablePermissions !== "object")
-            throw Error("Invalid table configuration.");
+    const tablePermissions = permissionsConfig[tableName];
+    if (typeof tablePermissions !== "object")
+      throw Error("Invalid table configuration.");
 
-        const configRoles = new Set(Object.keys(tablePermissions));
-        const rolesDiff = new Set(
-            [...configRoles].filter(role => !ROLES.has(role))
-        );
-        if (rolesDiff.size > 0) throw Error(`Unrecognized role(s): ${rolesDiff}.`);
+    const configRoles = new Set(Object.keys(tablePermissions));
+    const rolesDiff = new Set(
+      [...configRoles].filter((role) => !ROLES.has(role)),
+    );
+    if (rolesDiff.size > 0) throw Error(`Unrecognized role(s): ${rolesDiff}.`);
 
-        for (const role of [...ROLES]) {
+    for (const role of [...ROLES]) {
+      if (!Object.keys(tablePermissions).includes(role))
+        throw Error("Missing role configuration.");
 
-            if (!Object.keys(tablePermissions).includes(role)) throw Error("Missing role configuration.");
+      const permissions = tablePermissions[role];
+      if (typeof permissions !== "object")
+        throw Error(`Invalid configuration for ${role}.`);
 
-            const permissions = tablePermissions[role];
-            if (typeof permissions !== "object")
-                throw Error(`Invalid configuration for ${role}.`);
-            
-            const permissionsKeys = Object.keys(permissions);
-            if (
-                !permissionsKeys.includes("select") || 
-                typeof permissions?.select !== "boolean" 
-            ) throw Error(`${role} incorrect configuration for select.`);
-            if (
-                !permissionsKeys.includes("insert") || 
-                typeof permissions?.insert !== "boolean" 
-            ) throw Error(`${role} incorrect configuration for insert.`);
-            if (
-                !permissionsKeys.includes("update") || 
-                typeof permissions?.update !== "boolean" 
-            ) throw Error(`${role} incorrect configuration for update.`);
-            if (
-                !permissionsKeys.includes("delete") || 
-                typeof permissions?.delete !== "boolean" 
-            ) throw Error(`${role} incorrect configuration for delete.`);
-            if (
-                !permissionsKeys.includes("columnsToExclude") || 
-                !Array.isArray(permissions?.columnsToExclude)
-            ) throw Error(`${role} incorrect configuration for columnsToExclude.`);
-            if (
-                !permissionsKeys.includes("filters") || 
-                typeof permissions?.filters !== "object" 
-            ) throw Error(`${role} incorrect configuration for filters.`);
-        }
-
-        return tablePermissions;
-    } catch (error) {
-        LOGGER.error(`Failed to parse permissions for table ${tableName}`);
-        throw error;
+      const permissionsKeys = Object.keys(permissions);
+      if (
+        !permissionsKeys.includes("select") ||
+        typeof permissions?.select !== "boolean"
+      )
+        throw Error(`${role} incorrect configuration for select.`);
+      if (
+        !permissionsKeys.includes("insert") ||
+        typeof permissions?.insert !== "boolean"
+      )
+        throw Error(`${role} incorrect configuration for insert.`);
+      if (
+        !permissionsKeys.includes("update") ||
+        typeof permissions?.update !== "boolean"
+      )
+        throw Error(`${role} incorrect configuration for update.`);
+      if (
+        !permissionsKeys.includes("delete") ||
+        typeof permissions?.delete !== "boolean"
+      )
+        throw Error(`${role} incorrect configuration for delete.`);
+      if (
+        !permissionsKeys.includes("columnsToExclude") ||
+        !Array.isArray(permissions?.columnsToExclude)
+      )
+        throw Error(`${role} incorrect configuration for columnsToExclude.`);
+      if (
+        !permissionsKeys.includes("filters") ||
+        typeof permissions?.filters !== "object"
+      )
+        throw Error(`${role} incorrect configuration for filters.`);
     }
+
+    return tablePermissions;
+  } catch (error) {
+    LOGGER.error(`Failed to parse permissions for table ${tableName}`);
+    throw error;
+  }
 }
 
 async function getTableInfo(schema: string) {
-    const pgPool = postgres.getPool("default");
-    const query = `
+  const pgPool = postgres.getPool("default");
+  const query = `
 SELECT 
     table_name,
     CASE 
@@ -276,39 +294,41 @@ SELECT
 FROM information_schema.tables
 WHERE table_schema = '${schema}';
 `;
-    const tableInfos: TableInfo[] = [];
-    try {
-        const tableDetails = (await pgPool.query(query)).rows;
-        const permissionsConfig = await readPermissionsConfig();
+  const tableInfos: TableInfo[] = [];
+  try {
+    const tableDetails = (await pgPool.query(query)).rows;
+    const permissionsConfig = await readPermissionsConfig();
 
-        for (const tableDetail of tableDetails) {
-            const tableName = tableDetail["table_name"];
-            const isEnum = tableDetail["is_enum"];
-            const columnInfos = await getColumnInfo(schema, tableName);
-            const computedFields = await getComputedFields(schema, tableName);
-            const permissions = getTablePermissions(permissionsConfig, tableName);
+    for (const tableDetail of tableDetails) {
+      const tableName = tableDetail["table_name"];
+      const isEnum = tableDetail["is_enum"];
+      const columnInfos = await getColumnInfo(schema, tableName);
+      const computedFields = await getComputedFields(schema, tableName);
+      const permissions = getTablePermissions(permissionsConfig, tableName);
 
-            const tableInfo: TableInfo = { 
-                name: tableName,
-                columns: columnInfos, 
-                isEnum,
-                computedFields,
-                permissions
-            };
-            tableInfos.push(tableInfo);
-        }
-        
-    } catch (error) {
-        LOGGER.error(`Failed to query the database tables details: ${error}`);
-        throw error;
+      const tableInfo: TableInfo = {
+        name: tableName,
+        columns: columnInfos,
+        isEnum,
+        computedFields,
+        permissions,
+      };
+      tableInfos.push(tableInfo);
     }
+  } catch (error) {
+    LOGGER.error(`Failed to query the database tables details: ${error}`);
+    throw error;
+  }
 
-    return tableInfos;
+  return tableInfos;
 }
 
-async function getCompositeTypeColumnInfos(schema: string, compsiteType: string) {
-    const pgPool = postgres.getPool("default");
-    const query = `
+async function getCompositeTypeColumnInfos(
+  schema: string,
+  compsiteType: string,
+) {
+  const pgPool = postgres.getPool("default");
+  const query = `
 SELECT
     a.attname                                   AS field_name,
     pg_catalog.format_type(a.atttypid, a.atttypmod)
@@ -331,35 +351,37 @@ WHERE n.nspname = '${schema}'
 ORDER BY a.attnum;
 `;
 
-    const columnInfos: CompositeTypeColumnInfo[] = [];
-    try {
-        const columnDetails = (await pgPool.query(query)).rows;
+  const columnInfos: CompositeTypeColumnInfo[] = [];
+  try {
+    const columnDetails = (await pgPool.query(query)).rows;
 
-        for (const columnDetail of columnDetails) {
-            const columnName = columnDetail["field_name"];
-            const columnDataType = columnDetail["data_type"];
-            const isNullable = columnDetail["is_nullable"];
-            const hasDefault = columnDetail["has_default"];
+    for (const columnDetail of columnDetails) {
+      const columnName = columnDetail["field_name"];
+      const columnDataType = columnDetail["data_type"];
+      const isNullable = columnDetail["is_nullable"];
+      const hasDefault = columnDetail["has_default"];
 
-            const columnInfo: CompositeTypeColumnInfo = {
-                name: columnName,
-                dataType: columnDataType,
-                isNullable,
-                hasDefault
-            }
-            columnInfos.push(columnInfo);
-        }
-    } catch (error) {
-        LOGGER.error(`Failed to query the database schema compsoite type column details for schema "${schema}" and compsite type "${compsiteType}": ${error}`);
-        throw error;
+      const columnInfo: CompositeTypeColumnInfo = {
+        name: columnName,
+        dataType: columnDataType,
+        isNullable,
+        hasDefault,
+      };
+      columnInfos.push(columnInfo);
     }
+  } catch (error) {
+    LOGGER.error(
+      `Failed to query the database schema compsoite type column details for schema "${schema}" and compsite type "${compsiteType}": ${error}`,
+    );
+    throw error;
+  }
 
-    return columnInfos;
+  return columnInfos;
 }
 
 async function getCompositeTypes(schema: string) {
-    const pgPool = postgres.getPool("default");
-    const query = `
+  const pgPool = postgres.getPool("default");
+  const query = `
 SELECT DISTINCT
     t.typname                                   AS composite_type
 FROM pg_type t
@@ -375,72 +397,82 @@ WHERE n.nspname = '${schema}'
   AND a.attnum > 0                   -- user-defined fields only
   AND NOT a.attisdropped
 ;
-`;  
-    const compositeTypesInfos: CompositeTypeInfo[] = [];
-    try {
-        const compositeTypesDetails = (await pgPool.query(query)).rows;
+`;
+  const compositeTypesInfos: CompositeTypeInfo[] = [];
+  try {
+    const compositeTypesDetails = (await pgPool.query(query)).rows;
 
-        for (const compositeTypeDetail of compositeTypesDetails) {
-            const compositeTypeName = compositeTypeDetail["composite_type"];
-            const compositeTypeColumnInfos = await getCompositeTypeColumnInfos(schema, compositeTypeName);
+    for (const compositeTypeDetail of compositeTypesDetails) {
+      const compositeTypeName = compositeTypeDetail["composite_type"];
+      const compositeTypeColumnInfos = await getCompositeTypeColumnInfos(
+        schema,
+        compositeTypeName,
+      );
 
-            const compositeTypeInfo: CompositeTypeInfo = {
-                name: compositeTypeName,
-                columns: compositeTypeColumnInfos
-            };
-            compositeTypesInfos.push(compositeTypeInfo);
-        }
-
-    } catch (error) {
-        LOGGER.error(`Failed to query the database schema composite types details: ${error}`);
-        throw error;
+      const compositeTypeInfo: CompositeTypeInfo = {
+        name: compositeTypeName,
+        columns: compositeTypeColumnInfos,
+      };
+      compositeTypesInfos.push(compositeTypeInfo);
     }
+  } catch (error) {
+    LOGGER.error(
+      `Failed to query the database schema composite types details: ${error}`,
+    );
+    throw error;
+  }
 
-    return compositeTypesInfos;
+  return compositeTypesInfos;
 }
 
 async function getSchemaInfo() {
-    const pgPool = postgres.getPool("default");
-    const query = `SELECT schema_name FROM information_schema.schemata ;`
+  const pgPool = postgres.getPool("default");
+  const query = `SELECT schema_name FROM information_schema.schemata ;`;
 
-    const schemaInfos: SchemaInfo[] = [];
-    try {
-        let schemaNames = (await pgPool.query(query)).rows.map(record => record["schema_name"]);
+  const schemaInfos: SchemaInfo[] = [];
+  try {
+    let schemaNames = (await pgPool.query(query)).rows.map(
+      (record) => record["schema_name"],
+    );
 
-        if (SCHEMAS_TO_FILTER) {
-            schemaNames = schemaNames.filter(name => SCHEMAS_TO_FILTER!.includes(name));
-        }
-
-        for (const schemaName of schemaNames) {
-            const tableInfos = await getTableInfo(schemaName);
-            const compositeTypeInfo = await getCompositeTypes(schemaName);
-
-            const schemaInfo: SchemaInfo = {
-                name: schemaName,
-                tables: tableInfos,
-                compsiteTypes: compositeTypeInfo
-            };
-            schemaInfos.push(schemaInfo);
-        }
-    } catch (error) {
-        LOGGER.error(`Failed to query the database schema details: ${error}`);
-        throw error;
+    if (SCHEMAS_TO_FILTER) {
+      schemaNames = schemaNames.filter((name) =>
+        SCHEMAS_TO_FILTER!.includes(name),
+      );
     }
-    
-    return schemaInfos; 
+
+    for (const schemaName of schemaNames) {
+      const tableInfos = await getTableInfo(schemaName);
+      const compositeTypeInfo = await getCompositeTypes(schemaName);
+
+      const schemaInfo: SchemaInfo = {
+        name: schemaName,
+        tables: tableInfos,
+        compsiteTypes: compositeTypeInfo,
+      };
+      schemaInfos.push(schemaInfo);
+    }
+  } catch (error) {
+    LOGGER.error(`Failed to query the database schema details: ${error}`);
+    throw error;
+  }
+
+  return schemaInfos;
 }
 
 async function buildDataBaseInfo() {
-    const schemaInfos = await getSchemaInfo();
-    dataBaseInfo = { schemas: schemaInfos };
-    LOGGER.info("Database info retrieved successfully.");
+  const schemaInfos = await getSchemaInfo();
+  dataBaseInfo = { schemas: schemaInfos };
+  LOGGER.info("Database info retrieved successfully.");
 }
 
-export async function getDataBaseInfo(forceBuild: boolean = false): Promise<DataBaseInfo> {
-    if (dataBaseInfo && !forceBuild) {
-        return dataBaseInfo;
-    }
+export async function getDataBaseInfo(
+  forceBuild: boolean = false,
+): Promise<DataBaseInfo> {
+  if (dataBaseInfo && !forceBuild) {
+    return dataBaseInfo;
+  }
 
-    await buildDataBaseInfo();
-    return dataBaseInfo!;
+  await buildDataBaseInfo();
+  return dataBaseInfo!;
 }

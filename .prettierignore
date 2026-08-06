@@ -1,0 +1,10 @@
+# Root files
+.vscode
+dist
+*.json
+*.md
+*.js
+*.ts
+
+# Generated files
+src/database/classes/transformer-classes.ts

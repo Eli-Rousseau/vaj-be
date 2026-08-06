@@ -125,7 +125,7 @@ function buildCompositeTypeColumnField(
 function buildTableTransformerClasses(
   schemaInfo: SchemaInfo,
   tableInfo: TableInfo,
-  pkTableInfos: TableInfo[]
+  pkTableInfos: TableInfo[],
 ) {
   const className = `${capitalize(schemaInfo.name)}${capitalize(tableInfo.name)}`;
 
@@ -134,7 +134,7 @@ function buildTableTransformerClasses(
     .map((c) => c.foreignKey)
     .filter(Boolean) as string[];
   pkTableInfos = pkTableInfos.filter(
-    (_pkTableInfo) => !fkTables.includes(_pkTableInfo.name)
+    (_pkTableInfo) => !fkTables.includes(_pkTableInfo.name),
   );
 
   const body = [
@@ -228,16 +228,17 @@ function buildPropertyDeclaration(
   column: ColumnInfo | CompositeTypeColumnInfo,
 ): string {
   const type =
-    column.hasOwnProperty("foreignKey") && (column as ColumnInfo).foreignKey
-      ? `${capitalize(schema.name)}${capitalize((column as ColumnInfo).foreignKey!)}`
-      : TYPE_MAPPER[column.dataType as PostgresType];
+  Object.prototype.hasOwnProperty.call(column, "foreignKey") &&
+  (column as ColumnInfo).foreignKey
+    ? `${capitalize(schema.name)}${capitalize((column as ColumnInfo).foreignKey!)}`
+    : TYPE_MAPPER[column.dataType as PostgresType];
 
   return `${INDENT}${column.name}!: ${type} | null;`;
 }
 
 function buildPrimaryKeyCollections(
   schema: SchemaInfo,
-  tableInfos: TableInfo[]
+  tableInfos: TableInfo[],
 ): string {
   const pkTables = tableInfos.map((t) => t.name);
 
@@ -326,10 +327,10 @@ function buildComputedTransformDecorators(field: ComputedFieldInfo): string {
 
 function getPkTablesInfos(schemaInfo: SchemaInfo, tableInfo: TableInfo) {
   return schemaInfo.tables.filter(
-    (_tableInfo) => 
+    (_tableInfo) =>
       _tableInfo.columns.some(
-          (_columnInfo) => _columnInfo.foreignKey === tableInfo.name,
-        ) && !_tableInfo.isEnum,
+        (_columnInfo) => _columnInfo.foreignKey === tableInfo.name,
+      ) && !_tableInfo.isEnum,
   );
 }
 
@@ -340,7 +341,11 @@ function buildSchemaTransformerClasses(schemaInfo: SchemaInfo) {
 
     for (const pkTableInfo of pkTablesInfos) {
       if (!buildClasses.has(pkTableInfo.name))
-        buildTableTransformerClasses(schemaInfo, pkTableInfo, getPkTablesInfos(schemaInfo, pkTableInfo));
+        buildTableTransformerClasses(
+          schemaInfo,
+          pkTableInfo,
+          getPkTablesInfos(schemaInfo, pkTableInfo),
+        );
       buildClasses.add(pkTableInfo.name);
     }
 
@@ -353,7 +358,11 @@ function buildSchemaTransformerClasses(schemaInfo: SchemaInfo) {
         (_table) => _table.name === fkTable,
       )[0];
       if (!buildClasses.has(fkTableInfo.name))
-        buildTableTransformerClasses(schemaInfo, fkTableInfo, getPkTablesInfos(schemaInfo, fkTableInfo));
+        buildTableTransformerClasses(
+          schemaInfo,
+          fkTableInfo,
+          getPkTablesInfos(schemaInfo, fkTableInfo),
+        );
       buildClasses.add(fkTableInfo.name);
     }
 
@@ -367,7 +376,11 @@ function buildSchemaTransformerClasses(schemaInfo: SchemaInfo) {
           (_table) => _table.name === returnType,
         )[0];
         if (!buildClasses.has(cfTableInfo.name))
-          buildTableTransformerClasses(schemaInfo, cfTableInfo, getPkTablesInfos(schemaInfo, cfTableInfo));
+          buildTableTransformerClasses(
+            schemaInfo,
+            cfTableInfo,
+            getPkTablesInfos(schemaInfo, cfTableInfo),
+          );
         buildClasses.add(cfTableInfo.name);
       } else if (computedFieldInfo.returnTypeKind === "COMPOSITE") {
         const returnType = computedFieldInfo.returnType.replace(

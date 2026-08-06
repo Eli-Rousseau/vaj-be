@@ -24,7 +24,7 @@ const stageConfigs: Record<keyof typeof Stages, string> = {
  * @description Helps to load the environments from the desired stage.
  */
 export const loadStage = async function (
-  stage: keyof typeof Stages | null = null
+  stage: keyof typeof Stages | null = null,
 ) {
   if (process.env.STAGE) return;
 
@@ -35,7 +35,7 @@ export const loadStage = async function (
   if (!stage)
     stage = (await dropDown(
       "Please, select your environment:",
-      Object.keys(Stages)
+      Object.keys(Stages),
     )) as keyof typeof Stages;
   process.env["STAGE"] = stage;
 
@@ -54,7 +54,7 @@ export const loadStage = async function (
       source: "utils",
       module: path.basename(__filename),
     },
-    true
+    true,
   );
 
   LOGGER.info("Environment loaded.");

@@ -5,7 +5,12 @@ import { logger } from "@/src/utils/logger";
 import * as constructors from "@/src/graphql/query-constructors";
 import { postgres } from "@/src/utils/postgres";
 import { getDataBaseInfo } from "@/src/database/database-info";
-import { DataBaseInfo, ComputedFieldInfo, RolePermissions, TableInfo } from "@/src/database/types";
+import {
+  DataBaseInfo,
+  ComputedFieldInfo,
+  RolePermissions,
+  TableInfo,
+} from "@/src/database/types";
 import { decodeJWTToken } from "@/src/utils/jwt";
 import { ConfigError } from "@/src/utils/errors";
 import { ShopUser } from "@/src/database/classes/transformer-classes";
@@ -322,33 +327,35 @@ ${mutationTypes.map((line) => `\t${line}`).join("\n")}
 
 const RESOLVER_ARGS: Record<string, any> = {
   now: () => new Date().toISOString().replace("T", " ").replace("Z", ""),
-  today: () => new Date().toISOString().split('T')[0]
-}
+  today: () => new Date().toISOString().split("T")[0],
+};
 
 function getRequestUserRolePermissions(
   context: any,
   secret: string,
-  permissions: Record<string, RolePermissions>
+  permissions: Record<string, RolePermissions>,
 ) {
   const accessToken = context.request.headers.get("authorization");
   try {
     const user = decodeJWTToken(accessToken, secret);
     return {
       user,
-      rolePermissions: user.systemRole && Object.keys(permissions).includes(user.systemRole) 
-      ? permissions[user.systemRole] : permissions["USER"]
-    }
+      rolePermissions:
+        user.systemRole && Object.keys(permissions).includes(user.systemRole)
+          ? permissions[user.systemRole]
+          : permissions["USER"],
+    };
   } catch (error) {
     return {
       user: ShopUser.fromPlain({ systemRole: "USER" }),
-      rolePermissions: permissions["USER"]
+      rolePermissions: permissions["USER"],
     };
   }
 }
 
 function isRequestPermitted(
   rolePermissions: RolePermissions,
-  operation: "select" | "insert" | "update" | "delete"
+  operation: "select" | "insert" | "update" | "delete",
 ): boolean {
   return rolePermissions[operation];
 }
@@ -356,9 +363,11 @@ function isRequestPermitted(
 function isComputationalFieldPermitted(
   tablePermissions: Record<string, RolePermissions>,
   user: ShopUser,
-  computedField: ComputedFieldInfo
+  computedField: ComputedFieldInfo,
 ) {
-  return !tablePermissions[user.systemRole!].columnsToExclude.includes(computedField.name)
+  return !tablePermissions[user.systemRole!].columnsToExclude.includes(
+    computedField.name,
+  );
 }
 
 type ResolverFn = (...args: any[]) => any;
@@ -371,7 +380,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
 
   const schemaInfos = dataBaseInfo.schemas;
 
-  let resolvers: Record<string, Record<string, ResolverFn>> = {
+  const resolvers: Record<string, Record<string, ResolverFn>> = {
     Query: {},
     Mutation: {},
   };
@@ -402,9 +411,13 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
         resolvers["Query"][`get${schemaTableName}ByReference`] = async (
           _,
           { reference },
-          context
+          context,
         ) => {
-          const { user, rolePermissions } = getRequestUserRolePermissions(context, jwtSecret, tablePermissions);
+          const { user, rolePermissions } = getRequestUserRolePermissions(
+            context,
+            jwtSecret,
+            tablePermissions,
+          );
           if (!isRequestPermitted(rolePermissions, "select")) return [];
 
           const query = await constructors.constructGetOnColumnQuery(
@@ -414,7 +427,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             reference,
             rolePermissions.columnsToExclude,
             rolePermissions.filters,
-            { ...RESOLVER_ARGS, user }
+            { ...RESOLVER_ARGS, user },
           );
           const res = await pgPool.query(query);
           return res.rows;
@@ -422,11 +435,15 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
         resolvers["Query"][`get${plural(schemaTableName)}`] = async (
           _,
           { where, orderBy, limit, offset },
-          context
+          context,
         ) => {
-          const { user, rolePermissions } = getRequestUserRolePermissions(context, jwtSecret, tablePermissions);
+          const { user, rolePermissions } = getRequestUserRolePermissions(
+            context,
+            jwtSecret,
+            tablePermissions,
+          );
           if (!isRequestPermitted(rolePermissions, "select")) return [];
-          
+
           const query = await constructors.constructGetQuery(
             schema,
             table,
@@ -436,7 +453,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             orderBy,
             limit,
             offset,
-            { ...RESOLVER_ARGS, user }
+            { ...RESOLVER_ARGS, user },
           );
           const res = await pgPool.query(query);
           return res.rows;
@@ -445,11 +462,15 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
         resolvers["Mutation"][`insert${schemaTableName}`] = async (
           _,
           { data, onConflict },
-          context
+          context,
         ) => {
-          const { rolePermissions } = getRequestUserRolePermissions(context, jwtSecret, tablePermissions);
+          const { rolePermissions } = getRequestUserRolePermissions(
+            context,
+            jwtSecret,
+            tablePermissions,
+          );
           if (!isRequestPermitted(rolePermissions, "insert")) return [];
-          
+
           const query = await constructors.constructSingleInsertQuery(
             schema,
             table,
@@ -461,11 +482,15 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
         resolvers["Mutation"][`insert${plural(schemaTableName)}`] = async (
           _,
           { data, onConflict },
-          context
+          context,
         ) => {
-          const { rolePermissions } = getRequestUserRolePermissions(context, jwtSecret, tablePermissions);
+          const { rolePermissions } = getRequestUserRolePermissions(
+            context,
+            jwtSecret,
+            tablePermissions,
+          );
           if (!isRequestPermitted(rolePermissions, "insert")) return [];
-          
+
           const query = await constructors.constructBulkInsertQuery(
             schema,
             table,
@@ -477,11 +502,15 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
         resolvers["Mutation"][`update${schemaTableName}`] = async (
           _,
           { data, set },
-          context
+          context,
         ) => {
-          const { rolePermissions } = getRequestUserRolePermissions(context, jwtSecret, tablePermissions);
+          const { rolePermissions } = getRequestUserRolePermissions(
+            context,
+            jwtSecret,
+            tablePermissions,
+          );
           if (!isRequestPermitted(rolePermissions, "update")) return [];
-          
+
           const query = await constructors.constructSingleUpdateQuery(
             schema,
             table,
@@ -493,11 +522,15 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
         resolvers["Mutation"][`update${plural(schemaTableName)}`] = async (
           _,
           { data, set },
-          context
+          context,
         ) => {
-          const { rolePermissions } = getRequestUserRolePermissions(context, jwtSecret, tablePermissions);
+          const { rolePermissions } = getRequestUserRolePermissions(
+            context,
+            jwtSecret,
+            tablePermissions,
+          );
           if (!isRequestPermitted(rolePermissions, "update")) return [];
-          
+
           const query = await constructors.constructBulkUpdateQuery(
             schema,
             table,
@@ -509,11 +542,15 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
         resolvers["Mutation"][`delete${schemaTableName}`] = async (
           __dirname,
           { data },
-          context
+          context,
         ) => {
-          const { rolePermissions } = getRequestUserRolePermissions(context, jwtSecret, tablePermissions);
+          const { rolePermissions } = getRequestUserRolePermissions(
+            context,
+            jwtSecret,
+            tablePermissions,
+          );
           if (!isRequestPermitted(rolePermissions, "delete")) return [];
-          
+
           const query = await constructors.constructSingleDeleteQuery(
             schema,
             table,
@@ -525,11 +562,15 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
         resolvers["Mutation"][`delete${plural(schemaTableName)}`] = async (
           __dirname,
           { data },
-          context
+          context,
         ) => {
-          const { rolePermissions } = getRequestUserRolePermissions(context, jwtSecret, tablePermissions);
+          const { rolePermissions } = getRequestUserRolePermissions(
+            context,
+            jwtSecret,
+            tablePermissions,
+          );
           if (!isRequestPermitted(rolePermissions, "delete")) return [];
-          
+
           const query = await constructors.constructBulkDeleteQuery(
             schema,
             table,
@@ -546,11 +587,15 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             (resolvers[`${schemaTableName}Type`][plural(_table.name)] = async (
               parent,
               args,
-              context
+              context,
             ) => {
-              const { user, rolePermissions } = getRequestUserRolePermissions(context, jwtSecret, tablePermissions);
+              const { user, rolePermissions } = getRequestUserRolePermissions(
+                context,
+                jwtSecret,
+                tablePermissions,
+              );
               if (!isRequestPermitted(rolePermissions, "select")) return [];
-          
+
               const query = await constructors.constructGetOnColumnQuery(
                 schema,
                 _table.name,
@@ -558,7 +603,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
                 parent.reference,
                 rolePermissions.columnsToExclude,
                 rolePermissions.filters,
-                { ...RESOLVER_ARGS, user }
+                { ...RESOLVER_ARGS, user },
               );
               const res = await pgPool.query(query);
               return res.rows;
@@ -567,26 +612,27 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
 
         fkTables.forEach(
           (_table) =>
-            (resolvers[`${schemaTableName}Type`][`${_table.name}ByReference`] = async (
-              parent,
-              args,
-              context
-            ) => {
-              const { user, rolePermissions } = getRequestUserRolePermissions(context, jwtSecret, tablePermissions);
-              if (!isRequestPermitted(rolePermissions, "select")) return [];
-          
-              const query = await constructors.constructGetOnColumnQuery(
-                schema,
-                _table.name,
-                "reference",
-                parent.user,
-                rolePermissions.columnsToExclude,
-                rolePermissions.filters,
-                { ...RESOLVER_ARGS, user }
-              );
-              const res = await pgPool.query(query);
-              return res.rows[0];
-            }),
+            (resolvers[`${schemaTableName}Type`][`${_table.name}ByReference`] =
+              async (parent, args, context) => {
+                const { user, rolePermissions } = getRequestUserRolePermissions(
+                  context,
+                  jwtSecret,
+                  tablePermissions,
+                );
+                if (!isRequestPermitted(rolePermissions, "select")) return [];
+
+                const query = await constructors.constructGetOnColumnQuery(
+                  schema,
+                  _table.name,
+                  "reference",
+                  parent.user,
+                  rolePermissions.columnsToExclude,
+                  rolePermissions.filters,
+                  { ...RESOLVER_ARGS, user },
+                );
+                const res = await pgPool.query(query);
+                return res.rows[0];
+              }),
         );
 
         computedFields.forEach(
@@ -594,11 +640,22 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             (resolvers[`${schemaTableName}Type`][_computedField.name] = async (
               parent,
               args,
-              context
+              context,
             ) => {
-              const { user } = getRequestUserRolePermissions(context, jwtSecret, tablePermissions);
-              if (!isComputationalFieldPermitted(tablePermissions, user, _computedField)) return [];
-          
+              const { user } = getRequestUserRolePermissions(
+                context,
+                jwtSecret,
+                tablePermissions,
+              );
+              if (
+                !isComputationalFieldPermitted(
+                  tablePermissions,
+                  user,
+                  _computedField,
+                )
+              )
+                return [];
+
               const query = constructors.constructGetComputationalFieldQuery(
                 schema,
                 table,
@@ -638,13 +695,22 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
       } else {
         resolvers["Query"][`get${plural(schemaTableName)}`] = async (
           _,
-          context
+          context,
         ) => {
-          const { rolePermissions } = getRequestUserRolePermissions(context, jwtSecret, tablePermissions);
+          const { rolePermissions } = getRequestUserRolePermissions(
+            context,
+            jwtSecret,
+            tablePermissions,
+          );
           if (!isRequestPermitted(rolePermissions, "select")) return [];
-          
+
           const { columnsToExclude, filters } = rolePermissions;
-          const query = await constructors.constructGetQuery(schema, table, columnsToExclude, filters);
+          const query = await constructors.constructGetQuery(
+            schema,
+            table,
+            columnsToExclude,
+            filters,
+          );
           const res = await pgPool.query(query);
           return res.rows;
         };
@@ -652,11 +718,15 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
         resolvers["Mutation"][`insert${plural(schemaTableName)}`] = async (
           __dirname,
           { data },
-          context
+          context,
         ) => {
-          const { rolePermissions } = getRequestUserRolePermissions(context, jwtSecret, tablePermissions);
+          const { rolePermissions } = getRequestUserRolePermissions(
+            context,
+            jwtSecret,
+            tablePermissions,
+          );
           if (!isRequestPermitted(rolePermissions, "insert")) return [];
-          
+
           const query = await constructors.constructBulkInsertQuery(
             schema,
             table,
@@ -668,11 +738,15 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
         resolvers["Mutation"][`delete${plural(schemaTableName)}`] = async (
           __dirname,
           { data },
-          context
+          context,
         ) => {
-          const { rolePermissions } = getRequestUserRolePermissions(context, jwtSecret, tablePermissions);
+          const { rolePermissions } = getRequestUserRolePermissions(
+            context,
+            jwtSecret,
+            tablePermissions,
+          );
           if (!isRequestPermitted(rolePermissions, "delete")) return [];
-          
+
           const query = await constructors.constructBulkDeleteQuery(
             schema,
             table,

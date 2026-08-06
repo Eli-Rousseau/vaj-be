@@ -1,29 +1,28 @@
-import { Transform, plainToInstance, instanceToPlain } from 'class-transformer';
+import { Transform, plainToInstance, instanceToPlain } from "class-transformer";
 
 class TransformerError extends Error {
-    
-    constructor(message: string) {
-        super(message);
-        this.name = "TransfomerError";
-    }
+  constructor(message: string) {
+    super(message);
+    this.name = "TransfomerError";
+  }
 }
 
 export function Default(defaultValue: any = null): PropertyDecorator {
-	return (target: Object, propertyKey: string | symbol) => {
-		Transform(({ value }) => {
-			if (value !== null && value !== undefined) return value;
+  return (target: object, propertyKey: string | symbol) => {
+    Transform(({ value }) => {
+      if (value !== null && value !== undefined) return value;
 
-			if (typeof defaultValue === "function") return defaultValue();
+      if (typeof defaultValue === "function") return defaultValue();
 
-			if (Array.isArray(defaultValue)) return [...defaultValue];
+      if (Array.isArray(defaultValue)) return [...defaultValue];
 
-			if (typeof defaultValue === "object") {
-				return defaultValue === null ? null : { ...defaultValue };
-			}
+      if (typeof defaultValue === "object") {
+        return defaultValue === null ? null : { ...defaultValue };
+      }
 
-			return defaultValue;
-		})(target, propertyKey);
-	};
+      return defaultValue;
+    })(target, propertyKey);
+  };
 }
 
 export function Annotate(annotation: string): PropertyDecorator {
@@ -33,7 +32,8 @@ export function Annotate(annotation: string): PropertyDecorator {
       annotations = target.annotations;
     }
 
-    if (Object.keys(annotation).includes(String(propertyKey))) annotations[String(propertyKey)].add(annotation);
+    if (Object.keys(annotation).includes(String(propertyKey)))
+      annotations[String(propertyKey)].add(annotation);
     else annotations[String(propertyKey)] = new Set([annotation]);
 
     target["annotations"] = annotations;
@@ -42,14 +42,16 @@ export function Annotate(annotation: string): PropertyDecorator {
 
 type ToPlainOptions = {
   onlyMutables?: boolean;
-}
+};
 
 export class TransformerClass {
   static fromPlain<T extends TransformerClass>(
     this: new (...args: any[]) => T,
-    plain: unknown
+    plain: unknown,
   ): T {
-    return plainToInstance(this, plain as object, { excludeExtraneousValues: true });
+    return plainToInstance(this, plain as object, {
+      excludeExtraneousValues: true,
+    });
   }
 
   private getAnnotations(propertyKey: string | symbol): Set<string> {
@@ -65,15 +67,19 @@ export class TransformerClass {
   }
 
   toPlain(options?: ToPlainOptions): object {
-    let plain = instanceToPlain(this);
+    const plain = instanceToPlain(this);
 
     if (options?.onlyMutables) {
       const allKeys = Object.keys(plain);
-      const nonMutableKeys = allKeys.filter((key) => !this.getAnnotations(key).has("Mutable"));
-      nonMutableKeys.forEach((key) => { delete plain[key] });
+      const nonMutableKeys = allKeys.filter(
+        (key) => !this.getAnnotations(key).has("Mutable"),
+      );
+      nonMutableKeys.forEach((key) => {
+        delete plain[key];
+      });
     }
 
-    return plain
+    return plain;
   }
 }
 
@@ -81,32 +87,27 @@ const EPOCH_PATTERN = /^\d+$/;
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}$/;
 
-export const toDay = function (
-  value: any
-) {
+export const toDay = function (value: any) {
   if (value === undefined || value === null) return null;
 
   if (value instanceof Date) return value;
 
   if (typeof value == "string") {
-
     if (EPOCH_PATTERN.test(value)) {
-        const timestamp = Number(value);
-        return new Date(timestamp);
+      const timestamp = Number(value);
+      return new Date(timestamp);
     }
 
     if (DAY_PATTERN.test(value)) {
-        const [year, month, day] = value.split("-").map(Number);
-        return new Date(Date.UTC(year, month - 1, day));
+      const [year, month, day] = value.split("-").map(Number);
+      return new Date(Date.UTC(year, month - 1, day));
     }
   }
 
   throw new TransformerError(`Expected a day value. Received: ${value}`);
 };
 
-export const fromDay = function (
-  value: any
-) {
+export const fromDay = function (value: any) {
   if (value === undefined || value === null) return null;
 
   if (value instanceof Date) {
@@ -116,59 +117,53 @@ export const fromDay = function (
   throw new TransformerError(`Expected a Date instance. Recieved: ${value}`);
 };
 
-export const toDatetime = function (
-  value: any
-) {
+export const toDatetime = function (value: any) {
   if (value === undefined || value === null) return null;
 
   if (value instanceof Date) return value;
 
   if (typeof value === "string") {
     if (EPOCH_PATTERN.test(value)) {
-        const timestamp = Number(value);
-        return new Date(timestamp);
+      const timestamp = Number(value);
+      return new Date(timestamp);
     }
 
     if (DATETIME_PATTERN.test(value)) {
-        const splittedDatetime = value.split(" ");
-        const [year, month, day] = splittedDatetime[0].split("-").map(Number);
-        const [hours, minutes, seconds] = splittedDatetime[1].split(":").map(Number);
-        const milliseconds = (seconds - Math.floor(seconds)) * 1000;
+      const splittedDatetime = value.split(" ");
+      const [year, month, day] = splittedDatetime[0].split("-").map(Number);
+      const [hours, minutes, seconds] = splittedDatetime[1]
+        .split(":")
+        .map(Number);
+      const milliseconds = (seconds - Math.floor(seconds)) * 1000;
 
-        return new Date(
-            Date.UTC(
-            year,
-            month - 1,
-            day,
-            hours,
-            minutes,
-            Math.floor(seconds),
-            milliseconds
-            )
-        );
+      return new Date(
+        Date.UTC(
+          year,
+          month - 1,
+          day,
+          hours,
+          minutes,
+          Math.floor(seconds),
+          milliseconds,
+        ),
+      );
     }
   }
 
   throw new TransformerError(`Expected a day value. Received: ${value}`);
 };
 
-export const fromDatetime = function (
-  value: Date | null
-): string | null {
+export const fromDatetime = function (value: Date | null): string | null {
   if (value === undefined || value === null) return null;
 
   if (value instanceof Date) {
-    return value.toISOString()
-      .replace("T", " ")
-      .replace("Z", "");
+    return value.toISOString().replace("T", " ").replace("Z", "");
   }
 
   throw new TransformerError(`Expected an Date instance. Recieved: ${value}`);
 };
 
-export const toJSON = function (
-  value: any
-) {
+export const toJSON = function (value: any) {
   if (value === undefined || value === null) return null;
 
   if (typeof value === "string") {
@@ -178,9 +173,7 @@ export const toJSON = function (
   throw new TransformerError(`Expected a JSON instance. Recieved: ${value}`);
 };
 
-export const fromJSON = function (
-  value: any
-) {
+export const fromJSON = function (value: any) {
   if (value === undefined || value === null) return null;
 
   return JSON.stringify(value);

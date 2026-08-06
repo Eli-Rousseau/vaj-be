@@ -18,7 +18,9 @@ const runDatabaseContainer = function () {
   const port = process.env.DATABASE_PORT;
 
   if (!password || !host || !port) {
-    LOGGER.error("Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_HOST, or DATABASE_PORT.");
+    LOGGER.error(
+      "Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_HOST, or DATABASE_PORT.",
+    );
     process.exit(1);
   }
 
@@ -28,13 +30,15 @@ const runDatabaseContainer = function () {
     docker.runContainer({
       "--name": CONTAINER_NAME,
       args: [
-        { "-e": `POSTGRES_PASSWORD=${password}` }, 
+        { "-e": `POSTGRES_PASSWORD=${password}` },
         { "-p": `${port}:${port}` },
-        "postgres"
-      ]
+        "postgres",
+      ],
     });
 
-    LOGGER.info(`PostgreSQL container "${CONTAINER_NAME}" is running on ${host}:${port}.`);
+    LOGGER.info(
+      `PostgreSQL container "${CONTAINER_NAME}" is running on ${host}:${port}.`,
+    );
   } catch (error) {
     LOGGER.error("Failed to start up the postgres container.", error);
     process.exit(1);
@@ -53,4 +57,3 @@ const main = async function () {
 };
 
 main();
-

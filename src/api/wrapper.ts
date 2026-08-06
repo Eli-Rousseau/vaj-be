@@ -8,41 +8,40 @@ import { Context, getCurrentContext } from "@/src/middleware/context";
 import * as errors from "@/src/utils/errors";
 import { generateJWTToken } from "@/src/utils/jwt";
 
-
 type WrapperOptions = {
   handlerName: string;
   service: string;
   setupContext?: boolean;
   initializeAccessToken?: boolean;
-}
+};
 
 type WrappedHandler = (
   req: Request,
   res: Response,
   next: NextFunction,
-  context: Context
+  context: Context,
 ) => unknown | Promise<unknown>;
 
 const LOGGER = logger.get({
-    source: "api",
-    module: path.basename(__filename)
+  source: "api",
+  module: path.basename(__filename),
 });
 
-export const withHandler = async function(
+export const withHandler = async function (
   req: Request,
   res: Response,
   next: NextFunction,
   options: WrapperOptions,
-  handler: WrappedHandler
+  handler: WrappedHandler,
 ) {
   let context;
   if (options.setupContext) {
-      const traceId = (req.headers["x-trace-id"] as string) || crypto.randomUUID();
-      context = new Context(traceId);
-      res.setHeader("x-trace-id", traceId);
-  }
-  else {
-      context = getCurrentContext();
+    const traceId =
+      (req.headers["x-trace-id"] as string) || crypto.randomUUID();
+    context = new Context(traceId);
+    res.setHeader("x-trace-id", traceId);
+  } else {
+    context = getCurrentContext();
   }
 
   if (options.initializeAccessToken) initializeAccessToken(context);
@@ -56,33 +55,42 @@ export const withHandler = async function(
     method: req.method,
     route: req.originalUrl,
     user,
-    service: options.service
+    service: options.service,
   });
 
   const startedAt = Date.now();
 
   try {
-    requestLogger.info(`${context.traceId} - START - ${options.service} - ${options.handlerName}`, {
-      params: req.params,
-      query: req.query,
-      body: req.body
-    });
+    requestLogger.info(
+      `${context.traceId} - START - ${options.service} - ${options.handlerName}`,
+      {
+        params: req.params,
+        query: req.query,
+        body: req.body,
+      },
+    );
 
     await handler(req, res, next, context);
 
-    requestLogger.info(`${context.traceId} - END - ${options.service} - ${options.handlerName}`, {
-      statusCode: res.statusCode,
-      durationMs: Date.now() - startedAt
-    });
+    requestLogger.info(
+      `${context.traceId} - END - ${options.service} - ${options.handlerName}`,
+      {
+        statusCode: res.statusCode,
+        durationMs: Date.now() - startedAt,
+      },
+    );
   } catch (error: any) {
-    requestLogger.error(`${context.traceId} - FAILED - ${options.service} - ${options.handlerName}`, {
-      durationMs: Date.now() - startedAt,
-      error: {
-        name: error?.name,
-        message: error?.message,
-        stack: error?.stack
-      }
-    });
+    requestLogger.error(
+      `${context.traceId} - FAILED - ${options.service} - ${options.handlerName}`,
+      {
+        durationMs: Date.now() - startedAt,
+        error: {
+          name: error?.name,
+          message: error?.message,
+          stack: error?.stack,
+        },
+      },
+    );
 
     handleAPIError(res as any, error);
   }
@@ -90,7 +98,7 @@ export const withHandler = async function(
 
 /**
  * Useful for assigning the accessToken on the context or local storage for each request.
- * This is especially important for making requests on the graphql server for instance as 
+ * This is especially important for making requests on the graphql server for instance as
  * it can pass down the access token for downstream authorization.
  */
 export async function initializeAccessToken(context: Context) {
@@ -100,17 +108,17 @@ export async function initializeAccessToken(context: Context) {
     if (!jwtSecret) throw new errors.ConfigError("CONFIG_MISSING_JWT_SECRET");
 
     const userEmail = process.env.DEFAULT_USER_EMAIL;
-    if (!userEmail) throw new errors.ConfigError("CONFIG_MISSING_DEFAULT_USER_EMAIL");
+    if (!userEmail)
+      throw new errors.ConfigError("CONFIG_MISSING_DEFAULT_USER_EMAIL");
 
     const user = ShopUser.fromPlain({
       reference: crypto.randomBytes(16).toString("hex"),
       sequentialId: 0,
       email: userEmail,
       systemRole: "ADMINISTRATOR",
-      systemAuthentication: "INTERNAL"
-
+      systemAuthentication: "INTERNAL",
     });
-    
+
     accessToken = generateJWTToken(user, jwtSecret, 600);
     context.setAttribute("accessToken", accessToken);
   }
@@ -167,14 +175,17 @@ type HandleAPIErrorOptions = {
 export function handleAPIError(
   res: Response,
   error: unknown,
-  options?: HandleAPIErrorOptions
+  options?: HandleAPIErrorOptions,
 ) {
-  const configs = [...(options?.otherErrorClasses || []), ...DEFAULT_ERROR_CONFIG];
+  const configs = [
+    ...(options?.otherErrorClasses || []),
+    ...DEFAULT_ERROR_CONFIG,
+  ];
 
   LOGGER.error((error as any).message);
 
   for (const config of configs) {
-    if (config.classes.some(cls => error instanceof cls)) {
+    if (config.classes.some((cls) => error instanceof cls)) {
       return res.status(config.statusCode).json({
         error: config.message,
         errorMessage: error instanceof Error ? error.message : "UNKNOWN_ERROR",
@@ -187,5 +198,3 @@ export function handleAPIError(
     errorMessage: error instanceof Error ? error.message : "UNKNOWN_ERROR",
   });
 }
-
-  

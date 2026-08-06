@@ -1,102 +1,110 @@
-import { AuthenticationError, BadRequestError, ConfigError, DatabaseError } from "@/src/utils/errors";
+import {
+  AuthenticationError,
+  BadRequestError,
+  ConfigError,
+  DatabaseError,
+} from "@/src/utils/errors";
 import { ShopRefreshToken } from "@/src/database/classes/transformer-classes";
 import { generateGenericToken } from "@/src/authentication/common";
 import * as gql from "@/src/authentication/gql";
 import { generateJWTToken } from "@/src/utils/jwt";
 
 type RefreshTokenEvent = {
-    tokenReferenceAndHash: string;
-    jwtSecret: string;
-}
+  tokenReferenceAndHash: string;
+  jwtSecret: string;
+};
 
 type RefreshTokenResult = {
-    accessToken: string;
-    refreshToken: ShopRefreshToken;
-}
+  accessToken: string;
+  refreshToken: ShopRefreshToken;
+};
 
-export async function refreshToken(event: RefreshTokenEvent): Promise<RefreshTokenResult> {
-    const { tokenReferenceAndHash, jwtSecret } = event;
+export async function refreshToken(
+  event: RefreshTokenEvent,
+): Promise<RefreshTokenResult> {
+  const { tokenReferenceAndHash, jwtSecret } = event;
 
-    if (!jwtSecret) throw new ConfigError("CONFIG_MISSING_JWT_SECRET");
+  if (!jwtSecret) throw new ConfigError("CONFIG_MISSING_JWT_SECRET");
 
-    if (!tokenReferenceAndHash) throw new BadRequestError(`INVALID_REFRESH_TOKEN.`);
+  if (!tokenReferenceAndHash)
+    throw new BadRequestError(`INVALID_REFRESH_TOKEN.`);
 
-    const [ tokenReference, tokenHash ] = tokenReferenceAndHash.split(".");
+  const [tokenReference, tokenHash] = tokenReferenceAndHash.split(".");
 
-    if (!tokenReference || !tokenHash) throw new BadRequestError(`INVALID_REFRESH_TOKEN.`);
+  if (!tokenReference || !tokenHash)
+    throw new BadRequestError(`INVALID_REFRESH_TOKEN.`);
 
-    let refreshToken;
-    try {
-        refreshToken = await gql.findRefreshTokenByReference(tokenReference);
-    } catch (error) {
-        throw new DatabaseError(`FIND_REFRESH_TOKEN_FAILED:${error}`);
+  let refreshToken;
+  try {
+    refreshToken = await gql.findRefreshTokenByReference(tokenReference);
+  } catch (error) {
+    throw new DatabaseError(`FIND_REFRESH_TOKEN_FAILED:${error}`);
+  }
+
+  const expiration = new Date(Date.now());
+  if (
+    refreshToken.tokenHash !== tokenHash ||
+    refreshToken.revokedAt !== null ||
+    refreshToken.replacedBy !== null ||
+    refreshToken.expiresAt! < expiration
+  ) {
+    const refreshTokensToRevoke =
+      refreshToken.userByReference?.nonRevokedRefreshTokens;
+
+    if (refreshTokensToRevoke) {
+      const lastRefreshToken = refreshTokensToRevoke.sort((token1, token2) => {
+        return token1.expiresAt! > token2.expiresAt! ? 1 : -1;
+      })[0];
+      refreshTokensToRevoke.forEach((token) => {
+        token.revokedAt = expiration;
+        token.replacedBy = lastRefreshToken.reference!;
+      });
+
+      try {
+        await gql.revokeRefreshTokens(refreshTokensToRevoke);
+      } catch (error) {
+        throw new DatabaseError(`REVOKE_REFRESH_TOKENS_FAILED:${error}`);
+      }
     }
 
-    const expiration = new Date(Date.now());
-    if (
-        refreshToken.tokenHash !== tokenHash
-        || refreshToken.revokedAt !== null
-        || refreshToken.replacedBy !== null
-        || refreshToken.expiresAt! < expiration
-    ) {
+    throw new AuthenticationError(`INCORRECT_REFRESH_TOKEN`);
+  }
 
-        const refreshTokensToRevoke = refreshToken.userByReference?.nonRevokedRefreshTokens;
+  const user = refreshToken.userByReference!;
 
-        if (refreshTokensToRevoke) {
+  const newExpiration = new Date(expiration);
+  newExpiration.setDate(newExpiration.getDate() + 7); // 7 days
+  let newRefreshToken = ShopRefreshToken.fromPlain({
+    user: user.reference,
+    tokenHash: generateGenericToken(),
+    expiresAt: newExpiration,
+  });
 
-            const lastRefreshToken = refreshTokensToRevoke.sort((token1, token2) => { 
-                return token1.expiresAt! > token2.expiresAt! ? 1 : -1 
-            })[0];
-            refreshTokensToRevoke.forEach((token) => {
-                token.revokedAt = expiration;
-                token.replacedBy = lastRefreshToken.reference!;
-            });
+  try {
+    newRefreshToken = await gql.createRefreshToken(newRefreshToken);
+  } catch (error) {
+    throw new DatabaseError(`CREATE_REFRESH_TOKEN_FAILED:${error}`);
+  }
 
-            try {
-                await gql.revokeRefreshTokens(refreshTokensToRevoke);
-            } catch (error) {
-                throw new DatabaseError(`REVOKE_REFRESH_TOKENS_FAILED:${error}`);
-            }
-        }
+  const refreshTokensToRevoke = user.nonRevokedRefreshTokens;
 
-        throw new AuthenticationError(`INCORRECT_REFRESH_TOKEN`);
-    }
-
-    const user = refreshToken.userByReference!;
-
-    const newExpiration = new Date(expiration);
-    newExpiration.setDate(newExpiration.getDate() + 7); // 7 days
-    let newRefreshToken = ShopRefreshToken.fromPlain({
-        user: user.reference,
-        tokenHash: generateGenericToken(),
-        expiresAt: newExpiration
+  if (refreshTokensToRevoke && refreshTokensToRevoke.length > 0) {
+    refreshTokensToRevoke.forEach((token) => {
+      token.revokedAt = expiration;
+      token.replacedBy = newRefreshToken.reference;
     });
 
     try {
-        newRefreshToken = await gql.createRefreshToken(newRefreshToken);
+      await gql.revokeRefreshTokens(refreshTokensToRevoke);
     } catch (error) {
-        throw new DatabaseError(`CREATE_REFRESH_TOKEN_FAILED:${error}`);
+      throw new DatabaseError(`REVOKE_REFRESH_TOKENS_FAILED:${error}`);
     }
+  }
 
-    const refreshTokensToRevoke = user.nonRevokedRefreshTokens;
+  const accessToken = generateJWTToken(user, jwtSecret, 30 * 60);
 
-    if (refreshTokensToRevoke && refreshTokensToRevoke.length > 0) {
-        refreshTokensToRevoke.forEach((token) => {
-            token.revokedAt = expiration;
-            token.replacedBy = newRefreshToken.reference;
-        });
-
-        try {
-            await gql.revokeRefreshTokens(refreshTokensToRevoke);
-        } catch (error) {
-            throw new DatabaseError(`REVOKE_REFRESH_TOKENS_FAILED:${error}`);
-        }
-    }
-
-    const accessToken = generateJWTToken(user, jwtSecret, 30 * 60);
-
-    return {
-        accessToken,
-        refreshToken: newRefreshToken
-    }
+  return {
+    accessToken,
+    refreshToken: newRefreshToken,
+  };
 }

@@ -72,10 +72,9 @@ export enum S3ContentType {
 
 export function findEnumsValue<E extends Record<string, string>>(
   value: string,
-  enums: E
+  enums: E,
 ): E[keyof E] | null {
   const enumValues = Object.values(enums) as E[keyof E][];
-  const found = enumValues.find(v => v === value);
+  const found = enumValues.find((v) => v === value);
   return found ?? null;
 }
-

@@ -14,7 +14,7 @@ type EscapeLiteralOptions = {
   column?: string;
   columnTypes?: Record<string, string>;
   args?: Record<string, any>;
-}
+};
 
 function resolveDollarPath(value: any, args: any) {
   if (typeof value !== "string" || !value.startsWith("$")) {
@@ -34,10 +34,7 @@ function resolveDollarPath(value: any, args: any) {
   return current;
 }
 
-function escapeLiteral(
-  value: any, 
-  options: EscapeLiteralOptions = {}
-): string {
+function escapeLiteral(value: any, options: EscapeLiteralOptions = {}): string {
   const { column, columnTypes, args } = options;
   if (value === null || value === undefined) {
     return "NULL";
@@ -161,22 +158,22 @@ function constructJSONPath(contains: object, path: string) {
 async function constructSelectedColumns(
   schema: string,
   table: string,
-  columnsToExclude: string[]
+  columnsToExclude: string[],
 ) {
   const tableInfo = await getTableInfo(schema, table);
   const selectedColumns = tableInfo.columns.map((column) => {
-    if (columnsToExclude.includes(column.name)) return `NULL AS "${column.name}"`;
+    if (columnsToExclude.includes(column.name))
+      return `NULL AS "${column.name}"`;
     else return `"${column.name}"`;
   });
   return selectedColumns.join(", ");
-  
 }
 
 function constructNestedWhereClause(
   schema: string,
   table: string,
   where: WhereInput,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): NestedWhereResult {
   let joins: string[] = [];
   let wheres: string[] = [];
@@ -186,12 +183,10 @@ function constructNestedWhereClause(
 
     if (/ByReference/.test(column)) {
       const relation = column.replace("ByReference", "");
-      if (
-        !(
-          typeof expression === "object" &&
-          Object.keys(expression).includes("where")
-        )
-      ) {
+      if (!(
+        typeof expression === "object" &&
+        Object.keys(expression).includes("where")
+      )) {
         continue;
       }
       const nestedWhere = expression["where"];
@@ -203,7 +198,7 @@ function constructNestedWhereClause(
         schema,
         relation,
         nestedWhere,
-        args
+        args,
       );
       joins = joins.concat(nestedJoins);
       wheres = wheres.concat(nestedWheres);
@@ -215,7 +210,7 @@ function constructNestedWhereClause(
             schema,
             table,
             nestedWhere,
-            args
+            args,
           );
           conditionalWheres.push(nestedWhereResult["nestedWheres"]);
           joins.push(nestedWhereResult["nestedJoins"]);
@@ -230,7 +225,7 @@ function constructNestedWhereClause(
             schema,
             table,
             nestedWhere,
-            args
+            args,
           );
           conditionalWheres.push(nestedWhereResult["nestedWheres"]);
           joins.push(nestedWhereResult["nestedJoins"]);
@@ -245,7 +240,7 @@ function constructNestedWhereClause(
             schema,
             table,
             nestedWhere,
-            args
+            args,
           );
           conditionalWheres.push(nestedWhereResult["nestedWheres"]);
           joins.push(nestedWhereResult["nestedJoins"]);
@@ -310,9 +305,7 @@ function constructNestedWhereClause(
   };
 }
 
-const RELATIONAL_OPERATORS = [
-    "and", "or", "not"
-];
+const RELATIONAL_OPERATORS = ["and", "or", "not"];
 
 export function mergeFilterToWhereClause(
   filters: Record<string, any> = {},
@@ -343,7 +336,9 @@ export function mergeFilterToWhereClause(
   };
 
   for (const operator of RELATIONAL_OPERATORS) {
-    const filterArr = Array.isArray(remaining[operator]) ? remaining[operator] : null;
+    const filterArr = Array.isArray(remaining[operator])
+      ? remaining[operator]
+      : null;
     const whereArr = Array.isArray(result[operator]) ? result[operator] : null;
 
     // Same relational operator on both sides -> flatten both arrays into one
@@ -389,7 +384,7 @@ function constructWhereClause(
   table: string,
   filters: any,
   where?: WhereInput,
-  args?: Record<string, any>
+  args?: Record<string, any>,
 ): string {
   where = mergeFilterToWhereClause(filters, where);
   if (!where || Object.keys(where).length === 0) return "";
@@ -411,9 +406,13 @@ export async function constructGetQuery(
   orderBy?: Record<string, string>[],
   limit?: number,
   offset?: number,
-  args?: Record<string, any>
+  args?: Record<string, any>,
 ) {
-  const selectedColumns = await constructSelectedColumns(schema, table, columnsToExclude);
+  const selectedColumns = await constructSelectedColumns(
+    schema,
+    table,
+    columnsToExclude,
+  );
   const whereClause = constructWhereClause(schema, table, filters, where, args);
   const orderByClause = constructOrderByClause(table, orderBy);
   const limitClause = constructLimitClause(limit);
@@ -430,9 +429,13 @@ export async function constructGetOnColumnQuery(
   reference: string,
   columnsToExclude: string[],
   filters: any,
-  args?: Record<string, any>
+  args?: Record<string, any>,
 ) {
-  const selectedColumns = await constructSelectedColumns(schema, table, columnsToExclude);
+  const selectedColumns = await constructSelectedColumns(
+    schema,
+    table,
+    columnsToExclude,
+  );
   const where = { [column]: { eq: reference } };
   const whereClause = constructWhereClause(schema, table, filters, where, args);
   const query = `SELECT ${selectedColumns} FROM "${schema}"."${table}" ${whereClause} ;`;
@@ -482,10 +485,7 @@ function constructConflictClause(
   return conflictClause;
 }
 
-async function getTableInfo(
-  schema: string,
-  table: string
-) {
+async function getTableInfo(schema: string, table: string) {
   try {
     const databaseInfo = await getDataBaseInfo();
 
@@ -533,7 +533,9 @@ async function getTableValues(
 }
 
 function constructTableValuesTypes(tableInfo: TableInfo) {
-  return Object.fromEntries(tableInfo.columns.map(column => [column.name, column.dataType]));
+  return Object.fromEntries(
+    tableInfo.columns.map((column) => [column.name, column.dataType]),
+  );
 }
 
 async function constructNestedInsertClause(
@@ -582,12 +584,14 @@ async function constructNestedInsertClause(
           const alias =
             "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
 
-          let { last, nesteds } = await constructNestedInsertClause(
+          const construct = await constructNestedInsertClause(
             schema,
             relation,
             value,
             id,
           );
+          let { last } = construct;
+          const { nesteds } = construct;
           last = `"${alias}" AS (${last})`;
           nestedInserts.concat(nesteds);
           nestedInserts.push(last);
@@ -717,19 +721,26 @@ async function constructNestedUpdateClause(
           const alias =
             "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
 
-          let { last, nesteds } = await constructNestedUpdateClause(
+          const construct = await constructNestedUpdateClause(
             schema,
             relation,
             value,
             id,
           );
+          let { last } = construct;
+          const { nesteds } = construct;
           last = `"${alias}" AS (${last})`;
           nestedUpdates.concat(nesteds);
           nestedUpdates.push(last);
 
           record.push(escapeLiteral(value["data"]["reference"]));
         } else if (!/ByReference/.test(tableValue)) {
-          record.push(escapeLiteral(value, { column: tableValue, columnTypes: tableValuesTypes }));
+          record.push(
+            escapeLiteral(value, {
+              column: tableValue,
+              columnTypes: tableValuesTypes,
+            }),
+          );
         }
       } else if (
         !/ByReference/.test(tableValue) &&
@@ -837,19 +848,26 @@ async function constructNestedDeleteClause(
           const alias =
             "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
 
-          let { last, nesteds } = await constructNestedDeleteClause(
+          const construct = await constructNestedDeleteClause(
             schema,
             relation,
             value,
             id,
           );
+          let { last } = construct;
+          const { nesteds } = construct;
           last = `"${alias}" AS (${last})`;
           nestedDeletes.concat(nesteds);
           nestedDeletes.push(last);
 
           record.push(escapeLiteral(value["data"]["reference"]));
         } else if (!/ByReference/.test(tableValue)) {
-          record.push(escapeLiteral(value, { column: tableValue, columnTypes: tableValuesTypes }));
+          record.push(
+            escapeLiteral(value, {
+              column: tableValue,
+              columnTypes: tableValuesTypes,
+            }),
+          );
         }
       } else if (
         !/ByReference/.test(tableValue) &&

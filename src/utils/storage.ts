@@ -120,7 +120,7 @@ class StorageClient {
             isPublic: value?.isPublic,
           });
           return [key, bucketInstance];
-        } catch (error) {
+        } catch {
           throw new Error(
             `Unable to transform input into Bucket instance: ${value}`,
           );
@@ -204,10 +204,7 @@ class StorageClient {
   }
 
   private async getUploadUrl(bucket: Bucket) {
-    const expirationTimestamp = this.bucketUploadUrls.has(bucket)
-      ? this.bucketUploadUrls.get(bucket)
-          ?.authorizationTokenExpirationTimestamp!
-      : null;
+    const expirationTimestamp = this.bucketUploadUrls.get(bucket)?.authorizationTokenExpirationTimestamp ?? null;
     if (this.hasNonExpiredValue(expirationTimestamp))
       return this.bucketUploadUrls.get(bucket)!;
 
@@ -366,7 +363,7 @@ class StorageClient {
 
     try {
       let startFileName: string | null = "";
-      let files: File[] = [];
+      const files: File[] = [];
 
       while (startFileName !== null) {
         const url: string = `${authResponse.apiInfo.storageApi.apiUrl}/b2api/v4/b2_list_file_names?bucketId=${bucket.id}${prefix ? `&prefix=${prefix}` : ""}${startFileName ? `&startFileName=${startFileName}` : ""}`;

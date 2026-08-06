@@ -151,7 +151,9 @@ async function rebuildGraphQLSchema() {
   const userPassword = process.env.DEFAULT_USER_PASSWORD;
 
   if (!applicationUrl || !userName || !userEmail || !userPassword) {
-    LOGGER.error("Missing required environment variables: APPLICATION_URL, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, or DEFAULT_USER_PASSWORD.");
+    LOGGER.error(
+      "Missing required environment variables: APPLICATION_URL, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, or DEFAULT_USER_PASSWORD.",
+    );
     process.exit(1);
   }
 
@@ -159,26 +161,26 @@ async function rebuildGraphQLSchema() {
     const loginUser = {
       name: userName,
       email: userEmail,
-      password: userPassword
-    }
+      password: userPassword,
+    };
 
     const auth = new AuthVAJ(loginUser);
-    
+
     let tokens = await auth.connect();
     const accessToken = tokens?.accessToken;
 
     if (!accessToken) {
       throw new Error("Failed to retrieve access token.");
     }
-    
+
     const url = `${applicationUrl}/api/graphql/update-schema`;
     const headers = {
-      Authorization: accessToken
-    }
+      Authorization: accessToken,
+    };
 
     const response = await fetch(url, {
       method: "POST",
-      headers
+      headers,
     });
 
     if (!response.ok) {

@@ -5,7 +5,7 @@ import * as readline from "readline";
  */
 export function askQuestion(
   question: string,
-  defaultValue?: string
+  defaultValue?: string,
 ): Promise<string> {
   return new Promise((resolve) => {
     const rl = readline.createInterface({
@@ -34,7 +34,7 @@ export function askQuestion(
  */
 export function askQuestionWithHiddenInput(
   question: string,
-  defaultValue?: string
+  defaultValue?: string,
 ): Promise<string> {
   return new Promise((resolve) => {
     const rl = readline.createInterface({

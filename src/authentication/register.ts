@@ -1,5 +1,13 @@
-import { AuthenticationError, BadRequestError, ConfigError, DatabaseError } from "@/src/utils/errors";
-import { ShopUser, ShopRefreshToken } from "@/src/database/classes/transformer-classes";
+import {
+  AuthenticationError,
+  BadRequestError,
+  ConfigError,
+  DatabaseError,
+} from "@/src/utils/errors";
+import {
+  ShopUser,
+  ShopRefreshToken,
+} from "@/src/database/classes/transformer-classes";
 import { isValidEmail } from "@/src/utils/validators";
 import { generateGenericToken } from "@/src/authentication/common";
 import * as gql from "@/src/authentication/gql";
@@ -12,21 +20,23 @@ type RegisterEvent = {
 
 type RegisterResult = {
   accessToken: string;
-  refreshToken: ShopRefreshToken
+  refreshToken: ShopRefreshToken;
 };
 
 async function isEmailAlreadyAssigned(email: string) {
-    let users;
-    try {
-      users = await gql.findUsersByEmail(email);
-    } catch (error) {
-      throw new DatabaseError(`FIND_USERS_FAILED:${error}`);
-    }
-    
-    return users.length > 0;
+  let users;
+  try {
+    users = await gql.findUsersByEmail(email);
+  } catch (error) {
+    throw new DatabaseError(`FIND_USERS_FAILED:${error}`);
+  }
+
+  return users.length > 0;
 }
 
-export async function registerUser(event: RegisterEvent): Promise<RegisterResult> {
+export async function registerUser(
+  event: RegisterEvent,
+): Promise<RegisterResult> {
   const { user: rawUser, jwtSecret } = event;
 
   if (!jwtSecret) {
@@ -40,13 +50,16 @@ export async function registerUser(event: RegisterEvent): Promise<RegisterResult
     throw new TypeError(`UNABLE_TO_TRANSFORM_USER_TYPE:${error}`);
   }
 
-  if (!user.email || !isValidEmail(user.email)) throw new BadRequestError(`INVALID_EMAIL:${user.email}`);
+  if (!user.email || !isValidEmail(user.email))
+    throw new BadRequestError(`INVALID_EMAIL:${user.email}`);
 
   if (!user.name) throw new BadRequestError(`INVALID_NAME:${user.name}`);
 
-  if (!user.password) throw new BadRequestError(`INVALID_PASSWORD:${user.password}`);
+  if (!user.password)
+    throw new BadRequestError(`INVALID_PASSWORD:${user.password}`);
 
-  if (await isEmailAlreadyAssigned(user.email)) throw new AuthenticationError("EMAIL_ALREADY_IN_USE");
+  if (await isEmailAlreadyAssigned(user.email))
+    throw new AuthenticationError("EMAIL_ALREADY_IN_USE");
 
   user.systemRole = "USER";
   user.systemAuthentication = "INTERNAL";
@@ -61,7 +74,7 @@ export async function registerUser(event: RegisterEvent): Promise<RegisterResult
   let refreshToken = ShopRefreshToken.fromPlain({
     user: user.reference,
     tokenHash: generateGenericToken(),
-    expiresAt: expiration
+    expiresAt: expiration,
   });
 
   try {
@@ -74,6 +87,6 @@ export async function registerUser(event: RegisterEvent): Promise<RegisterResult
 
   return {
     accessToken,
-    refreshToken
+    refreshToken,
   };
 }

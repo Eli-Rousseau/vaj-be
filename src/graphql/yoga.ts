@@ -7,9 +7,9 @@ import { buildGraphQLSchema } from "@/src/graphql/build-schema";
 import { AuthVAJ } from "@/src/api/auth";
 
 const LOGGER = logger.get({
-    source: "src",
-    service: "graphql",
-    module: path.basename(__filename)
+  source: "src",
+  service: "graphql",
+  module: path.basename(__filename),
 });
 
 let currentSchema: GraphQLSchema | null = null;
@@ -23,15 +23,11 @@ export const yoga = createYoga({
   },
 
   context: async ({ request }) => {
-    let authorization = request.headers.get("authorization");
+    const authorization = request.headers.get("authorization");
 
-    if (
-      !authorization &&
-      process.env.STAGE === "dev"
-    ) {
-      const accessToken = (
-        await AuthVAJ.connectAsDefaultUser()
-      )?.accessToken || "";
+    if (!authorization && process.env.STAGE === "dev") {
+      const accessToken =
+        (await AuthVAJ.connectAsDefaultUser())?.accessToken || "";
 
       request.headers.set("authorization", accessToken);
     }
@@ -40,10 +36,10 @@ export const yoga = createYoga({
 
 export async function initSchema() {
   currentSchema = await buildGraphQLSchema();
-  LOGGER.info("GraphQL schema build.")
+  LOGGER.info("GraphQL schema build.");
 }
 
 export async function rebuildSchema(force = false) {
   currentSchema = await buildGraphQLSchema(force);
-  LOGGER.info("GraphQL schema updated.")
+  LOGGER.info("GraphQL schema updated.");
 }

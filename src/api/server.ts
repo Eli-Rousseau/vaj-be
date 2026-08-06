@@ -8,10 +8,10 @@ import { setupShutdownHooks } from "@/src/utils/shutdown";
 import * as middleware from "@/src/middleware/handlers";
 
 const LOGGER = logger.get({
-    source: "src",
-    service: "api",
-    module: path.basename(__filename)
-})
+  source: "src",
+  service: "api",
+  module: path.basename(__filename),
+});
 
 let app: Express | null = null;
 
@@ -24,8 +24,10 @@ async function startServer() {
   const host = process.env.APPLICATION_HOST;
   const port = process.env.APPLICATION_PORT;
 
-  if (!host || ! port) {
-    LOGGER.error("Missing required environment variables: APPLICATION_HOST or APPLICATION_PORT.");
+  if (!host || !port) {
+    LOGGER.error(
+      "Missing required environment variables: APPLICATION_HOST or APPLICATION_PORT.",
+    );
     process.exit(1);
   }
 
@@ -47,7 +49,7 @@ async function startServer() {
   });
 }
 
-startServer().catch(err => {
+startServer().catch((err) => {
   LOGGER.error(err);
   process.exit(1);
 });
