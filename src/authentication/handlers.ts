@@ -17,7 +17,6 @@ export async function handleInternalRegister(
     {
       handlerName: "handleInternalRegister",
       service: "authentication",
-      initializeAccessToken: true,
     },
     async (req, res, next, context) => {
       const result = await registerUser({
@@ -45,7 +44,6 @@ export async function handleInternalLogin(
     {
       handlerName: "handleInternalLogin",
       service: "authentication",
-      initializeAccessToken: true,
     },
     async (req, res, next, context) => {
       const result = await loginUser({
@@ -73,7 +71,6 @@ export async function handleRefreshToken(
     {
       handlerName: "handleRefreshToken",
       service: "authentication",
-      initializeAccessToken: true,
     },
     async (req, res, next, context) => {
       const result = await refreshToken({

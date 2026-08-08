@@ -27,7 +27,7 @@ export const yoga = createYoga({
 
     if (!authorization && process.env.STAGE === "dev") {
       const accessToken =
-        (await AuthVAJ.connectAsDefaultUser())?.accessToken || "";
+        (await AuthVAJ.connectAPIUser())?.accessToken || "";
 
       request.headers.set("authorization", accessToken);
     }

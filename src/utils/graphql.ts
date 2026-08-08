@@ -16,7 +16,7 @@ type GraphQLParams = {
 
 class GraphQLClient {
   private async findAuthorization(): Promise<string> {
-    return (await AuthVAJ.connectAsDefaultUser())?.accessToken || "";
+    return (await AuthVAJ.connectAPIUser())?.accessToken || "";
   }
 
   async execute(params: GraphQLParams) {

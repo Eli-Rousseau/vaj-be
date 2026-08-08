@@ -25,7 +25,7 @@ type Tokens = {
   refreshToken: string;
 };
 
-let defaultUserAuthVAJ: AuthVAJ | null = null;
+let apiUser: AuthVAJ | null = null;
 
 export class AuthVAJ {
   protected readonly credentials: InternalApiCredentials;
@@ -135,30 +135,28 @@ export class AuthVAJ {
   }
 
   async connect(): Promise<Tokens | null> {
-    let tokens: Tokens | null;
-
     const accessToken = this.tokens?.accessToken;
 
-    if (!accessToken) {
-      tokens = await this.login();
-    } else {
-      if (await this.accessTokenIsValid()) tokens = this.tokens;
-      else tokens = await this.refresh();
-    }
+    if (!accessToken) return await this.login();
 
-    return tokens;
+    try {
+      if (await this.accessTokenIsValid()) return this.tokens;
+      else return await this.refresh();
+    } catch {
+      return await this.login();
+    }
   }
 
-  static async connectAsDefaultUser() {
-    if (!defaultUserAuthVAJ) {
-      const userName = process.env.DEFAULT_USER_NAME;
-      const userEmail = process.env.DEFAULT_USER_EMAIL;
-      const userPassword = process.env.DEFAULT_USER_PASSWORD;
+  static async connectAPIUser() {
+    if (!apiUser) {
+      const userName = process.env.API_USER_1_NAME;
+      const userEmail = process.env.API_USER_1_EMAIL;
+      const userPassword = process.env.API_USER_1_PASSWORD;
       const jwtSecret = process.env.JWT_SECRET;
 
       if (!userName || !userEmail || !userPassword || !jwtSecret) {
         Error(
-          "Missing required environment variables: DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_PASSWORD, or JWT_SECRET.",
+          "Missing required environment variables: API_USER_1_NAME, API_USER_1_EMAIL, API_USER_1_PASSWORD, or JWT_SECRET.",
         );
       }
 
@@ -167,7 +165,8 @@ export class AuthVAJ {
       let user: ShopUser;
       const foundUser = (
         await pgPool.query(
-          `SELECT 
+          `
+          SELECT 
                         reference, 
                         "sequentialId",
                         name,
@@ -196,7 +195,8 @@ export class AuthVAJ {
         const { reference: userReference, sequentialId: userSequentialId } =
           (
             await pgPool.query(
-              `INSERT INTO shop.user 
+              `
+              INSERT INTO shop.user 
                         (name, email, password, "systemAuthentication", "systemRole") 
                         VALUES ($1, $2, $3, $4, $5)
                         RETURNING reference, "sequentialId";`,
@@ -216,7 +216,8 @@ export class AuthVAJ {
       let refreshToken;
       const foundRefreshToken = (
         await pgPool.query(
-          `SELECT 
+          `
+          SELECT 
                         reference,
                         "sequentialId",
                         "user",
@@ -236,7 +237,7 @@ export class AuthVAJ {
         refreshToken = ShopRefreshToken.fromPlain(foundRefreshToken);
       } else {
         const expiresAt = new Date();
-        expiresAt.setFullYear(expiresAt.getFullYear() + 100);
+        expiresAt.setDate(expiresAt.getDate() + 7);
         refreshToken = ShopRefreshToken.fromPlain({
           user: user.reference,
           tokenHash: generateGenericToken(),
@@ -249,7 +250,8 @@ export class AuthVAJ {
           // eslint-disable-next-line  no-unsafe-optional-chaining
         (
           await pgPool.query(
-            `INSERT INTO shop."refreshToken" 
+            `
+            INSERT INTO shop."refreshToken" 
                         ("user", "tokenHash", "expiresAt")
                         VALUES ($1, $2, $3)
                         RETURNING reference, "sequentialId"
@@ -269,7 +271,8 @@ export class AuthVAJ {
       }
 
       await pgPool.query(
-        `UPDATE shop."refreshToken"
+        `
+        UPDATE shop."refreshToken"
                 SET "revokedAt" = CURRENT_TIMESTAMP, "replacedBy" = $2
                 WHERE "user" = $1
                     AND reference <> $2
@@ -293,12 +296,12 @@ export class AuthVAJ {
         email: user.email,
         password: user.password,
       } as InternalApiCredentials;
-      defaultUserAuthVAJ = new AuthVAJ(loginUser);
-      defaultUserAuthVAJ.tokens = tokens;
+      apiUser = new AuthVAJ(loginUser);
+      apiUser.tokens = tokens;
 
       LOGGER.info("New default user connection established.");
     }
 
-    return defaultUserAuthVAJ.connect();
+    return apiUser.connect();
   }
 }

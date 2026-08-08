@@ -146,13 +146,13 @@ async function applyMigrations(scripts: string[]) {
 
 async function rebuildGraphQLSchema() {
   const applicationUrl = process.env.APPLICATION_URL;
-  const userName = process.env.DEFAULT_USER_NAME;
-  const userEmail = process.env.DEFAULT_USER_EMAIL;
-  const userPassword = process.env.DEFAULT_USER_PASSWORD;
+  const userName = process.env.API_USER_1_NAME;
+  const userEmail = process.env.API_USER_1_EMAIL;
+  const userPassword = process.env.API_USER_1_PASSWORD;
 
   if (!applicationUrl || !userName || !userEmail || !userPassword) {
     LOGGER.error(
-      "Missing required environment variables: APPLICATION_URL, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, or DEFAULT_USER_PASSWORD.",
+      "Missing required environment variables: APPLICATION_URL, API_USER_1_NAME, API_USER_1_EMAIL, or API_USER_1_PASSWORD.",
     );
     process.exit(1);
   }
