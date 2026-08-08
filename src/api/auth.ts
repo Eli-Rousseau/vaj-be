@@ -75,7 +75,7 @@ export class AuthVAJ {
 
   async register(): Promise<Tokens | null> {
     const tokens = await this.post<{ user: InternalApiCredentials }, Tokens>(
-      "/api/authentication/register",
+      "/api//v1/authentication/register",
       {
         user: this.credentials,
       },
@@ -88,7 +88,7 @@ export class AuthVAJ {
 
   async login(): Promise<Tokens | null> {
     const tokens = await this.post<{ user: InternalApiCredentials }, Tokens>(
-      "/api/authentication/login",
+      "/api/v1/authentication/login",
       {
         user: this.credentials,
       },
@@ -107,7 +107,7 @@ export class AuthVAJ {
     }
 
     const tokens = await this.post<{ refreshToken: string }, Tokens>(
-      "/api/authentication/refresh-token",
+      "/api/v1/authentication/refresh-token",
       {
         refreshToken: this.tokens.refreshToken,
       },

@@ -2,7 +2,7 @@ import path from "path";
 
 import { logger } from "@/src/utils/logger";
 import { TransformerClass } from "@/src/database/classes/transformers";
-import { AuthVAJ } from "../api/auth";
+import { AuthVAJ } from "@/src/api/auth";
 
 const LOGGER = logger.get({
   source: "utils",
@@ -31,7 +31,7 @@ class GraphQLClient {
     const query = params.query.trim();
     const variables = params?.variables ? params.variables : {};
 
-    const url = `${baseUrl}/api/graphql`;
+    const url = `${baseUrl}/api/v1/graphql`;
 
     try {
       const response = await fetch(url, {

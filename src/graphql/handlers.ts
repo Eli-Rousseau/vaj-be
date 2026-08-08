@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
-import { rebuildSchema } from "./yoga";
-import { withHandler } from "../api/wrapper";
+import { rebuildSchema } from "@/src/graphql/yoga";
+import { withHandler } from "@/src/api/wrapper";
 
 export async function handleGraphQLUpdateSchema(
   req: Request,

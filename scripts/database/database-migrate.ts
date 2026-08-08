@@ -173,7 +173,7 @@ async function rebuildGraphQLSchema() {
       throw new Error("Failed to retrieve access token.");
     }
 
-    const url = `${applicationUrl}/api/graphql/update-schema`;
+    const url = `${applicationUrl}/api/v1/graphql/update-schema`;
     const headers = {
       Authorization: accessToken,
     };
