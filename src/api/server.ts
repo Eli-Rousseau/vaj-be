@@ -35,6 +35,7 @@ async function startServer() {
 
   app.use(middleware.handleSetupRequestContext);
   app.use(middleware.handleValidateAccessToken);
+  app.use(middleware.handleRateLimit);
 
   app.use(express.json());
 

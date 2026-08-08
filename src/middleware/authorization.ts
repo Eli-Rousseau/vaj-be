@@ -19,7 +19,7 @@ export function validateAccessToken(
   if (!jwtSecret) throw new ConfigError("CONFIG_MISSING_JWT_SECRET");
 
   let user = ShopUser.fromPlain({
-    systemRole: "DEFAULT",
+    systemRole: "USER",
     systemAuthentication: "INTERNAL",
   });
   if (accessToken && typeof accessToken === "string") {

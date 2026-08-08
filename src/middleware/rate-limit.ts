@@ -1,29 +1,78 @@
-// import { NextFunction, Request, Response } from "express";
+type FixedWindowRateLimiterOptions = {
+    windowMs?: number;
+    maxRequests?: number;
+}
 
-// const RATE_WINDOW_MS = 60_000;
-// const RATE_THRESHOLD = 1000;
+class FixedWindowRateLimiter {
+    protected windowMs: number;
+    protected maxRequests: number;
+    protected windows: Map<string, number>;
 
-// let requestCounter = 0;
-// let windowStart = Date.now();
+  constructor(options: FixedWindowRateLimiterOptions) {
+    this.windowMs = options.windowMs || 60000; // 1 minute
+    this.maxRequests = options.maxRequests || 50;
+    this.windows = new Map();
+  }
 
-// export function rateLimiter(req: Request, res: Response, next: NextFunction): void {
-//   const now = Date.now();
+  protected getWindowKey(id: string) {
+    const windowStart = Math.floor(Date.now() / this.windowMs);
+    return `${id}:${windowStart}`;
+  }
 
-//   if (now >= windowStart + RATE_WINDOW_MS) {
-//     windowStart = now;
-//     requestCounter = 0;
-//   }
+  isAllowed(id: string) {
+    const key = this.getWindowKey(id);
+    const current = this.windows.get(key) || 0;
 
-//   requestCounter++;
+    if (current >= this.maxRequests) {
+      return { allowed: false, remaining: 0, maxRequests: this.maxRequests };
+    }
 
-//   if (requestCounter > RATE_THRESHOLD) {
-//     const retryAfterSeconds = Math.ceil((windowStart + RATE_WINDOW_MS - now) / 1000);
-//     res.setHeader("Retry-After", retryAfterSeconds.toString());
-//     res.status(429).json({
-//       message: "Rate limit exceeded. Please try again later.",
-//     });
-//     return;
-//   }
+    this.windows.set(key, current + 1);
 
-//   next();
-// }
+    this.cleanup();
+
+    return {
+      allowed: true,
+      remaining: this.maxRequests - current - 1,
+      maxRequests: this.maxRequests
+    };
+  }
+
+  cleanup() {
+    const now = Date.now();
+    const currentWindow = Math.floor(now / this.windowMs);
+
+    for (const [key] of this.windows) {
+      const windowNum = key.slice(key.lastIndexOf(':') + 1);
+      if (parseInt(windowNum) < currentWindow - 1) {
+        this.windows.delete(key);
+      }
+    }
+  }
+}
+
+const fixedWindowRateLimiter = new FixedWindowRateLimiter({
+    windowMs: 300_000,
+    maxRequests: 100
+});
+
+type RateLimitEvent = {
+    id: string;
+    role: string;
+};
+
+type RateLimitResult = {
+    allowed: boolean;
+    remaining: number;
+    maxRequests: number;
+};
+
+export function rateLimit(event: RateLimitEvent): RateLimitResult {
+    const { id, role } = event;
+    if (["DEVELOPER"].includes(role)) return {
+        allowed: true,
+        remaining: -1,
+        maxRequests: -1
+    };
+    return fixedWindowRateLimiter.isAllowed(id);
+}

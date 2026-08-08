@@ -3,8 +3,10 @@ import {
   authorization,
   validateAccessToken,
 } from "@/src/middleware/authorization";
+import { rateLimit } from "@/src/middleware/rate-limit";
 import { runWithContext } from "@/src/middleware/context";
 import { withHandler } from "@/src/api/wrapper";
+import { ShopUser } from "@/src/database/classes/transformer-classes";
 
 export async function handleSetupRequestContext(
   req: Request,
@@ -80,6 +82,44 @@ export async function handleAuthorization(
       next();
     },
   );
+}
+
+export async function handleRateLimit(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  await withHandler(
+    req,
+    res,
+    next,
+    {
+      handlerName: "handleRateLimit",
+      service: "middleware"
+    },
+    (req, res, next, context) => {
+      const user = context.getAttribute("user") as ShopUser;
+      const id =
+        user?.reference ??
+        req.headers["x-forwarded-for"]?.toString().split(",")[0] ??
+        "anonymous";
+      const result = rateLimit({ 
+        id: id,
+        role: user.systemRole!
+      });
+
+      res.set('X-RateLimit-Limit', result.maxRequests.toString());
+      res.set('X-RateLimit-Remaining', result.remaining.toString());
+
+      if (!result.allowed) {
+        return res.status(429).json({
+          error: 'Too many requests'
+        });
+      }
+
+      next();
+    }
+  )
 }
 
 export async function unhandeledRoutes(
