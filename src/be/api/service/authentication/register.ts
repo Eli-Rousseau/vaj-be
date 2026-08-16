@@ -1,0 +1,92 @@
+import {
+  AuthenticationError,
+  BadRequestError,
+  ConfigError,
+  DatabaseError,
+} from "@/src/core/errors";
+import {
+  ShopUser,
+  ShopRefreshToken,
+} from "@/src/be/database/classes/transformer-classes";
+import { isValidEmail } from "@/src/core/validators";
+import { generateGenericToken } from "@/src/be/api/service/authentication/common";
+import * as gql from "@/src/be/api/service/authentication/gql";
+import { generateJWTToken } from "@/src/core/jwt";
+
+type RegisterEvent = {
+  user: unknown;
+  jwtSecret: string;
+};
+
+type RegisterResult = {
+  accessToken: string;
+  refreshToken: ShopRefreshToken;
+};
+
+async function isEmailAlreadyAssigned(email: string) {
+  let users;
+  try {
+    users = await gql.findUsersByEmail(email);
+  } catch (error) {
+    throw new DatabaseError(`FIND_USERS_FAILED:${error}`);
+  }
+
+  return users.length > 0;
+}
+
+export async function registerUser(
+  event: RegisterEvent,
+): Promise<RegisterResult> {
+  const { user: rawUser, jwtSecret } = event;
+
+  if (!jwtSecret) {
+    throw new ConfigError("CONFIG_MISSING_JWT_SECRET");
+  }
+
+  let user: ShopUser;
+  try {
+    user = ShopUser.fromPlain(rawUser);
+  } catch (error) {
+    throw new TypeError(`UNABLE_TO_TRANSFORM_USER_TYPE:${error}`);
+  }
+
+  if (!user.email || !isValidEmail(user.email))
+    throw new BadRequestError(`INVALID_EMAIL:${user.email}`);
+
+  if (!user.name) throw new BadRequestError(`INVALID_NAME:${user.name}`);
+
+  if (!user.password)
+    throw new BadRequestError(`INVALID_PASSWORD:${user.password}`);
+
+  if (await isEmailAlreadyAssigned(user.email))
+    throw new AuthenticationError("EMAIL_ALREADY_IN_USE");
+
+  user.systemRole = "USER";
+  user.systemAuthentication = "INTERNAL";
+
+  try {
+    user = await gql.createUser(user);
+  } catch (error) {
+    throw new DatabaseError(`CREATE_USER_FAILED:${error}`);
+  }
+
+  const expiration = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7); // One week
+  let refreshToken = ShopRefreshToken.fromPlain({
+    user: user.reference,
+    tokenHash: generateGenericToken(),
+    expiresAt: expiration,
+  });
+
+  try {
+    refreshToken = await gql.createRefreshToken(refreshToken);
+  } catch (error) {
+    throw new DatabaseError(`CREATE_REFRESH_TOKEN_FAILED:${error}`);
+  }
+
+  const accessToken = generateJWTToken(user, jwtSecret, 30 * 60);
+
+  return {
+    accessToken,
+    refreshToken,
+  };
+}

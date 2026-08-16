@@ -2,5 +2,5 @@
   "watch": ["src"],
   "ignore": ["dist/**"],
   "ext": "ts,json",
-  "exec": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/src/api/server.js dev"
+  "exec": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/be/api/server.js dev"
 }
