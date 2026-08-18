@@ -3,8 +3,8 @@ import * as handlers from "@/src/be/api/service/authentication/handlers";
 
 const router = Router();
 
-router.post("/register", handlers.handleInternalRegister);
-router.post("/login", handlers.handleInternalLogin);
+router.post("/register", handlers.handleRegister);
+router.post("/login", handlers.handleLogin);
 router.post("/refresh-token", handlers.handleRefreshToken);
 
 export default router;

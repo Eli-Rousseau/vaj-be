@@ -3,6 +3,10 @@ import crypto from "crypto";
 import { ShopUser } from "@/src/be/database/classes/transformer-classes";
 import { AuthorizationError } from "@/src/core/errors";
 
+export function generateGenericToken(): string {
+  return crypto.randomBytes(64).toString("hex");
+}
+
 export function generateJWTToken(
   user: ShopUser,
   secret: string,

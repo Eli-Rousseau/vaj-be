@@ -1,7 +1,14 @@
 import winston from "winston";
-import { getCurrentContext } from "@/src/be/api/middleware/context";
+import { getCurrentContext } from "@/src/core/context";
 
 type LogFormat = "JSON" | "SIMPLE" | "CLI";
+
+type Method = "GET" | "POST" | "PUT" | "DELETE"
+
+type LoggerOptions = {
+  inputs?: any;
+  replace?: boolean;
+}
 
 const loggerFormats: Record<LogFormat, winston.Logform.Format> = {
   JSON: winston.format.combine(
@@ -19,6 +26,21 @@ const loggerFormats: Record<LogFormat, winston.Logform.Format> = {
   CLI: winston.format.combine(winston.format.colorize(), winston.format.cli()),
 };
 
+class BaseLogger extends winston.Logger {
+
+  constructor(options: winston.LoggerOptions) {
+    super(options)
+  }
+
+  request(method: Method, url: string, headers: Record<string, string>, body: any) {
+    this.info(`HTTP REQUEST`);
+  }
+
+  response(status: number, headers: Record<string, string>, body: any) {
+    this.info(`HTTP RESPONSE`);
+  }
+}
+
 class Logger {
   private baseLogger: winston.Logger;
 
@@ -26,29 +48,38 @@ class Logger {
     this.baseLogger = this.create();
   }
 
-  private create(replace: boolean = false) {
+  private create() {
     const level = process.env.LOG_LEVEL ?? "info";
     const envFormat = (process.env.LOG_FORMAT ?? "CLI") as LogFormat;
     const format = loggerFormats[envFormat] ?? loggerFormats.JSON;
 
-    const baseLogger = winston.createLogger({
+    const baseLogger = new BaseLogger({
       level,
       format,
       transports: [new winston.transports.Console()],
-    });
+    })
 
     return baseLogger;
   }
 
-  get(context?: object, replace: boolean = false) {
+  get(options?: LoggerOptions) {
+    let localeLogger = this.baseLogger;
+
     const contextLogger = getCurrentContext()?.getAttribute("logger");
-    if (contextLogger) return contextLogger;
+    if (contextLogger) {
+      localeLogger = contextLogger;
+    };
     
-    if (replace) {
+    if (options?.replace === true) {
       this.baseLogger = this.create();
+      localeLogger = this.baseLogger;
     }
 
-    return context ? this.baseLogger.child(context) : this.baseLogger;
+    if (options?.inputs) {
+      localeLogger = localeLogger.child(options.inputs);
+    }
+
+    return localeLogger;
   }
 }
 

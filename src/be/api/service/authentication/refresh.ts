@@ -5,10 +5,13 @@ import {
   DatabaseError,
 } from "@/src/core/errors";
 import { ShopRefreshToken } from "@/src/be/database/classes/transformer-classes";
-import { generateGenericToken } from "@/src/be/api/service/authentication/common";
+import { generateGenericToken } from "@/src/core/jwt";
 import * as gql from "@/src/be/api/service/authentication/gql";
 import { generateJWTToken } from "@/src/core/jwt";
 
+///////////
+// TYPES //
+///////////
 type RefreshTokenEvent = {
   tokenReferenceAndHash: string;
   jwtSecret: string;
@@ -19,7 +22,10 @@ type RefreshTokenResult = {
   refreshToken: ShopRefreshToken;
 };
 
-export async function refreshToken(
+//////////
+// MAIN //
+//////////
+export async function refresh(
   event: RefreshTokenEvent,
 ): Promise<RefreshTokenResult> {
   const { tokenReferenceAndHash, jwtSecret } = event;

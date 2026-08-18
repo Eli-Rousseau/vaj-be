@@ -45,7 +45,9 @@ export const loadStage = async function (
   dotenv.config({ path: config, quiet: true });
 
   // Reinitialize the baseLOGGER once the environment is loaded
-  LOGGER = logger.get({}, true);
+  LOGGER = logger.get({
+    replace: true
+  });
 
   LOGGER.info("Environment loaded.");
 };

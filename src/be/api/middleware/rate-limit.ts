@@ -1,8 +1,25 @@
+///////////
+// TYPES //
+///////////
 type FixedWindowRateLimiterOptions = {
     windowMs?: number;
     maxRequests?: number;
 }
 
+type RateLimitEvent = {
+    id: string;
+    role: string;
+};
+
+type RateLimitResult = {
+    allowed: boolean;
+    remaining: number;
+    maxRequests: number;
+};
+
+/////////////
+// HELPERS //
+/////////////
 class FixedWindowRateLimiter {
     protected windowMs: number;
     protected maxRequests: number;
@@ -56,17 +73,9 @@ const fixedWindowRateLimiter = new FixedWindowRateLimiter({
     maxRequests: 100
 });
 
-type RateLimitEvent = {
-    id: string;
-    role: string;
-};
-
-type RateLimitResult = {
-    allowed: boolean;
-    remaining: number;
-    maxRequests: number;
-};
-
+//////////
+// MAIN //
+//////////
 export function rateLimit(event: RateLimitEvent): RateLimitResult {
     const { id, role } = event;
     if (["DEVELOPER"].includes(role)) return {

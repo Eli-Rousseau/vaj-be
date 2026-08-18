@@ -1,10 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import {
-  authorization,
-  validateAccessToken,
-} from "@/src/be/api/middleware/authorization";
-import { rateLimit } from "@/src/be/api/middleware/rate-limit";
-import { runWithContext } from "@/src/be/api/middleware/context";
+
+import * as main from "@/src/be/api/middleware/index";
+import { runWithContext } from "@/src/core/context";
 import { withHandler } from "@/src/be/api/wrapper";
 import { ShopUser } from "@/src/be/database/classes/transformer-classes";
 
@@ -38,7 +35,7 @@ export async function handleValidateAccessToken(
     (req, res, next, context) => {
       const accessToken = req.header("Authorization") as string;
 
-      const result = validateAccessToken({
+      const result = main.validateToken({
         accessToken: accessToken,
         jwtSecret: process.env.JWT_SECRET as string,
       });
@@ -65,7 +62,7 @@ export async function handleAuthorization(
     res,
     next,
     (req, res, next, context) => {
-      authorization({
+      main.authorize({
         userRole: context.getAttribute("user")?.systemRole as string,
         authorizedRoles: roles,
       });
@@ -89,7 +86,7 @@ export async function handleRateLimit(
         user?.reference ??
         req.headers["x-forwarded-for"]?.toString().split(",")[0] ??
         "anonymous";
-      const result = rateLimit({ 
+      const result = main.rateLimit({ 
         id: id,
         role: user.systemRole!
       });

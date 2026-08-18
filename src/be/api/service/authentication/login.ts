@@ -10,10 +10,13 @@ import {
   ShopUser,
 } from "@/src/be/database/classes/transformer-classes";
 import { isValidEmail } from "@/src/core/validators";
-import { generateGenericToken } from "@/src/be/api/service/authentication/common";
+import { generateGenericToken } from "@/src/core/jwt";
 import * as gql from "@/src/be/api/service/authentication/gql";
 import { generateJWTToken } from "@/src/core/jwt";
 
+///////////
+// TYPES //
+///////////
 type LoginEvent = {
   user: unknown;
   jwtSecret: string;
@@ -24,6 +27,9 @@ type LoginResult = {
   refreshToken: ShopRefreshToken;
 };
 
+/////////////
+// HELPERS //
+/////////////
 async function findUserByEmail(email: string) {
   let users;
   try {
@@ -39,7 +45,10 @@ async function findUserByEmail(email: string) {
   return users[0];
 }
 
-export async function loginUser(event: LoginEvent): Promise<LoginResult> {
+//////////
+// MAIN //
+//////////
+export async function login(event: LoginEvent): Promise<LoginResult> {
   const { user: rawUser, jwtSecret } = event;
 
   if (!jwtSecret) throw new ConfigError("CONFIG_MISSING_JWT_SECRET");

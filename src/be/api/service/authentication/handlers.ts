@@ -1,11 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 
-import { registerUser } from "@/src/be/api/service/authentication/register";
-import { loginUser } from "@/src/be/api/service/authentication/login";
-import { refreshToken } from "@/src/be/api/service/authentication/refresh";
+import * as main from "@/src/be/api/service/authentication/index";
 import { withHandler } from "@/src/be/api/wrapper";
 
-export async function handleInternalRegister(
+export async function handleRegister(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -15,7 +13,7 @@ export async function handleInternalRegister(
     res,
     next,
     async (req, res, next, context) => {
-      const result = await registerUser({
+      const result = await main.register({
         user: req.body?.user,
         jwtSecret: process.env.JWT_SECRET as string,
       });
@@ -28,7 +26,7 @@ export async function handleInternalRegister(
   );
 }
 
-export async function handleInternalLogin(
+export async function handleLogin(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -38,7 +36,7 @@ export async function handleInternalLogin(
     res,
     next,
     async (req, res, next, context) => {
-      const result = await loginUser({
+      const result = await main.login({
         user: req.body?.user,
         jwtSecret: process.env.JWT_SECRET as string,
       });
@@ -61,7 +59,7 @@ export async function handleRefreshToken(
     res,
     next,
     async (req, res, next, context) => {
-      const result = await refreshToken({
+      const result = await main.refresh({
         tokenReferenceAndHash: req.body?.refreshToken,
         jwtSecret: process.env.JWT_SECRET as string,
       });

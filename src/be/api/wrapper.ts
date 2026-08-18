@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from "express";
 
 import { logger } from "@/src/core/logger";
 import { ShopUser } from "@/src/be/database/classes/transformer-classes";
-import { Context, getCurrentContext } from "@/src/be/api/middleware/context";
+import { Context, getCurrentContext } from "@/src/core/context";
 import * as errors from "@/src/core/errors";
 
 type WrapperOptions = {
@@ -41,6 +41,7 @@ export const withHandler = async function (
     const traceId =
       (req.headers["x-trace-id"] as string) || crypto.randomUUID();
     context = new Context(traceId);
+    context.setAttribute("logger", logger.get({ replace: true }));
     res.setHeader("x-trace-id", traceId);
   } else {
     context = getCurrentContext();
@@ -51,14 +52,16 @@ export const withHandler = async function (
 
   const { handlerName, serviceName } = getHandlerAndServiceName();
 
-  const oldLogger = context.getAttribute("logger");
-  const newLogger = LOGGER.child({
-    traceId: context.traceId,
-    service: serviceName,
-    handler: handlerName,
-    method: req.method,
-    route: req.originalUrl,
-    user
+  const newLogger = logger.get({
+    replace: true,
+    inputs: {
+      traceId: context.traceId,
+      service: serviceName,
+      handler: handlerName,
+      method: req.method,
+      route: req.originalUrl,
+      user
+    }
   });
   context.setAttribute("logger", newLogger);
 
@@ -98,7 +101,7 @@ export const withHandler = async function (
 
     handleAPIError(res as any, error);
   } finally {
-    context.setAttribute("logger", oldLogger);
+    context.setAttribute("logger", logger.get({ replace: true }));
   }
 };
 

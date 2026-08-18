@@ -9,10 +9,13 @@ import {
   ShopRefreshToken,
 } from "@/src/be/database/classes/transformer-classes";
 import { isValidEmail } from "@/src/core/validators";
-import { generateGenericToken } from "@/src/be/api/service/authentication/common";
+import { generateGenericToken } from "@/src/core/jwt";
 import * as gql from "@/src/be/api/service/authentication/gql";
 import { generateJWTToken } from "@/src/core/jwt";
 
+///////////
+// TYPES //
+///////////
 type RegisterEvent = {
   user: unknown;
   jwtSecret: string;
@@ -23,6 +26,10 @@ type RegisterResult = {
   refreshToken: ShopRefreshToken;
 };
 
+
+/////////////
+// HELPERS //
+/////////////
 async function isEmailAlreadyAssigned(email: string) {
   let users;
   try {
@@ -34,7 +41,10 @@ async function isEmailAlreadyAssigned(email: string) {
   return users.length > 0;
 }
 
-export async function registerUser(
+//////////
+// MAIN //
+//////////
+export async function register(
   event: RegisterEvent,
 ): Promise<RegisterResult> {
   const { user: rawUser, jwtSecret } = event;

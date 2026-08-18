@@ -5,7 +5,7 @@ import {
   ShopRefreshToken,
   ShopUser,
 } from "@/src/be/database/classes/transformer-classes";
-import { generateGenericToken } from "@/src/be/api/service/authentication/common";
+import { generateGenericToken } from "@/src/core/jwt";
 
 const LOGGER = logger.get();
 
