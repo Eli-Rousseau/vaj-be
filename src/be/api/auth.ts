@@ -6,6 +6,7 @@ import {
   ShopUser,
 } from "@/src/be/database/classes/transformer-classes";
 import { generateGenericToken } from "@/src/core/jwt";
+import { HTTPError } from "@/src/core/errors";
 
 const LOGGER = logger.get();
 
@@ -57,7 +58,7 @@ export class AuthVAJ {
     LOGGER.response({response});
 
     if (!response.ok) {
-      return null;
+      throw new HTTPError(response.status, response.statusText);
     }
 
     return (await response.json()) as TResponse;
