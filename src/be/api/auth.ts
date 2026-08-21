@@ -43,29 +43,24 @@ export class AuthVAJ {
     endpoint: string,
     body: TRequest,
   ): Promise<TResponse | null> {
-    try {
-      const response = await fetch(`${this.applicationUrl}${endpoint}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
+    const url = `${this.applicationUrl}${endpoint}`;
+    const request = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    };
 
-      if (!response.ok) {
-        LOGGER.warn(
-          `Request failed: ${response.status} ${response.statusText}`,
-        );
+    LOGGER.request({url, request});
+    const response = await fetch(url, request);
+    LOGGER.response({response});
 
-        return null;
-      }
-
-      return (await response.json()) as TResponse;
-    } catch (error) {
-      LOGGER.warn("HTTP request failed.", error);
-
+    if (!response.ok) {
       return null;
     }
+
+    return (await response.json()) as TResponse;
   }
 
   async register(): Promise<Tokens | null> {

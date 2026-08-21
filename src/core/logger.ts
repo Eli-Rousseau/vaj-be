@@ -3,24 +3,20 @@ import { getCurrentContext } from "@/src/core/context";
 
 type LogFormat = "JSON" | "SIMPLE" | "CLI";
 
-type Method = "GET" | "POST" | "PUT" | "DELETE"
-
 type LoggerOptions = {
   inputs?: any;
   replace?: boolean;
 }
 
 type LoggerRequestOptions = {
-  method: Method;
   url: string;
-  headers?: Record<string, string>;
-  body?: any;
+  request: Request | { method: string; headers: any; body: any };
+  keepBody?: boolean;
 }
 
 type LoggerResponseOptions = {
-  status: number;
-  headers?: Record<string, string>;
-  body?: any
+  response: Response;
+  keepBody?: boolean;
 }
 
 interface BaseLogger extends winston.Logger{
@@ -44,6 +40,18 @@ const loggerFormats: Record<LogFormat, winston.Logform.Format> = {
   CLI: winston.format.combine(winston.format.colorize(), winston.format.cli()),
 };
 
+const formatHeaders = function(headers: Headers, fieldsToMask: string[] = []) {
+  if (!headers) return "";
+
+  const headersClone = structuredClone(headers);
+
+  for (const field of fieldsToMask) {
+    if (Object.keys(headersClone).includes(field)) headersClone.set(field, "***MASKED***");
+  }
+
+  return headersClone.toString();
+}
+
 class Logger {
   private baseLogger: BaseLogger;
 
@@ -63,8 +71,27 @@ class Logger {
     });
 
     return Object.assign(localLogger, {
-      request: (options: LoggerRequestOptions) => localLogger.info("HTTP REQUEST", { ...options }),
-      response: (options: LoggerResponseOptions) => localLogger.info("HTTP RESPONSE", { ...options }),
+      request: (options: LoggerRequestOptions) => {
+        const log = [
+          "HTTP REQUEST",
+          `METHOD: ${options.request.method}`,
+          `URL: ${options.url}`,
+          `HEADERS: ${formatHeaders(options.request?.headers, ["Authorization"])}`,
+          `BODY: ${options.keepBody && options.request.body ? options.request.body.toString() : ""}`
+        ]
+        localLogger.info(log.join("\n"));
+      },
+      response: (options: LoggerResponseOptions) => {
+        const log = [
+          "HTTP RESPONSE",
+          `STATUS: ${options.response.status.toString()}`,
+          `HEADERS: ${formatHeaders(options.response.headers, ["Authorization"])}`,
+          `BODY: ${options.keepBody && options.response.body ? options.response.body.toString() : ""}`
+        ]
+
+        if (options.response.ok) localLogger.info(log.join("\n"));
+        else localLogger.warn(log.join("\n"));
+      },
     }) as unknown as BaseLogger;
   }
 

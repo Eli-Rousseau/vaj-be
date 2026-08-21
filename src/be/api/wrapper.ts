@@ -148,6 +148,11 @@ const DEFAULT_ERROR_CONFIG: ErrorConfig[] = [
     statusCode: 400,
     message: "Incorrect data type",
   },
+  {
+    classes: [errors.HTTPError],
+    statusCode: 500,
+    message: "Failed HTTP request"
+  }
 ];
 
 type HandleAPIErrorOptions = {
