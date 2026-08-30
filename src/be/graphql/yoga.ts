@@ -3,7 +3,7 @@ import type { GraphQLSchema } from "graphql";
 
 import { logger } from "@/src/core/logger";
 import { buildGraphQLSchema } from "@/src/be/graphql/build-schema";
-import { AuthVAJ } from "@/src/be/api/auth";
+import VAJClient from "@/src/core/sdk/vaj";
 
 const LOGGER = logger.get();
 
@@ -21,8 +21,8 @@ export const yoga = createYoga({
     const authorization = request.headers.get("authorization");
 
     if (!authorization && process.env.STAGE === "dev") {
-      const accessToken =
-        (await AuthVAJ.connectAPIUser())?.accessToken || "";
+      const vajClient = await VAJClient.withAPIUserAuth();
+      const accessToken = (await vajClient.auth.connect())?.accessToken || "";
 
       request.headers.set("authorization", accessToken);
     }
@@ -34,7 +34,7 @@ export async function initSchema() {
   LOGGER.info("GraphQL schema build.");
 }
 
-export async function rebuildSchema(force = false) {
-  currentSchema = await buildGraphQLSchema(force);
+export async function rebuildSchema() {
+  currentSchema = await buildGraphQLSchema(true);
   LOGGER.info("GraphQL schema updated.");
 }

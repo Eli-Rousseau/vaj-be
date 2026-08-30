@@ -7,7 +7,7 @@ import { postgres } from "@/src/core/postgres";
 import { setupShutdownHooks } from "@/src/core/shutdown";
 import { askQuestion } from "@/src/core/prompt";
 import { buildTransformerClasses } from "@/src/be/database/classes/build-classes";
-import { AuthVAJ } from "@/src/be/api/auth";
+import VAJClient from "@/src/core/sdk/vaj";
 
 const LOGGER = logger.get();
 
@@ -141,55 +141,11 @@ async function applyMigrations(scripts: string[]) {
 }
 
 async function rebuildGraphQLSchema() {
-  const applicationUrl = process.env.APPLICATION_URL;
-  const userName = process.env.API_USER_1_NAME;
-  const userEmail = process.env.API_USER_1_EMAIL;
-  const userPassword = process.env.API_USER_1_PASSWORD;
-
-  if (!applicationUrl || !userName || !userEmail || !userPassword) {
-    LOGGER.error(
-      "Missing required environment variables: APPLICATION_URL, API_USER_1_NAME, API_USER_1_EMAIL, or API_USER_1_PASSWORD.",
-    );
-    process.exit(1);
-  }
-
   try {
-    const loginUser = {
-      name: userName,
-      email: userEmail,
-      password: userPassword,
-    };
-
-    const auth = new AuthVAJ(loginUser);
-
-    let tokens = await auth.connect();
-    const accessToken = tokens?.accessToken;
-
-    if (!accessToken) {
-      throw new Error("Failed to retrieve access token.");
-    }
-
-    const url = `${applicationUrl}/api/v1/graphql/update-schema`;
-    const headers = {
-      Authorization: accessToken,
-    };
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers,
-    });
-
-    if (!response.ok) {
-      throw Error(
-        `Failed graphql/update-schema request: HTTP ${response.status} ${response.statusText}`,
-      );
-    }
-
-    LOGGER.info(
-      `Succeeded graphql/update-schema request: HTTP ${response.status} ${response.statusText}`,
-    );
+    const vajClient = await VAJClient.withAPIUserAuth();
+    await vajClient.updateSchema();
   } catch (error) {
-    LOGGER.warn(`The graphql/update-schema request failed: ${error}`);
+    LOGGER.warn(`Failed to update the graphql schema: ${error}`);
   }
 }
 

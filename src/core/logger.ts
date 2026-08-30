@@ -29,6 +29,7 @@ const loggerFormats: Record<LogFormat, winston.Logform.Format> = {
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
     winston.format.json(),
+    winston.format.prettyPrint()
   ),
   SIMPLE: winston.format.combine(
     winston.format.colorize(),
@@ -37,20 +38,41 @@ const loggerFormats: Record<LogFormat, winston.Logform.Format> = {
       return `[${timestamp}] ${level}: ${message}`;
     }),
   ),
-  CLI: winston.format.combine(winston.format.colorize(), winston.format.cli()),
+  CLI: winston.format.combine(
+    winston.format.colorize(), 
+    winston.format.cli()
+  ),
 };
 
-const formatHeaders = function(headers: Headers, fieldsToMask: string[] = []) {
-  if (!headers) return "";
+const formatHeaders = (
+  headers: unknown,
+  fieldsToMask: string[] = []
+): Record<string, string> => {
+  if (!headers) return {};
 
-  const headersClone = structuredClone(headers);
+  const maskedFields = new Set(
+    fieldsToMask.map(field => field.toLowerCase())
+  );
 
-  for (const field of fieldsToMask) {
-    if (Object.keys(headersClone).includes(field)) headersClone.set(field, "***MASKED***");
+  let entries: [string, unknown][];
+
+  if (headers instanceof Headers) {
+    entries = Array.from(headers);
+  } else if (typeof headers === "object") {
+    entries = Object.entries(headers as Record<string, unknown>);
+  } else {
+    return {};
   }
 
-  return headersClone.toString();
-}
+  return Object.fromEntries(
+    entries.map(([key, value]) => [
+      key,
+      maskedFields.has(key.toLowerCase())
+        ? "***MASKED***"
+        : String(value),
+    ])
+  );
+};
 
 class Logger {
   private baseLogger: BaseLogger;
@@ -76,8 +98,8 @@ class Logger {
           "HTTP REQUEST",
           `METHOD: ${options.request.method}`,
           `URL: ${options.url}`,
-          `HEADERS: ${formatHeaders(options.request?.headers, ["Authorization"])}`,
-          `BODY: ${options.keepBody && options.request.body ? options.request.body.toString() : ""}`
+          `HEADERS: ${JSON.stringify(formatHeaders(options.request?.headers, ["Authorization"]))}`,
+          `BODY: ${options.keepBody && options.request.body ? JSON.stringify(options.request.body) : ""}`
         ]
         localLogger.info(log.join("\n"));
       },
@@ -85,8 +107,8 @@ class Logger {
         const log = [
           "HTTP RESPONSE",
           `STATUS: ${options.response.status.toString()}`,
-          `HEADERS: ${formatHeaders(options.response.headers, ["Authorization"])}`,
-          `BODY: ${options.keepBody && options.response.body ? options.response.body.toString() : ""}`
+          `HEADERS: ${JSON.stringify(formatHeaders(options.response.headers, ["Authorization"]))}`,
+          `BODY: ${options.keepBody && options.response.body ? JSON.stringify(options.response.body) : ""}`
         ]
 
         if (options.response.ok) localLogger.info(log.join("\n"));

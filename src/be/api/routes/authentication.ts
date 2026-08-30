@@ -5,6 +5,6 @@ const router = Router();
 
 router.post("/register", handlers.handleRegister);
 router.post("/login", handlers.handleLogin);
-router.post("/refresh-token", handlers.handleRefreshToken);
+router.post("/refresh-token", handlers.handleRefresh);
 
 export default router;

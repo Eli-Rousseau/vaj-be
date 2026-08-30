@@ -1,7 +1,7 @@
 import { logger } from "@/src/core/logger";
 import { TransformerClass } from "@/src/be/database/classes/transformers";
-import { AuthVAJ } from "@/src/be/api/auth";
-import { HTTPError } from "./errors";
+import { HTTPError } from "@/src/core/errors";
+import VAJClient from "@/src/core/sdk/vaj";
 
 const LOGGER = logger.get();
 
@@ -12,15 +12,16 @@ type GraphQLParams = {
 
 class GraphQLClient {
   private async findAuthorization(): Promise<string> {
-    return (await AuthVAJ.connectAPIUser())?.accessToken || "";
+    const vajClient = await VAJClient.withAPIUserAuth();
+    return (await vajClient.auth.connect())?.accessToken || "";
   }
 
   async execute(params: GraphQLParams) {
-    const baseUrl = process.env.APPLICATION_URL;
+    const baseUrl = process.env.VAJ_APPLICATION_URL;
 
     if (!baseUrl) {
       throw new Error(
-        "Missing required environmental variable: APPLICATION_URL.",
+        "Missing required environmental variable: VAJ_APPLICATION_URL.",
       );
     }
 

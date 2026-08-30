@@ -49,7 +49,7 @@ export async function handleLogin(
   );
 }
 
-export async function handleRefreshToken(
+export async function handleRefresh(
   req: Request,
   res: Response,
   next: NextFunction,

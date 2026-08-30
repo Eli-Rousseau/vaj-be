@@ -63,8 +63,6 @@ export async function register(
   if (!user.email || !isValidEmail(user.email))
     throw new BadRequestError(`INVALID_EMAIL:${user.email}`);
 
-  if (!user.name) throw new BadRequestError(`INVALID_NAME:${user.name}`);
-
   if (!user.password)
     throw new BadRequestError(`INVALID_PASSWORD:${user.password}`);
 

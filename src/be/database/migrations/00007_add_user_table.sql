@@ -1,7 +1,7 @@
 CREATE TABLE shop.user (
     reference UUID CONSTRAINT "userPk" PRIMARY KEY CONSTRAINT "userReferenceNotNull" NOT NULL DEFAULT shop.uuid_generate_v4(),
     "sequentialId" SERIAL CONSTRAINT "userSequentialIdNotNull" NOT NULL,
-    name TEXT CONSTRAINT "userNameNotNull" NOT NULL,
+    name TEXT DEFAULT NULL,
     birthday TEXT DEFAULT NULL,
     email TEXT CONSTRAINT "userEmailNotNull" NOT NULL CONSTRAINT "userEmailKey" UNIQUE,
     "phoneNumber" TEXT DEFAULT NULL,

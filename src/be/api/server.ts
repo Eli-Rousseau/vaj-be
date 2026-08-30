@@ -16,12 +16,12 @@ async function startServer() {
 
   setupShutdownHooks();
 
-  const host = process.env.APPLICATION_HOST;
-  const port = process.env.APPLICATION_PORT;
+  const host = process.env.VAJ_APPLICATION_HOST;
+  const port = process.env.VAJ_APPLICATION_PORT;
 
   if (!host || !port) {
     LOGGER.error(
-      "Missing required environment variables: APPLICATION_HOST or APPLICATION_PORT.",
+      "Missing required environment variables: VAJ_APPLICATION_HOST or VAJ_APPLICATION_PORT.",
     );
     process.exit(1);
   }

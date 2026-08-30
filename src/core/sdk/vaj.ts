@@ -10,10 +10,15 @@ import { HTTPError } from "@/src/core/errors";
 
 const LOGGER = logger.get();
 
-type InternalApiCredentials = {
-  name: string;
+type VAJAuthOptions = {
   email: string;
   password: string;
+}
+
+type VAJClientOptions = {
+  email: string;
+  password: string;
+  auth?: VAJAuth;
 };
 
 type Tokens = {
@@ -21,22 +26,28 @@ type Tokens = {
   refreshToken: string;
 };
 
-let apiUser: AuthVAJ | null = null;
+type VAJCredentials = {
+  email: string;
+  password: string;
+}
 
-export class AuthVAJ {
-  protected readonly credentials: InternalApiCredentials;
+let apiUserVAJAuth: VAJAuth | null = null;
+let apiUserVAJClient: VAJClient | null = null;
+
+class VAJAuth {
+  protected readonly email: string;
+  protected readonly password: string;
   protected tokens: Tokens | null = null;
   protected readonly applicationUrl: string;
 
-  constructor(credentials: InternalApiCredentials) {
-    this.credentials = credentials;
+  constructor(options: VAJAuthOptions) {
+    if (!options.email) throw Error(`Missing value for argument email.`);
+    if (!options.password) throw Error(`Missing value for argument password.`);
+    this.email = options.email;
+    this.password = options.password;
 
-    const applicationUrl = process.env.APPLICATION_URL;
-
-    if (!applicationUrl) {
-      throw new Error("Missing required environment variable: APPLICATION_URL");
-    }
-
+    const applicationUrl = process.env.VAJ_APPLICATION_URL;
+    if (!applicationUrl) throw new Error("Missing required environment variable: VAJ_APPLICATION_URL");
     this.applicationUrl = applicationUrl;
   }
 
@@ -64,52 +75,61 @@ export class AuthVAJ {
     return (await response.json()) as TResponse;
   }
 
-  async register(): Promise<Tokens | null> {
-    const tokens = await this.post<{ user: InternalApiCredentials }, Tokens>(
-      "/api//v1/authentication/register",
-      {
-        user: this.credentials,
-      },
-    );
+  protected async register(): Promise<Tokens | null> {
+    try {
+      const tokens = await this.post<{ user: VAJCredentials }, Tokens>(
+        "/api/v1/authentication/register",
+        {
+          user: { email: this.email, password: this.password },
+        },
+      );
 
-    this.tokens = tokens;
-
-    return tokens;
+      this.tokens = tokens;
+      return tokens;
+    } catch (HTTPError) {
+      return null;
+    }
   }
 
-  async login(): Promise<Tokens | null> {
-    const tokens = await this.post<{ user: InternalApiCredentials }, Tokens>(
-      "/api/v1/authentication/login",
-      {
-        user: this.credentials,
-      },
-    );
+  protected async login(): Promise<Tokens | null> {
+    try {
+      const tokens = await this.post<{ user: VAJCredentials }, Tokens>(
+        "/api/v1/authentication/login",
+        {
+          user: { email: this.email, password: this.password },
+        },
+      );
 
-    this.tokens = tokens;
-
-    return tokens;
+      this.tokens = tokens;
+      return tokens;
+    } catch (HTTPError) {
+      return null;
+    }
+    
   }
 
-  async refresh(): Promise<Tokens | null> {
+  protected async refresh(): Promise<Tokens | null> {
     if (!this.tokens?.refreshToken) {
       LOGGER.warn("Missing refresh token.");
-
       return null;
     }
 
-    const tokens = await this.post<{ refreshToken: string }, Tokens>(
-      "/api/v1/authentication/refresh-token",
-      {
-        refreshToken: this.tokens.refreshToken,
-      },
-    );
+    try {
+      const tokens = await this.post<{ refreshToken: string }, Tokens>(
+        "/api/v1/authentication/refresh-token",
+        {
+          refreshToken: this.tokens.refreshToken,
+        },
+      );
 
-    this.tokens = tokens;
-
-    return tokens;
+      this.tokens = tokens;
+      return tokens;
+    } catch (HTTPError) {
+      return null;
+    } 
   }
 
-  async accessTokenIsValid(): Promise<boolean> {
+  protected async accessTokenIsValid(): Promise<boolean> {
     const accessToken = this.tokens?.accessToken;
 
     if (!accessToken) return false;
@@ -138,16 +158,16 @@ export class AuthVAJ {
     }
   }
 
-  static async connectAPIUser() {
-    if (!apiUser) {
-      const userName = process.env.API_USER_1_NAME;
-      const userEmail = process.env.API_USER_1_EMAIL;
-      const userPassword = process.env.API_USER_1_PASSWORD;
+  static async withAPIUser() {
+    if (!apiUserVAJAuth) {
+      const userName = process.env.VAJ_API_USER_1_NAME;
+      const userEmail = process.env.VAJ_API_USER_1_EMAIL;
+      const userPassword = process.env.VAJ_API_USER_1_PASSWORD;
       const jwtSecret = process.env.JWT_SECRET;
 
       if (!userName || !userEmail || !userPassword || !jwtSecret) {
         Error(
-          "Missing required environment variables: API_USER_1_NAME, API_USER_1_EMAIL, API_USER_1_PASSWORD, or JWT_SECRET.",
+          "Missing required environment variables: VAJ_API_USER_1_NAME, VAJ_API_USER_1_EMAIL, VAJ_API_USER_1_PASSWORD, or JWT_SECRET.",
         );
       }
 
@@ -282,17 +302,88 @@ export class AuthVAJ {
         refreshToken: `${refreshToken.reference}.${refreshToken.tokenHash}`,
       };
 
-      const loginUser = {
-        name: user.name,
-        email: user.email,
-        password: user.password,
-      } as InternalApiCredentials;
-      apiUser = new AuthVAJ(loginUser);
-      apiUser.tokens = tokens;
+      apiUserVAJAuth = new VAJAuth({ 
+        email: user.email!, 
+        password: user.password! 
+      });
+      apiUserVAJAuth.tokens = tokens;
 
       LOGGER.info("New default user connection established.");
     }
 
-    return apiUser.connect();
+    return apiUserVAJAuth;
   }
 }
+
+export default class VAJClient {
+  auth: VAJAuth;
+  protected readonly applicationUrl: string;
+
+  constructor(options: VAJClientOptions) {
+    if (options.auth instanceof VAJAuth) this.auth = options.auth;
+    else {
+      this.auth = new VAJAuth({ 
+        email: options.email, 
+        password: options.password 
+      });
+    }
+
+    const applicationUrl = process.env.VAJ_APPLICATION_URL;
+    if (!applicationUrl) throw new Error("Missing required environment variable: VAJ_APPLICATION_URL");
+    this.applicationUrl = applicationUrl;
+  }
+
+  static async withAPIUserAuth() {
+    if (!apiUserVAJClient) {
+      const userEmail = process.env.VAJ_API_USER_1_EMAIL;
+      const userPassword = process.env.VAJ_API_USER_1_PASSWORD;
+      if (!userEmail || !userPassword) {
+        Error(
+          "Missing required environment variables: VAJ_API_USER_1_EMAIL or VAJ_API_USER_1_PASSWORD.",
+        );
+      }
+
+      const auth = await VAJAuth.withAPIUser();
+      apiUserVAJClient = new VAJClient({
+        email: userEmail!,
+        password: userPassword!,
+        auth
+      });
+    }
+    
+    return apiUserVAJClient!;
+  }
+
+  protected async post(
+    endpoint: string,
+    headers: any,
+    body: any,
+  ) {
+    const url = `${this.applicationUrl}${endpoint}`;
+    const request = {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    };
+
+    LOGGER.request({url, request});
+    const response = await fetch(url, request);
+    LOGGER.response({response});
+
+    if (!response.ok) {
+      throw new HTTPError(response.status, response.statusText);
+    }
+
+    return (await response.json());
+  }
+
+  async updateSchema() {
+    const endpoint = "/api/v1/graphql/update-schema";
+    const headers = {
+      "Authorization": (await this.auth.connect())!.accessToken
+    }
+    const body = "";
+    await this.post(endpoint, headers, body);
+  }
+} 
+

@@ -1,9 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 
-import { rebuildSchema } from "@/src/be/graphql/yoga";
 import { withHandler } from "@/src/be/api/wrapper";
+import * as main from "@/src/be/api/service/graphql/index";
 
-export async function handleGraphQLUpdateSchema(
+export async function handleUpdateSchema(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -13,8 +13,8 @@ export async function handleGraphQLUpdateSchema(
     res,
     next,
     async (req, res, next, context) => {
-      await rebuildSchema(true);
-      res.sendStatus(200);
+      await main.updateSchema();
+      res.status(200).json({});
     },
   );
 }

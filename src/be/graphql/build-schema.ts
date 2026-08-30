@@ -1,6 +1,5 @@
 import { createSchema } from "graphql-yoga";
 
-import { logger } from "@/src/core/logger";
 import * as constructors from "@/src/be/graphql/query-constructors";
 import { postgres } from "@/src/core/postgres";
 import { getDataBaseInfo } from "@/src/be/database/database-info";
