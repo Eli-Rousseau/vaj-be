@@ -10,7 +10,7 @@ type LoggerOptions = {
 
 type LoggerRequestOptions = {
   url: string;
-  request: Request | { method: string; headers: any; body: any };
+  request: Request | { method: string; headers: any; body?: any };
   keepBody?: boolean;
 }
 

@@ -3,7 +3,7 @@ import { rm, writeFile } from "fs/promises";
 
 import { loadStage } from "@/src/core/stage";
 import { runCommand } from "@/src/core/process";
-import { storage } from "@/src/core/storage";
+import { B2Client } from "@/src/core/sdk/b2";
 import { logger } from "@/src/core/logger";
 
 const LOGGER = logger.get();
@@ -24,8 +24,9 @@ async function dropDatabase(args: {
 }
 
 async function retrieveBackup() {
-  const bucket = storage.findBucket("private");
-  let backups = await storage.listFiles(bucket, directory);
+  const b2Client = new B2Client();
+  const bucket = b2Client.getBucket("private");
+  let backups = await b2Client.listFiles(bucket, directory);
   if (backups.length === 0) {
     LOGGER.error("No backup file retrieved.");
     process.exit(1);
@@ -38,7 +39,7 @@ async function retrieveBackup() {
   });
   const file = backups[0];
 
-  await storage.downloadFile(file);
+  await b2Client.downloadFile(file);
 
   try {
     await writeFile(tmp, file.content as Buffer);

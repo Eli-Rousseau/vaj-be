@@ -4,11 +4,11 @@ import { readFile, rm } from "fs/promises";
 import { loadStage } from "@/src/core/stage";
 import { logger } from "@/src/core/logger";
 import { runCommand } from "@/src/core/process";
-import { File, storage, S3ContentType } from "@/src/core/storage";
+import { File, B2Client, S3ContentType } from "@/src/core/sdk/b2";
 
 const LOGGER = logger.get();
 
-const tmp = `${cwd()}/src/database/.backup.tar`;
+const tmp = `${cwd()}/src/be/database/.backup.tar`;
 const directory = "database/backups/";
 
 async function makeDatabaseBackup(args: {
@@ -32,16 +32,17 @@ async function storeBackup() {
     process.exit(1);
   }
 
-  const bucket = storage.findBucket("private");
+  const b2Client = new B2Client();
+  const bucket = b2Client.getBucket("private");
   const key = `${directory}${Date.now().toString()}.tar`;
   const file = File.fromPlain({
     key,
-    bucket,
+    bucket: bucket!.key,
     content,
     contentType: S3ContentType.TAR,
   });
 
-  await storage.uploadFile(file);
+  await b2Client.uploadFile(file);
   try {
     await rm(tmp);
   } catch (error) {
