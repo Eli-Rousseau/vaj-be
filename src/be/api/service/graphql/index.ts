@@ -1,0 +1,1 @@
+export { updateSchema } from "@/src/be/api/service/graphql/update-schema";

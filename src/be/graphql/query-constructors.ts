@@ -1,0 +1,942 @@
+import { logger } from "@/src/core/logger";
+import { getDataBaseInfo } from "@/src/be/database/database-info";
+import { ComputedFieldReturnType, TableInfo } from "@/src/be/database/types";
+
+const LOGGER = logger.get();
+
+type EscapeLiteralOptions = {
+  column?: string;
+  columnTypes?: Record<string, string>;
+  args?: Record<string, any>;
+};
+
+function resolveDollarPath(value: any, args: any) {
+  if (typeof value !== "string" || !value.startsWith("$")) {
+    return value;
+  }
+
+  const path = value.slice(1).split(".");
+  let current = args;
+
+  for (const key of path) {
+    if (current == null || typeof current !== "object" || !(key in current)) {
+      return value; // fallback if path is invalid
+    }
+    current = current[key];
+  }
+
+  return current;
+}
+
+function escapeLiteral(value: any, options: EscapeLiteralOptions = {}): string {
+  const { column, columnTypes, args } = options;
+  if (value === null || value === undefined) {
+    return "NULL";
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  value = resolveDollarPath(value, args);
+
+  if (typeof value === "function") {
+    value = value();
+  }
+
+  if (!value) return value;
+
+  if (column && columnTypes && Object.keys(columnTypes).includes(column)) {
+    return `'${String(value).replace(/'/g, "''")}'::${columnTypes[column]}`;
+  }
+
+  return `'${String(value).replace(/'/g, "''")}'`;
+}
+
+function constructLimitClause(limit?: number) {
+  let limitClause = "";
+  if (Number.isInteger(limit) && limit! > 0) {
+    limitClause = `LIMIT ${limit}`;
+  }
+
+  return limitClause;
+}
+
+function constructOffsetClause(offset?: number) {
+  let offsetClause = "";
+  if (Number.isInteger(offset) && offset! > 0) {
+    offsetClause = `OFFSET ${offset}`;
+  }
+
+  return offsetClause;
+}
+
+function constructOrderByClause(
+  table: string,
+  orderBy?: Record<string, string>[],
+): string {
+  if (!orderBy || !Array.isArray(orderBy) || orderBy.length === 0) {
+    return "";
+  }
+
+  const clauses: string[] = [];
+
+  for (const record of orderBy) {
+    const entries = Object.entries(record);
+
+    if (entries.length !== 1) continue;
+
+    const [field, direction] = entries[0];
+    const upperDirection = direction.toUpperCase();
+
+    if (!["ASC", "DESC"].includes(upperDirection)) continue;
+
+    clauses.push(`"${table}"."${field}" ${upperDirection}`);
+  }
+
+  if (clauses.length === 0) return "";
+
+  return `ORDER BY ${clauses.join(", ")}`;
+}
+
+type Operator =
+  | "_eq"
+  | "_neq"
+  | "_gt"
+  | "_gte"
+  | "_lt"
+  | "_lte"
+  | "_in"
+  | "_nin"
+  | "_parse"
+  | "_hasKey"
+  | "_contains"
+  | "_and"
+  | "_or"
+  | "_not"
+  | "where";
+
+type WhereInput = Record<string, Partial<Record<Operator | string, any>>>;
+
+type NestedWhereResult = {
+  nestedJoins: string;
+  nestedWheres: string;
+};
+
+function jsonPathFromDot(path: string): string {
+  return "$." + path.split(".").join(".");
+}
+
+function constructJSONPath(contains: object, path: string) {
+  const entries = Object.entries(contains);
+  if (entries.length !== 1) return "";
+
+  const [key, value] = entries[0];
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    value === undefined ||
+    value === null
+  ) {
+    path = path + ` ->> '${key}' = ${escapeLiteral(value)}`;
+    return path;
+  } else if (typeof value === "object") {
+    path = path + ` -> '${key}'`;
+    return constructJSONPath(value, path);
+  } else {
+    return "";
+  }
+}
+
+async function constructSelectedColumns(
+  schema: string,
+  table: string,
+  columnsToExclude: string[],
+) {
+  const tableInfo = await getTableInfo(schema, table);
+  const selectedColumns = tableInfo.columns.map((column) => {
+    if (columnsToExclude.includes(column.name))
+      return `NULL AS "${column.name}"`;
+    else return `"${column.name}"`;
+  });
+  return selectedColumns.join(", ");
+}
+
+function constructNestedWhereClause(
+  schema: string,
+  table: string,
+  where: WhereInput,
+  args: Record<string, any>,
+): NestedWhereResult {
+  let joins: string[] = [];
+  let wheres: string[] = [];
+
+  for (const [column, expression] of Object.entries(where)) {
+    if (!expression) continue;
+
+    if (/ByReference/.test(column)) {
+      const relation = column.replace("ByReference", "");
+      if (!(
+        typeof expression === "object" &&
+        Object.keys(expression).includes("where")
+      )) {
+        continue;
+      }
+      const nestedWhere = expression["where"];
+      joins.push(
+        `JOIN "${schema}".${relation} ON "${relation}".reference = "${table}"."${relation}"`,
+      );
+
+      const { nestedJoins, nestedWheres } = constructNestedWhereClause(
+        schema,
+        relation,
+        nestedWhere,
+        args,
+      );
+      joins = joins.concat(nestedJoins);
+      wheres = wheres.concat(nestedWheres);
+    } else if (column === "and") {
+      const conditionalWheres: string[] = [];
+      if (Array.isArray(expression)) {
+        for (const nestedWhere of expression) {
+          const nestedWhereResult = constructNestedWhereClause(
+            schema,
+            table,
+            nestedWhere,
+            args,
+          );
+          conditionalWheres.push(nestedWhereResult["nestedWheres"]);
+          joins.push(nestedWhereResult["nestedJoins"]);
+        }
+      }
+      wheres.push(`(${conditionalWheres.join(" AND ")})`);
+    } else if (column === "or") {
+      const conditionalWheres: string[] = [];
+      if (Array.isArray(expression)) {
+        for (const nestedWhere of expression) {
+          const nestedWhereResult = constructNestedWhereClause(
+            schema,
+            table,
+            nestedWhere,
+            args,
+          );
+          conditionalWheres.push(nestedWhereResult["nestedWheres"]);
+          joins.push(nestedWhereResult["nestedJoins"]);
+        }
+      }
+      wheres.push(`(${conditionalWheres.join(" OR ")})`);
+    } else if (column === "not") {
+      const conditionalWheres: string[] = [];
+      if (Array.isArray(expression)) {
+        for (const nestedWhere of expression) {
+          const nestedWhereResult = constructNestedWhereClause(
+            schema,
+            table,
+            nestedWhere,
+            args,
+          );
+          conditionalWheres.push(nestedWhereResult["nestedWheres"]);
+          joins.push(nestedWhereResult["nestedJoins"]);
+        }
+      }
+      wheres.push(`NOT (${conditionalWheres.join(" AND ")})`);
+    } else {
+      for (const [operator, value] of Object.entries(expression)) {
+        const col = `"${table}"."${column}"`;
+
+        if (operator === "eq") {
+          wheres.push(
+            value == null
+              ? `${col} IS NULL`
+              : `${col} = ${escapeLiteral(value, { args })}`,
+          );
+        } else if (operator === "neq") {
+          wheres.push(
+            value == null
+              ? `${col} IS NOT NULL`
+              : `${col} <> ${escapeLiteral(value, { args })}`,
+          );
+        } else if (operator === "gt") {
+          wheres.push(`${col} > ${escapeLiteral(value, { args })}`);
+        } else if (operator === "gte") {
+          wheres.push(`${col} >= ${escapeLiteral(value, { args })}`);
+        } else if (operator === "lt") {
+          wheres.push(`${col} < ${escapeLiteral(value, { args })}`);
+        } else if (operator === "lte") {
+          wheres.push(`${col} <= ${escapeLiteral(value, { args })}`);
+        } else if (operator === "in") {
+          if (Array.isArray(value) && value.length) {
+            wheres.push(
+              `${col} IN (${value.map((v) => escapeLiteral(v, { args })).join(", ")})`,
+            );
+          }
+        } else if (operator === "nin") {
+          if (Array.isArray(value) && value.length) {
+            wheres.push(
+              `${col} NOT IN (${value.map((v) => escapeLiteral(v, { args })).join(", ")})`,
+            );
+          }
+        } else if (operator === "hasKey") {
+          if (typeof value === "string") {
+            wheres.push(
+              `jsonb_path_exists(${col}, '${jsonPathFromDot(value)}')`,
+            );
+          }
+        } else if (operator === "contains") {
+          if (typeof value === "object") {
+            const path = constructJSONPath(value, "");
+            if (path) wheres.push(`${col}${path}`);
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    nestedJoins: joins.join(" "),
+    nestedWheres: wheres.join(" AND "),
+  };
+}
+
+const RELATIONAL_OPERATORS = ["and", "or", "not"];
+
+export function mergeFilterToWhereClause(
+  filters: Record<string, any> = {},
+  where: Record<string, any> = {},
+): Record<string, any> {
+  const hasFilters = Object.keys(filters).length > 0;
+  const hasWhere = Object.keys(where).length > 0;
+  if (!hasFilters && !hasWhere) return {};
+  if (!hasFilters) return structuredClone(where);
+  if (!hasWhere) return structuredClone(filters);
+
+  const result = structuredClone(where);
+  const remaining = structuredClone(filters);
+
+  const isObject = (v: unknown): v is Record<string, any> =>
+    typeof v === "object" && v !== null && !Array.isArray(v);
+
+  // Fold one branch object into a list of branches: merge into the first branch
+  // that shares a top-level field, otherwise append it.
+  const foldBranch = (branches: any[], branch: any): any[] => {
+    const idx = branches.findIndex(
+      (b) => isObject(b) && Object.keys(branch).some((k) => k in b),
+    );
+    if (idx === -1) return [...branches, structuredClone(branch)];
+    const next = branches.slice();
+    next[idx] = mergeFilterToWhereClause(branch, branches[idx]);
+    return next;
+  };
+
+  for (const operator of RELATIONAL_OPERATORS) {
+    const filterArr = Array.isArray(remaining[operator])
+      ? remaining[operator]
+      : null;
+    const whereArr = Array.isArray(result[operator]) ? result[operator] : null;
+
+    // Same relational operator on both sides -> flatten both arrays into one
+    // branch list, coalescing branches that constrain the same field.
+    //   { or:[A,B] } + { or:[C,D] }  ->  { or:[A,B,C,D] }  (C,D folded in)
+    if (filterArr && whereArr) {
+      let branches = whereArr.map((b: any) => structuredClone(b));
+      for (const fBranch of filterArr) branches = foldBranch(branches, fBranch);
+      result[operator] = branches;
+      delete remaining[operator];
+      continue;
+    }
+
+    // Operator only on the where side -> fold the remaining plain filters in as
+    // a single branch.
+    if (whereArr) {
+      const plain: Record<string, any> = { ...remaining };
+      for (const op of RELATIONAL_OPERATORS) delete plain[op];
+      if (Object.keys(plain).length > 0) {
+        result[operator] = foldBranch(
+          result[operator].map((b: any) => structuredClone(b)),
+          plain,
+        );
+        for (const k of Object.keys(plain)) delete remaining[k];
+      }
+    }
+  }
+
+  // Merge any remaining plain keys.
+  for (const [key, value] of Object.entries(remaining)) {
+    if (key in result && isObject(result[key]) && isObject(value)) {
+      result[key] = { ...result[key], ...value };
+    } else {
+      result[key] = value;
+    }
+  }
+
+  return result;
+}
+
+function constructWhereClause(
+  schema: string,
+  table: string,
+  filters: any,
+  where?: WhereInput,
+  args?: Record<string, any>,
+): string {
+  where = mergeFilterToWhereClause(filters, where);
+  if (!where || Object.keys(where).length === 0) return "";
+
+  args = args || {};
+  const { nestedJoins: joins, nestedWheres: wheres } =
+    constructNestedWhereClause(schema, table, where, args);
+
+  if (!wheres) return "";
+  return `${joins} WHERE ${wheres}`;
+}
+
+export async function constructGetQuery(
+  schema: string,
+  table: string,
+  columnsToExclude: string[],
+  filters: any,
+  where?: WhereInput,
+  orderBy?: Record<string, string>[],
+  limit?: number,
+  offset?: number,
+  args?: Record<string, any>,
+) {
+  const selectedColumns = await constructSelectedColumns(
+    schema,
+    table,
+    columnsToExclude,
+  );
+  const whereClause = constructWhereClause(schema, table, filters, where, args);
+  const orderByClause = constructOrderByClause(table, orderBy);
+  const limitClause = constructLimitClause(limit);
+  const offsetClause = constructOffsetClause(offset);
+
+  const query = `SELECT ${selectedColumns} FROM "${schema}"."${table}" ${whereClause} ${orderByClause} ${limitClause} ${offsetClause} ;`;
+  return query;
+}
+
+export async function constructGetOnColumnQuery(
+  schema: string,
+  table: string,
+  column: string,
+  reference: string,
+  columnsToExclude: string[],
+  filters: any,
+  args?: Record<string, any>,
+) {
+  const selectedColumns = await constructSelectedColumns(
+    schema,
+    table,
+    columnsToExclude,
+  );
+  const where = { [column]: { eq: reference } };
+  const whereClause = constructWhereClause(schema, table, filters, where, args);
+  const query = `SELECT ${selectedColumns} FROM "${schema}"."${table}" ${whereClause} ;`;
+  return query;
+}
+
+export function constructGetComputationalFieldQuery(
+  schema: string,
+  table: string,
+  fn: string,
+  returnTypeKind: ComputedFieldReturnType,
+  reference: string,
+): string {
+  const query = `SELECT ("${schema}"."${fn}"("${table}"))${returnTypeKind === "REFERENCE" ? "" : ".*"} FROM "${schema}"."${table}" WHERE "${table}"."reference" = ${escapeLiteral(reference)} ;`;
+  return query;
+}
+
+type nestedResult = {
+  last: string;
+  nesteds: string[];
+};
+
+function constructConflictClause(
+  onConflict: Record<string, any> | null,
+): string {
+  if (!onConflict) return "";
+
+  let conflictClause = "";
+
+  const constraint =
+    Object.keys(onConflict).includes("constraint") &&
+    typeof onConflict["constraint"] == "string"
+      ? onConflict["constraint"]
+      : null;
+  const updateColumns =
+    Object.keys(onConflict).includes("columns") &&
+    Array.isArray(onConflict["columns"])
+      ? onConflict["columns"]
+      : null;
+  if (constraint && updateColumns) {
+    const updates = updateColumns.map(
+      (column) => `"${column}" = EXCLUDED."${column}"`,
+    );
+    conflictClause = `ON CONFLICT ON CONSTRAINT "${constraint}" ${updates ? "DO UPDATE SET " + updates.join(", ") : "DO NOTHING"}`;
+  }
+
+  return conflictClause;
+}
+
+async function getTableInfo(schema: string, table: string) {
+  try {
+    const databaseInfo = await getDataBaseInfo();
+
+    const schemaInfo = databaseInfo?.schemas.find((s) => s.name === schema);
+    if (!schemaInfo) {
+      throw new Error(`Schema "${schema}" not found`);
+    }
+
+    const tableInfo = schemaInfo.tables.find((t) => t.name === table);
+    if (!tableInfo) {
+      throw new Error(`Table "${table}" not found in schema "${schema}"`);
+    }
+
+    return tableInfo;
+  } catch (error) {
+    LOGGER.error(
+      `Unable to retrieve database info for schema "${schema}" and table "${table}".`,
+      error,
+    );
+    throw error;
+  }
+}
+
+async function getTableValues(
+  tableInfo: TableInfo,
+  set: string[] | null = null,
+) {
+  let allValues = tableInfo.columns.flatMap((column) => {
+    if (column.handleAutomaticUpdate) return [];
+
+    const values = [column.name];
+
+    if (column.foreignKey) {
+      values.push(`${column.name}ByReference`);
+    }
+
+    return values;
+  });
+
+  if (set) {
+    allValues = allValues.filter((value) => set.includes(value));
+  }
+
+  return allValues;
+}
+
+function constructTableValuesTypes(tableInfo: TableInfo) {
+  return Object.fromEntries(
+    tableInfo.columns.map((column) => [column.name, column.dataType]),
+  );
+}
+
+async function constructNestedInsertClause(
+  schema: string,
+  table: string,
+  inputs: Record<string, any>,
+  parentId: string,
+): Promise<nestedResult> {
+  const tableInfo = await getTableInfo(schema, table);
+  const tableValues = await getTableValues(tableInfo);
+  if (!tableValues) {
+    throw new Error(`No table values found for table: ${table}`);
+  }
+
+  const onConflict = Object.keys(inputs).includes("onConflict")
+    ? inputs["onConflict"]
+    : null;
+  const conflictClause = constructConflictClause(onConflict);
+
+  inputs = inputs["data"];
+
+  if (!Array.isArray(inputs)) {
+    inputs = [inputs];
+  }
+
+  const records: string[] = [];
+  const nestedInserts: string[] = [];
+
+  for (let i = 0; i < inputs.length; i++) {
+    const input = inputs[i];
+    const record: string[] = [];
+
+    for (let j = 0; j < tableValues.length; j++) {
+      const tableValue = tableValues[j];
+
+      if (tableValue in input) {
+        const value = input[tableValue];
+
+        if (
+          /ByReference/.test(tableValue) &&
+          value !== null &&
+          typeof value === "object"
+        ) {
+          const id = parentId.toString() + i.toString() + j.toString();
+          const relation = tableValue.replace("ByReference", "");
+          const alias =
+            "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
+
+          const construct = await constructNestedInsertClause(
+            schema,
+            relation,
+            value,
+            id,
+          );
+          let { last } = construct;
+          const { nesteds } = construct;
+          last = `"${alias}" AS (${last})`;
+          nestedInserts.concat(nesteds);
+          nestedInserts.push(last);
+
+          record.push(`(SELECT "reference" FROM "${alias}")`);
+        } else if (!/ByReference/.test(tableValue)) {
+          record.push(escapeLiteral(value));
+        }
+      } else if (
+        !/ByReference/.test(tableValue) &&
+        !Object.keys(input).includes(tableValue + `ByReference`)
+      ) {
+        record.push(escapeLiteral(null));
+      }
+    }
+
+    records.push(`(${record.join(", ")})`);
+  }
+
+  const keys = `(${tableValues
+    .filter((value) => !/ByReference/.test(value))
+    .map((value) => `"${value}"`)
+    .join(", ")})`;
+  const values = records.join(", ");
+
+  const last = `INSERT INTO "${schema}"."${table}" ${keys} VALUES ${values} ${conflictClause} RETURNING *`;
+
+  return { last, nesteds: nestedInserts };
+}
+
+export async function constructSingleInsertQuery(
+  schema: string,
+  table: string,
+  inputs: Record<string, any>,
+): Promise<string> {
+  if (
+    typeof inputs !== "object" ||
+    !("data" in inputs) ||
+    typeof inputs["data"] !== "object"
+  ) {
+    throw new Error(
+      `Record insertion expects data of type record, instead it received:\n${inputs}`,
+    );
+  }
+
+  const { last, nesteds } = await constructNestedInsertClause(
+    schema,
+    table,
+    inputs,
+    "0",
+  );
+  const nestedInserts = nesteds.length > 0 ? `WITH ${nesteds.join(", ")}` : "";
+
+  return `${nestedInserts} ${last} ;`;
+}
+
+export async function constructBulkInsertQuery(
+  schema: string,
+  table: string,
+  inputs: Record<string, any>,
+): Promise<string> {
+  if (
+    typeof inputs !== "object" ||
+    !("data" in inputs) ||
+    !Array.isArray(inputs["data"])
+  ) {
+    throw new Error(
+      `Bulk insertion expects data of type array of records, instead it received:\n${inputs}`,
+    );
+  }
+
+  const { last, nesteds } = await constructNestedInsertClause(
+    schema,
+    table,
+    inputs,
+    "0",
+  );
+  const nestedInserts =
+    nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
+
+  return `${nestedInserts} ${last} ;`;
+}
+
+async function constructNestedUpdateClause(
+  schema: string,
+  table: string,
+  updates: Record<string, any>,
+  parentId: string,
+): Promise<nestedResult> {
+  const set = updates?.set || null;
+
+  const tableInfo = await getTableInfo(schema, table);
+  let tableValues = await getTableValues(tableInfo, set);
+  if (!tableValues) {
+    throw new Error(`No table values found for table: ${table}`);
+  }
+  tableValues = [...tableValues];
+  tableValues.unshift("reference");
+  const tableValuesTypes = constructTableValuesTypes(tableInfo);
+
+  updates = updates["data"];
+
+  if (!Array.isArray(updates)) {
+    updates = [updates];
+  }
+
+  const records: string[] = [];
+  const nestedUpdates: string[] = [];
+
+  for (let i = 0; i < updates.length; i++) {
+    const update = updates[i];
+    const record: string[] = [];
+
+    for (let j = 0; j < tableValues.length; j++) {
+      const tableValue = tableValues[j];
+
+      if (tableValue in update) {
+        const value = update[tableValue];
+
+        if (
+          /ByReference/.test(tableValue) &&
+          value !== null &&
+          typeof value === "object"
+        ) {
+          const id = parentId.toString() + i.toString() + j.toString();
+          const relation = tableValue.replace("ByReference", "");
+          const alias =
+            "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
+
+          const construct = await constructNestedUpdateClause(
+            schema,
+            relation,
+            value,
+            id,
+          );
+          let { last } = construct;
+          const { nesteds } = construct;
+          last = `"${alias}" AS (${last})`;
+          nestedUpdates.concat(nesteds);
+          nestedUpdates.push(last);
+
+          record.push(escapeLiteral(value["data"]["reference"]));
+        } else if (!/ByReference/.test(tableValue)) {
+          record.push(
+            escapeLiteral(value, {
+              column: tableValue,
+              columnTypes: tableValuesTypes,
+            }),
+          );
+        }
+      } else if (
+        !/ByReference/.test(tableValue) &&
+        !Object.keys(update).includes(tableValue + `ByReference`)
+      ) {
+        record.push(escapeLiteral(null));
+      }
+    }
+
+    records.push(`(${record.join(", ")})`);
+  }
+
+  const values = `(VALUES ${records.join(", ")})`;
+  const tableValuesWithNoByReference = tableValues.filter(
+    (value) => !/ByReference/.test(value),
+  );
+
+  const keys = `(${tableValuesWithNoByReference.map((value) => `"${value}"`).join(", ")})`;
+  const definitions = tableValuesWithNoByReference
+    .filter((value) => value !== "reference")
+    .map((value) => `"${value}" = "${parentId}"."${value}"`)
+    .join(", ");
+
+  const last = `UPDATE "${schema}"."${table}" SET ${definitions} FROM ${values} AS "${parentId}"${keys} WHERE "${table}".reference = "${parentId}".reference RETURNING *`;
+
+  return { last, nesteds: nestedUpdates };
+}
+
+export async function constructSingleUpdateQuery(
+  schema: string,
+  table: string,
+  updates: Record<string, any>,
+): Promise<string> {
+  const { last, nesteds } = await constructNestedUpdateClause(
+    schema,
+    table,
+    updates,
+    "0",
+  );
+  const nestedInserts =
+    nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
+
+  return `${nestedInserts} ${last} ;`;
+}
+
+export async function constructBulkUpdateQuery(
+  schema: string,
+  table: string,
+  updates: Record<string, any>,
+): Promise<string> {
+  const { last, nesteds } = await constructNestedUpdateClause(
+    schema,
+    table,
+    updates,
+    "0",
+  );
+  const nestedInserts =
+    nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
+
+  return `${nestedInserts} ${last} ;`;
+}
+
+async function constructNestedDeleteClause(
+  schema: string,
+  table: string,
+  deletes: Record<string, any>,
+  parentId: string,
+  referenceColumn: string = "reference",
+): Promise<nestedResult> {
+  const tableInfo = await getTableInfo(schema, table);
+  let tableValues = await getTableValues(tableInfo);
+  if (!tableValues) {
+    throw new Error(`No table values found for table: ${table}`);
+  }
+  tableValues = [...tableValues];
+  tableValues.unshift("reference");
+  const tableValuesTypes = constructTableValuesTypes(tableInfo);
+
+  deletes = deletes["data"];
+
+  if (!Array.isArray(deletes)) {
+    deletes = [deletes];
+  }
+
+  const records: string[] = [];
+  const nestedDeletes: string[] = [];
+
+  for (let i = 0; i < deletes.length; i++) {
+    const _delete = deletes[i];
+    const record: string[] = [];
+
+    for (let j = 0; j < tableValues.length; j++) {
+      const tableValue = tableValues[j];
+
+      if (tableValue in _delete) {
+        const value = _delete[tableValue];
+
+        if (
+          /ByReference/.test(tableValue) &&
+          value !== null &&
+          typeof value === "object"
+        ) {
+          const id = parentId.toString() + i.toString() + j.toString();
+          const relation = tableValue.replace("ByReference", "");
+          const alias =
+            "new" + relation.charAt(0).toUpperCase() + relation.slice(1) + id;
+
+          const construct = await constructNestedDeleteClause(
+            schema,
+            relation,
+            value,
+            id,
+          );
+          let { last } = construct;
+          const { nesteds } = construct;
+          last = `"${alias}" AS (${last})`;
+          nestedDeletes.concat(nesteds);
+          nestedDeletes.push(last);
+
+          record.push(escapeLiteral(value["data"]["reference"]));
+        } else if (!/ByReference/.test(tableValue)) {
+          record.push(
+            escapeLiteral(value, {
+              column: tableValue,
+              columnTypes: tableValuesTypes,
+            }),
+          );
+        }
+      } else if (
+        !/ByReference/.test(tableValue) &&
+        !Object.keys(_delete).includes(tableValue + `ByReference`)
+      ) {
+        record.push(escapeLiteral(null));
+      }
+    }
+
+    records.push(`(${record.join(", ")})`);
+  }
+
+  const values = `(VALUES ${records.join(", ")})`;
+  const keys = `(${tableValues
+    .filter((value) => !/ByReference/.test(value))
+    .map((value) => `"${value}"`)
+    .join(", ")})`;
+
+  const last = `DELETE FROM "${schema}"."${table}" USING ${values} "${parentId}"${keys} WHERE "${table}"."${referenceColumn}" = "${parentId}"."${referenceColumn}" RETURNING *`;
+
+  return { last, nesteds: nestedDeletes };
+}
+
+export async function constructSingleDeleteQuery(
+  schema: string,
+  table: string,
+  deletes: Record<string, any>,
+): Promise<string> {
+  if (
+    typeof deletes !== "object" ||
+    !("data" in deletes) ||
+    typeof deletes["data"] !== "object"
+  ) {
+    throw new Error(
+      `Record deletion expects data of type record, instead it received:\n${deletes}`,
+    );
+  }
+
+  const { last, nesteds } = await constructNestedDeleteClause(
+    schema,
+    table,
+    deletes,
+    "0",
+  );
+  const nestedInserts =
+    nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
+
+  return `${nestedInserts} ${last} ;`;
+}
+
+export async function constructBulkDeleteQuery(
+  schema: string,
+  table: string,
+  deletes: Record<string, any>,
+  referenceColumn: string = "reference",
+): Promise<string> {
+  if (
+    typeof deletes !== "object" ||
+    !("data" in deletes) ||
+    !Array.isArray(deletes["data"])
+  ) {
+    throw new Error(
+      `Bulk deletion expects data of type array of records, instead it received:\n${deletes}`,
+    );
+  }
+
+  const { last, nesteds } = await constructNestedDeleteClause(
+    schema,
+    table,
+    deletes,
+    "0",
+    referenceColumn,
+  );
+  const nestedInserts =
+    nesteds.length !== 0 ? `WITH ${nesteds.join(", ")}` : "";
+
+  return `${nestedInserts} ${last} ;`;
+}
