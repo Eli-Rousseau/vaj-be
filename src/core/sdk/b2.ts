@@ -300,6 +300,8 @@ export class B2Client {
     }
 
     async downloadFile(file: File) {
+        if (file.content) return;
+
         const url = `${(await this.auth.connect()).apiInfo.storageApi.downloadUrl}/b2api/v4/b2_download_file_by_id?fileId=${file.id}`;
         const request = {
             method: "GET",
@@ -314,7 +316,7 @@ export class B2Client {
 
         if (!response.ok) throw new HTTPError(response.status, response.statusText);
 
-        return Buffer.from(await response.arrayBuffer());
+        file.content = Buffer.from(await response.arrayBuffer());
     }
 
     async listFiles(bucket: Bucket, prefix?: string) {

@@ -8,7 +8,7 @@ import { logger } from "@/src/core/logger";
 
 const LOGGER = logger.get();
 
-const tmp = `${cwd()}/src/database/.backup.tar`;
+const tmp = `${cwd()}/src/be/database/.backup.tar`;
 const directory = "database/backups/";
 
 async function dropDatabase(args: {
