@@ -37,6 +37,7 @@ async function startServer() {
   // Adding the routers
   app.use("/api/v1/graphql", await routers.getGraphQlRouter());
   app.use("/api/v1/authentication", routers.authentication.default);
+  app.use("/api/v1/file", routers.file.default);
 
   app.use(middleware.unhandeledRoutes);
 
