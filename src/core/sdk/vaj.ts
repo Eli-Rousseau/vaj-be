@@ -2,6 +2,7 @@ import { logger } from "@/src/core/logger";
 import { decodeJWTToken, generateJWTToken } from "@/src/core/jwt";
 import { postgres } from "@/src/core/postgres";
 import {
+  ShopFile,
   ShopRefreshToken,
   ShopUser,
 } from "@/src/be/database/classes/transformer-classes";
@@ -354,16 +355,16 @@ export default class VAJClient {
     return apiUserVAJClient!;
   }
 
-  protected async post(
-    endpoint: string,
-    headers: any,
-    body: any,
-  ) {
-    const url = `${this.applicationUrl}${endpoint}`;
+  async updateSchema() {
+    const endpoint = "api/v1/graphql/update-schema";
+    const headers = {
+      "Authorization": (await this.auth.connect())!.accessToken
+    }
+    
+    const url = `${this.applicationUrl}/${endpoint}`;
     const request = {
       method: "POST",
-      headers,
-      body: JSON.stringify(body),
+      headers
     };
 
     LOGGER.request({url, request});
@@ -374,16 +375,57 @@ export default class VAJClient {
       throw new HTTPError(response.status, response.statusText);
     }
 
-    return (await response.json());
+    return;
   }
 
-  async updateSchema() {
-    const endpoint = "/api/v1/graphql/update-schema";
-    const headers = {
-      "Authorization": (await this.auth.connect())!.accessToken
+  async uploadFile(
+    file: File | Blob | Buffer,
+    fileName?: string,
+    contentType?: string,
+  ): Promise<ShopFile> {
+    const formData = new FormData();
+
+    if (Buffer.isBuffer(file)) {
+      // Backend / Node.js caller
+      const blob = new Blob([file as unknown as ArrayBuffer], {
+        type: contentType ?? "application/octet-stream",
+      });
+
+      formData.append(
+        "file",
+        blob,
+        fileName,
+      );
+    } else {
+      // Browser File/Blob
+      formData.append(
+        "file",
+        file,
+        file instanceof File ? file.name : fileName,
+      );
     }
-    const body = "";
-    await this.post(endpoint, headers, body);
-  }
-} 
 
+    const endpoint = "api/v1/file";
+    const headers = {
+      Authorization: (await this.auth.connect())!.accessToken,
+    };
+
+    const url = `${this.applicationUrl}/${endpoint}`;
+
+    const request = {
+      method: "POST",
+      headers,
+      body: formData,
+    };
+
+    LOGGER.request({ url, request });
+    const response = await fetch(url, request);
+    LOGGER.response({ response });
+
+    if (!response.ok) {
+      throw new HTTPError(response.status, response.statusText);
+    }
+
+    return await response.json() as ShopFile;
+  }
+}

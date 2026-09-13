@@ -4,8 +4,8 @@ import * as handlers from "@/src/be/api/service/file/handlers";
 
 const router = Router();
 
-router.get("/:sequentialId", handlers.getFile);
-router.post("/", handlers.uploadFile);
-router.delete("/", handlers.deleteFile);
+router.get("/:sequentialId", handlers.handleGet);
+router.post("/", handlers.handleUpload);
+router.delete("/", handlers.hanldeDelete);
 
 export default router;

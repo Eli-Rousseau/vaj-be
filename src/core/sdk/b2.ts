@@ -255,6 +255,9 @@ export class B2Client {
         if (file.bucketObj!.isPublic) {
             const publicUrl: string = `https://f${file.bucketObj!.region.match(/\d{3}/)![0]}.backblazeb2.com/file/${file.bucketObj!.name}/${file.key}`;
             file["publicUrl"] = publicUrl;
+            file["isPublic"] = true;
+        } else {
+            file["isPublic"] = false;
         }
         file["id"] = upload.fileId;
     }

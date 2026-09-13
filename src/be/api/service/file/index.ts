@@ -1,0 +1,1 @@
+export { upload } from "@/src/be/api/service/file/upload";
