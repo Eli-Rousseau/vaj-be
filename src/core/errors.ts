@@ -1,6 +1,5 @@
 export class AuthenticationError extends Error {}
 export class AuthorizationError extends Error {}
-export class B2Error extends Error {}
 export class BadRequestError extends Error {}
 export class ConfigError extends Error {}
 export class CustomTypeError extends Error {}

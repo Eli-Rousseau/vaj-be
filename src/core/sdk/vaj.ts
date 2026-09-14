@@ -32,6 +32,12 @@ type VAJCredentials = {
   password: string;
 }
 
+type UploadFileArgs = {
+  file: File | Blob | Buffer;
+  fileName?: string,
+  contentType?: string
+}
+
 let apiUserVAJAuth: VAJAuth | null = null;
 let apiUserVAJClient: VAJClient | null = null;
 
@@ -378,11 +384,9 @@ export default class VAJClient {
     return;
   }
 
-  async uploadFile(
-    file: File | Blob | Buffer,
-    fileName?: string,
-    contentType?: string,
-  ): Promise<ShopFile> {
+  async uploadFile(args: UploadFileArgs): Promise<ShopFile> {
+    const { file, fileName, contentType } = args;
+
     const formData = new FormData();
 
     if (Buffer.isBuffer(file)) {

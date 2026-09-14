@@ -124,11 +124,6 @@ const DEFAULT_ERROR_CONFIG: ErrorConfig[] = [
     message: "Failed authorization",
   },
   {
-    classes: [errors.B2Error],
-    statusCode: 500,
-    message: "Unable to request BackBlaze"
-  },
-  {
     classes: [errors.BadRequestError],
     statusCode: 400,
     message: "Invalid request",

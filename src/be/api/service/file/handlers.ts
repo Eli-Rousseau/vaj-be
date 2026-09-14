@@ -2,8 +2,6 @@ import { NextFunction, Request, Response } from "express";
 
 import { withHandler } from "@/src/be/api/wrapper";
 import * as main from "@/src/be/api/service/file"
-import { BadRequestError } from "@/src/core/errors";
-import { S3ContentType } from "@/src/core/sdk/b2";
 
 export async function handleGet(
   req: Request,
@@ -45,20 +43,8 @@ export async function handleUpload(
 
       const file = formData.get("file");
 
-      if (!(file instanceof globalThis.File)) {
-        throw new BadRequestError("Missing file.");
-      }
-
-      if (!file.size) {
-        throw new BadRequestError("Uploaded file is empty.");
-      }
-
-      const fileContent = Buffer.from(await file.arrayBuffer());
-
-      const result = await main.upload({
-        fileContent,
-        fileContentType: file.type as S3ContentType,
-        fileName: file.name,
+      const result = await main.upload({ 
+        file: file as File
       });
 
       res.status(201).json(result);

@@ -8,6 +8,10 @@ export async function createFile(data: ShopFile) {
 mutation createRefreshToken($file: ShopFileMutationType!) {
   insertShopFile(
     data: $file
+    onConflict:  {
+       constraint: "fileBucketKeyKey"
+       columns: ["id", "contentType", "isPublic", "publicUrl",]
+    }
   ) {
     reference
     sequentialId

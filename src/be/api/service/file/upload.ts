@@ -1,15 +1,19 @@
-import { B2Error, BadRequestError, DatabaseError } from "@/src/core/errors";
-import { File, B2Client, S3ContentType } from "@/src/core/sdk/b2";
+import { BadRequestError } from "@/src/core/errors";
+import { File as B2File, B2Client } from "@/src/core/sdk/b2";
 import * as gql from "@/src/be/api/service/file/gql";
 import { ShopFile } from "@/src/be/database/classes/transformer-classes";
+import { findEnumsValue, S3ContentType } from "@/src/core/enums";
+
+//////////
+// VARS //
+//////////
+const FILE_SIZE_LIMIT = 1024 * 1024 * 50 // 50GB
 
 ///////////
 // TYPES //
 ///////////
 type UploadEvent = {
-    fileContent: Buffer;
-    fileContentType: string;
-    fileName: string;
+    file: File
 }
 
 type UploadResult = {
@@ -19,50 +23,54 @@ type UploadResult = {
 /////////////
 // HELPERS //
 /////////////
-export function randomString(length: number = 10) {
-    let result = '';
-    const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    
-    for (let i = 0; i < length; i++) {
-        const randomInd = Math.floor(Math.random() * characters.length);
-        result += characters.charAt(randomInd);
-    }
-    return result;
+function sanitizeFileName(fileName: string) {
+    return (fileName || "").replace(/[^\w\-. ]/, "");
+}
+
+function isValidFileName(fileName: string) {
+    return fileName ? /^[\w\-. ]+\.[\dA-Za-z]+$/.test(fileName) : false;
 }
 
 //////////
 // MAIN //
 //////////
 export async function upload(event: UploadEvent): Promise<UploadResult> {
-    const { fileContent, fileContentType } = event;
-    let fileName = event.fileName
+    const { file: requestFile } = event;
 
-    if (!fileContent) throw new BadRequestError("Missing file content.");
-    if (!fileContentType) throw new BadRequestError("Missing file content type.");
-    if (!fileName) fileName = randomString();
+    if (!(requestFile instanceof globalThis.File)) 
+        throw new BadRequestError("Missing file.");
+    if (!requestFile.size) 
+        throw new BadRequestError("Uploaded file is empty.");
+    if (requestFile.size > FILE_SIZE_LIMIT)
+        throw new BadRequestError(`File of ${requestFile.size} bytes exceeds max limit of ${FILE_SIZE_LIMIT} bytes.`);
+
+    let fileName = sanitizeFileName(requestFile.name);
+    const fileContentType = requestFile.type;
+    const fileContent = Buffer.from(await requestFile.arrayBuffer());
+
+    if (!fileContent) 
+        throw new BadRequestError("Missing file content.");
+    if (!fileContentType) 
+        throw new BadRequestError("Missing file content type.");
+    if (!findEnumsValue(fileContentType, S3ContentType)) 
+        throw new BadRequestError(`Unrecognized content type: ${fileContentType}`)
+    if (!fileName) 
+        throw new BadRequestError("Missing file name.");
+    if (!isValidFileName(fileName))
+        throw new BadRequestError(`Invalid file name "${fileName}"`);
 
     const b2Client = B2Client.withBaseB2Auth();
-    const bucket = b2Client.getBucket("public");
+    const bucket = b2Client.getBucket("private");
     const key = `file/upload/${fileName}`;
-    const upload = File.fromPlain({
+    const upload = B2File.fromPlain({
         bucket: bucket!.key,
         key,
         name: fileName,
         content: fileContent,
         contentType: fileContentType
     })
-    try {
-        await b2Client.uploadFile(upload);
-    } catch (error) {
-        throw new B2Error(`UPLOAD_FILE_FAILED: ${error}`);
-    }
+    await b2Client.uploadFile(upload);
 
-    let file;
-    try {
-        file =  await gql.createFile(upload);
-    } catch (error) {
-        throw new DatabaseError(`CREATE_FILE_FAILED: ${error}`);
-    }
-    
-    return { file }
+    const resultFile =  await gql.createFile(upload);
+    return { file: resultFile }
 }

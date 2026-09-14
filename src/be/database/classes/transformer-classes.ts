@@ -922,135 +922,6 @@ export class ShopSystemRoleEnum extends TransformerClass {
   systemRolePermissions!: ShopSystemRolePermission[] | null;
 }
 
-export class ShopArticleImage extends TransformerClass {
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  reference!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  sequentialId!: number | null;
-
-  @Type(() => ShopArticle)
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  articleByReference!: ShopArticle | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  article!: string | null;
-
-  @Type(() => ShopFile)
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  fileByReference!: ShopFile | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  file!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  isCover!: boolean | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  createdAt!: Date | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  updatedAt!: Date | null;
-
-  @Type(() => ShopArticle)
-  @Default()
-  @Expose()
-  articles!: ShopArticle[] | null;
-
-  @Type(() => ShopFile)
-  @Default()
-  @Expose()
-  files!: ShopFile[] | null;
-}
-
-export class ShopFile extends TransformerClass {
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  reference!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  sequentialId!: number | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  key!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  name!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  bucket!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  contentType!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  isPublic!: boolean | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  publicUrl!: string | null;
-
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  id!: string | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  createdAt!: Date | null;
-
-  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
-  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
-  @Annotate("Mutable")
-  @Default()
-  @Expose()
-  updatedAt!: Date | null;
-
-  @Type(() => ShopArticleImage)
-  @Default()
-  @Expose()
-  articleImages!: ShopArticleImage[] | null;
-}
-
 export class ShopArticleCategories extends TransformerClass {
   @Annotate("Mutable")
   @Default()
@@ -1177,6 +1048,69 @@ export class ShopArticleBrandEnum extends TransformerClass {
   articleBrand!: string | null;
 }
 
+export class ShopArticleImage extends TransformerClass {
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  reference!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  sequentialId!: number | null;
+
+  @Type(() => ShopArticle)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  articleByReference!: ShopArticle | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  article!: string | null;
+
+  @Type(() => ShopFile)
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  fileByReference!: ShopFile | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  file!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  isCover!: boolean | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  createdAt!: Date | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  updatedAt!: Date | null;
+
+  @Type(() => ShopArticle)
+  @Default()
+  @Expose()
+  articles!: ShopArticle[] | null;
+
+  @Type(() => ShopFile)
+  @Default()
+  @Expose()
+  files!: ShopFile[] | null;
+}
+
 export class ShopArticleGenderEnum extends TransformerClass {
   @Annotate("Mutable")
   @Default()
@@ -1231,5 +1165,71 @@ export class ShopSystemPermissionEnum extends TransformerClass {
   @Default()
   @Expose()
   systemPermission!: string | null;
+}
+
+export class ShopFile extends TransformerClass {
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  reference!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  sequentialId!: number | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  key!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  name!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  bucket!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  contentType!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  isPublic!: boolean | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  publicUrl!: string | null;
+
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  id!: string | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  createdAt!: Date | null;
+
+  @Transform(({ value }) => transformers.toDatetime(value), { toClassOnly: true })
+  @Transform(({ value }) => transformers.fromDatetime(value), { toPlainOnly: true })
+  @Annotate("Mutable")
+  @Default()
+  @Expose()
+  updatedAt!: Date | null;
+
+  @Type(() => ShopArticleImage)
+  @Default()
+  @Expose()
+  articleImages!: ShopArticleImage[] | null;
 }
 
