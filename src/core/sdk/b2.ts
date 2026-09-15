@@ -279,7 +279,7 @@ export class B2Client {
     }
 
     async deleteFile(file: File) {
-        const url: string = `${(await this.auth.connect()).apiInfo.storageApi.apiUrl}/b2api/v2/b2_delete_file_version`;
+        const url = `${(await this.auth.connect()).apiInfo.storageApi.apiUrl}/b2api/v2/b2_delete_file_version`;
         const request = {
             method: "POST",
             headers: {

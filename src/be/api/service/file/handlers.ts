@@ -73,7 +73,11 @@ export async function handleDelete(
     res,
     next,
     async (req, res, next, context) => {
-      // req.params.sequentialId
+      const { file } = await main.delete({
+        sequentialId: Number(req.params.sequentialId)
+      });
+
+      res.status(201).send();
     },
   );
 }

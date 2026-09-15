@@ -38,6 +38,10 @@ type UploadFileArgs = {
   contentType?: string
 }
 
+type DeleteFileArgs = {
+  sequentialId: number
+}
+
 let apiUserVAJAuth: VAJAuth | null = null;
 let apiUserVAJClient: VAJClient | null = null;
 
@@ -431,5 +435,30 @@ export default class VAJClient {
     }
 
     return await response.json() as ShopFile;
+  }
+
+  async deleteFile(args: DeleteFileArgs) {
+    const { sequentialId } = args;
+
+    const endpoint = `api/v1/file/${sequentialId}`;
+    const headers = {
+      Authorization: (await this.auth.connect())!.accessToken,
+    };
+
+    const url = `${this.applicationUrl}/${endpoint}`;
+    const request = {
+      method: "DELETE",
+      headers
+    };
+
+    LOGGER.request({url, request});
+    const response = await fetch(url, request);
+    LOGGER.response({response});
+
+    if (!response.ok) {
+      throw new HTTPError(response.status, response.statusText);
+    }
+
+    return;
   }
 }

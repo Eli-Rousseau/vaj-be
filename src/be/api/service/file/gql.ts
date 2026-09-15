@@ -71,3 +71,20 @@ query getFileBySequentialId($sequentialId: JSON) {
 
   return file;
 }
+
+export async function deleteFile(data: ShopFile) {
+  (
+    await graphql.executeAndTransform(ShopFile, {
+      query: `
+  mutation deleteFile($files: [ShopFileMutationType!]!) {
+    deleteShopFiles(data: $files) {
+      reference
+    }
+  }    
+      `,
+      variables: {
+        files: [data.toPlain({ onlyMutables: true })]
+      }
+    })
+  )[0];
+}
