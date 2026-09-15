@@ -6,6 +6,6 @@ const router = Router();
 
 router.get("/:sequentialId", handlers.handleGet);
 router.post("/", handlers.handleUpload);
-router.delete("/", handlers.hanldeDelete);
+router.delete("/:sequentialId", handlers.handleDelete);
 
 export default router;

@@ -36,3 +36,38 @@ mutation createRefreshToken($file: ShopFileMutationType!) {
 
   return file;
 }
+
+export async function getFileBySequentialId(sequentialId: number) {
+  const file = (
+    await graphql.executeAndTransform(ShopFile, {
+      query: `
+query getFileBySequentialId($sequentialId: JSON) {
+  getShopFiles(
+    where:  {
+       sequentialId:  {
+          eq: $sequentialId
+       }
+    }
+  ) {
+    reference
+    sequentialId
+    key
+    name
+    bucket
+    contentType
+    isPublic
+    publicUrl
+    id
+    createdAt
+    updatedAt
+  }
+}
+      `,
+      variables: {
+        sequentialId
+      }
+    })
+  )?.[0];
+
+  return file;
+}

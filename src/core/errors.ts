@@ -10,3 +10,4 @@ export class HTTPError extends Error {
         super(`Failed HTTP request: ${status.toString()} ${statusText}`)
     }
 }
+export class ResourceNotFoundError extends Error {};

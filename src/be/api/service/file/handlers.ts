@@ -13,7 +13,18 @@ export async function handleGet(
     res,
     next,
     async (req, res, next, context) => {
-        // req.params.sequentialId;
+      const { content, contentType, fileName } = await main.get({
+        sequentialId: Number(req.params.sequentialId),
+      });
+
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Content-Length", content.length);
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="${fileName}"`,
+      );
+
+      res.send(content);
     },
   );
 }
@@ -52,7 +63,7 @@ export async function handleUpload(
   );
 }
 
-export async function hanldeDelete(
+export async function handleDelete(
   req: Request,
   res: Response,
   next: NextFunction,
@@ -61,6 +72,8 @@ export async function hanldeDelete(
     req,
     res,
     next,
-    async (req, res, next, context) => {},
+    async (req, res, next, context) => {
+      // req.params.sequentialId
+    },
   );
 }
