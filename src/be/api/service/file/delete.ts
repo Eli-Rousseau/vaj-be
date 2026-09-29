@@ -2,6 +2,7 @@ import { ShopFile } from "@/src/be/database/classes/transformer-classes"
 import { BadRequestError, ResourceNotFoundError } from "@/src/core/errors";
 import * as gql from "@/src/be/api/service/file/gql";
 import { File as B2File, B2Client } from "@/src/core/sdk/b2";
+import { redisClient } from "@/src/core/cache";
 
 ///////////
 // TYPES //
@@ -34,6 +35,7 @@ export async function delete_(event: DeleteEvent): Promise<DeleteResult> {
     filesToDelete.forEach(async (_file) => (await b2Client.deleteFile(b2File)));
 
     await gql.deleteFile(file);
+    await redisClient.delete(`file-upload:${sequentialId!}`);
 
     return { file };
 }

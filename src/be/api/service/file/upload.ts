@@ -3,6 +3,7 @@ import { File as B2File, B2Client } from "@/src/core/sdk/b2";
 import * as gql from "@/src/be/api/service/file/gql";
 import { ShopFile } from "@/src/be/database/classes/transformer-classes";
 import { findEnumsValue, S3ContentType } from "@/src/core/enums";
+import { redisClient } from "@/src/core/cache";
 
 //////////
 // VARS //
@@ -72,5 +73,15 @@ export async function upload(event: UploadEvent): Promise<UploadResult> {
     await b2Client.uploadFile(upload);
 
     const resultFile =  await gql.createFile(upload);
+
+    await redisClient.set(
+        `file-upload:${resultFile.sequentialId!}`,
+        upload.content,
+        {
+            expirationInSeconds: 86_400, // 1 day
+            saveBuffer: true
+        }
+    )
+
     return { file: resultFile }
 }

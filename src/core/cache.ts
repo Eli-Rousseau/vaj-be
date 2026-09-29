@@ -3,18 +3,19 @@ import { logger } from "@/src/core/logger";
 
 const LOGGER = logger.get();
 
-type SetJSONOptions = {
+type RedisClientSetOptions = {
   expirationInSeconds?: number;
+  saveBuffer?: boolean
 };
 
+type RedisClientGetOptions = {
+  returnBuffer?: boolean;
+}
+
 class RedisClient {
-  private pool: RedisClientPoolType | null = null;
+  protected pool: RedisClientPoolType
 
-  getPool(): RedisClientPoolType {
-    if (this.pool) {
-      return this.pool;
-    }
-
+  constructor() {
     const host = process.env.REDIS_HOST;
     const port = process.env.REDIS_PORT;
     const user = process.env.REDIS_USERNAME;
@@ -29,7 +30,7 @@ class RedisClient {
     const url = `redis://${user}:${password}@${host}:${port}`;
 
     const pool = createClientPool({
-      url,
+      url
     });
 
     pool.on("error", (err) => {
@@ -37,16 +38,14 @@ class RedisClient {
     });
 
     this.pool = pool as RedisClientPoolType;
-
-    return pool as RedisClientPoolType;
   }
 
   async shutDown() {
     LOGGER.info("Shutting down Redis pool...");
-    await this.pool?.close();
+    await this.pool.close();
   }
 
-  async setJSON(key: string, object: any, options?: SetJSONOptions) {
+  async set(key: string, object: any, options?: RedisClientSetOptions) {
     const redisOptions: any = {};
     if (options?.expirationInSeconds) {
       redisOptions["expiration"] = {
@@ -55,48 +54,52 @@ class RedisClient {
       };
     }
 
-    const redisPool = this.getPool();
-    await redisPool.set(key, JSON.stringify(object), redisOptions);
+    let toSave;
+    if (options?.saveBuffer) toSave = object.toString("utf-16le");
+    else toSave = JSON.stringify(object);
+
+    await this.pool.set(key, toSave, redisOptions);
   }
 
-  async getJSON(key: string): Promise<any> {
-    const redisPool = this.getPool();
-    const response = await redisPool.get(key);
+  async get(key: string, options?: RedisClientGetOptions) {
+    const response = await this.pool.get(key);
 
-    if (response === null) {
-      return null;
-    }
-    return JSON.parse(response);
+    if (response === null) return null;
+
+    let toReturn;
+    if (options?.returnBuffer) toReturn = Buffer.from(response, "utf-16le");
+    else toReturn = JSON.parse(response);
+
+    return toReturn;
   }
 
-  async deleteJSON(key: string) {
-    const redisPool = this.getPool();
-    await redisPool.del(key);
+  async delete(key: string) {
+    await this.pool.del(key);
   }
 
-  async findKeyInJSON(key: string, path: string) {
-    const object = await this.getJSON(key);
+  // async findKeyInJSON(key: string, path: string) {
+  //   const object = await this.getJSON(key);
 
-    try {
-      const pathElements = path.split(".");
-      let nestedObject = object;
-      for (const element of pathElements) {
-        nestedObject =
-          !isNaN(parseFloat(element)) && Array.isArray(nestedObject)
-            ? nestedObject[parseInt(element)]
-            : nestedObject[element];
-      }
+  //   try {
+  //     const pathElements = path.split(".");
+  //     let nestedObject = object;
+  //     for (const element of pathElements) {
+  //       nestedObject =
+  //         !isNaN(parseFloat(element)) && Array.isArray(nestedObject)
+  //           ? nestedObject[parseInt(element)]
+  //           : nestedObject[element];
+  //     }
 
-      return nestedObject;
-    } catch (error) {
-      return null;
-    }
-  }
+  //     return nestedObject;
+  //   } catch (error) {
+  //     return null;
+  //   }
+  // }
 
-  async keyExistsInJSON(key: string, path: string) {
-    const result = await this.findKeyInJSON(key, path);
-    return result !== null;
-  }
+  // async keyExistsInJSON(key: string, path: string) {
+  //   const result = await this.findKeyInJSON(key, path);
+  //   return result !== null;
+  // }
 }
 
 export const redisClient = new RedisClient();
