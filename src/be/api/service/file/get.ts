@@ -1,7 +1,7 @@
 import { BadRequestError, ResourceNotFoundError } from "@/src/core/errors";
 import { File as B2File, B2Client } from "@/src/core/sdk/b2";
 import * as gql from "@/src/be/api/service/file/gql";
-import { redisClient } from "@/src/core/cache";
+import { RedisClient } from "@/src/core/sdk/redis";
 
 ///////////
 // TYPES //
@@ -32,6 +32,7 @@ export async function get(event: GetEvent): Promise<GetResult> {
     const contentType = file.contentType!.toString();
     const fileName = file.name!;
 
+    const redisClient = RedisClient.withDefaultPool();
     const cachedFile = await redisClient.get(
         `file-upload:${sequentialId!}`,
         {

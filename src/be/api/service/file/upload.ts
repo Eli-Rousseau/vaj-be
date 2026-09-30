@@ -3,7 +3,7 @@ import { File as B2File, B2Client } from "@/src/core/sdk/b2";
 import * as gql from "@/src/be/api/service/file/gql";
 import { ShopFile } from "@/src/be/database/classes/transformer-classes";
 import { findEnumsValue, S3ContentType } from "@/src/core/enums";
-import { redisClient } from "@/src/core/cache";
+import { RedisClient } from "@/src/core/sdk/redis";
 
 //////////
 // VARS //
@@ -45,7 +45,7 @@ export async function upload(event: UploadEvent): Promise<UploadResult> {
     if (requestFile.size > FILE_SIZE_LIMIT)
         throw new BadRequestError(`File of ${requestFile.size} bytes exceeds max limit of ${FILE_SIZE_LIMIT} bytes.`);
 
-    let fileName = sanitizeFileName(requestFile.name);
+    const fileName = sanitizeFileName(requestFile.name);
     const fileContentType = requestFile.type;
     const fileContent = Buffer.from(await requestFile.arrayBuffer());
 
@@ -74,6 +74,7 @@ export async function upload(event: UploadEvent): Promise<UploadResult> {
 
     const resultFile =  await gql.createFile(upload);
 
+    const redisClient = RedisClient.withDefaultPool();
     await redisClient.set(
         `file-upload:${resultFile.sequentialId!}`,
         upload.content,
