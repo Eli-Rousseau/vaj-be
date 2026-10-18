@@ -3,7 +3,7 @@ import { readdir, readFile, writeFile } from "fs/promises";
 
 import { loadStage } from "@/src/core/stage";
 import { logger } from "@/src/core/logger";
-import { postgres } from "@/src/core/postgres";
+import { PostgresClient } from "@/src/be/sdks/postgres";
 import { setupShutdownHooks } from "@/src/core/shutdown";
 import { askQuestion } from "@/src/core/prompt";
 import { buildTransformerClasses } from "@/src/be/database/classes/build-classes";
@@ -42,11 +42,11 @@ function checkMigrationSequence(migrations: string[]) {
 }
 
 async function getCurrentMigrations() {
-  const pgPool = postgres.getPool("default");
+  const postgresClient = PostgresClient.getClientByPoolKey("default");;
   const query = "SELECT * FROM meta.migration;";
 
   try {
-    const migrations: Migration[] = (await pgPool.query(query)).rows;
+    const migrations: Migration[] = (await postgresClient.query(query)).rows;
     migrations.sort((migr1, migr2) => {
       const index1 = Number(migr1.name.match(/^\d+/)![0]);
       const index2 = Number(migr2.name.match(/^\d+/)![0]);
@@ -111,7 +111,7 @@ function computeMigrationsDiff(migrations: Migration[], scripts: string[]) {
 }
 
 async function applyMigrations(scripts: string[]) {
-  const pgPool = postgres.getPool("default");
+  const postgresClient = PostgresClient.getClientByPoolKey("default");;
 
   for (const script of scripts) {
     const path = `${MIGRATION_DIRECTORY}/${script}`;
@@ -125,16 +125,16 @@ async function applyMigrations(scripts: string[]) {
     }
 
     try {
-      await pgPool.query("BEGIN");
-      await pgPool.query(content);
-      await pgPool.query("INSERT INTO meta.migration (name) VALUES ($1)", [
+      await postgresClient.query("BEGIN");
+      await postgresClient.query(content);
+      await postgresClient.query("INSERT INTO meta.migration (name) VALUES ($1)", [
         script,
       ]);
-      await pgPool.query("COMMIT");
+      await postgresClient.query("COMMIT");
       LOGGER.info(`Migration ${script} applied.`);
     } catch (error) {
       LOGGER.error(`Migration ${script} failed. Rolling back.`, error);
-      await pgPool.query("ROLLBACK");
+      await postgresClient.query("ROLLBACK");
       process.exit(1);
     }
   }

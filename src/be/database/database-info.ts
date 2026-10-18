@@ -2,7 +2,7 @@ import { readFile } from "fs/promises";
 import { cwd } from "process";
 
 import { logger } from "@/src/core/logger";
-import { postgres } from "@/src/core/postgres";
+import { PostgresClient } from "@/src/be/sdks/postgres";
 import {
   DataBaseInfo,
   ColumnInfo,
@@ -41,7 +41,7 @@ async function readPermissionsConfig() {
 }
 
 async function getColumnInfo(schema: string, table: string) {
-  const pgPool = postgres.getPool("default");
+  const postgresClient = PostgresClient.getClientByPoolKey("default");
   const query = `
 SELECT
     c.column_name,
@@ -97,7 +97,7 @@ ORDER BY c.ordinal_position;
 
   const columnInfos: ColumnInfo[] = [];
   try {
-    const columnDetails = (await pgPool.query(query)).rows;
+    const columnDetails = (await postgresClient.query(query)).rows;
 
     for (const columnDetail of columnDetails) {
       const columnName = columnDetail["column_name"];
@@ -130,7 +130,7 @@ ORDER BY c.ordinal_position;
 }
 
 async function getComputedFields(schema: string, table: string) {
-  const pgPool = postgres.getPool("default");
+  const postgresClient = PostgresClient.getClientByPoolKey("default");
   const query = `
 SELECT
     p.proname                               AS function_name,
@@ -180,7 +180,7 @@ ORDER BY function_name;
 
   const computedFieldInfos: ComputedFieldInfo[] = [];
   try {
-    const computedFieldDetails = (await pgPool.query(query)).rows;
+    const computedFieldDetails = (await postgresClient.query(query)).rows;
 
     for (const computedFieldDetail of computedFieldDetails) {
       const fnName = computedFieldDetail["function_name"];
@@ -278,7 +278,7 @@ function getTablePermissions(
 }
 
 async function getTableInfo(schema: string) {
-  const pgPool = postgres.getPool("default");
+  const postgresClient = PostgresClient.getClientByPoolKey("default");
   const query = `
 SELECT 
     table_name,
@@ -291,7 +291,7 @@ WHERE table_schema = '${schema}';
 `;
   const tableInfos: TableInfo[] = [];
   try {
-    const tableDetails = (await pgPool.query(query)).rows;
+    const tableDetails = (await postgresClient.query(query)).rows;
     const permissionsConfig = await readPermissionsConfig();
 
     for (const tableDetail of tableDetails) {
@@ -322,7 +322,7 @@ async function getCompositeTypeColumnInfos(
   schema: string,
   compsiteType: string,
 ) {
-  const pgPool = postgres.getPool("default");
+  const postgresClient = PostgresClient.getClientByPoolKey("default");
   const query = `
 SELECT
     a.attname                                   AS field_name,
@@ -348,7 +348,7 @@ ORDER BY a.attnum;
 
   const columnInfos: CompositeTypeColumnInfo[] = [];
   try {
-    const columnDetails = (await pgPool.query(query)).rows;
+    const columnDetails = (await postgresClient.query(query)).rows;
 
     for (const columnDetail of columnDetails) {
       const columnName = columnDetail["field_name"];
@@ -375,7 +375,7 @@ ORDER BY a.attnum;
 }
 
 async function getCompositeTypes(schema: string) {
-  const pgPool = postgres.getPool("default");
+  const postgresClient = PostgresClient.getClientByPoolKey("default");
   const query = `
 SELECT DISTINCT
     t.typname                                   AS composite_type
@@ -395,7 +395,7 @@ WHERE n.nspname = '${schema}'
 `;
   const compositeTypesInfos: CompositeTypeInfo[] = [];
   try {
-    const compositeTypesDetails = (await pgPool.query(query)).rows;
+    const compositeTypesDetails = (await postgresClient.query(query)).rows;
 
     for (const compositeTypeDetail of compositeTypesDetails) {
       const compositeTypeName = compositeTypeDetail["composite_type"];
@@ -421,12 +421,12 @@ WHERE n.nspname = '${schema}'
 }
 
 async function getSchemaInfo() {
-  const pgPool = postgres.getPool("default");
+  const postgresClient = PostgresClient.getClientByPoolKey("default");
   const query = `SELECT schema_name FROM information_schema.schemata ;`;
 
   const schemaInfos: SchemaInfo[] = [];
   try {
-    let schemaNames = (await pgPool.query(query)).rows.map(
+    let schemaNames = (await postgresClient.query(query)).rows.map(
       (record) => record["schema_name"],
     );
 

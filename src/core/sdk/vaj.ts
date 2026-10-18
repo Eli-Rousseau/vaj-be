@@ -1,6 +1,6 @@
 import { logger } from "@/src/core/logger";
 import { decodeJWTToken, generateJWTToken } from "@/src/core/jwt";
-import { postgres } from "@/src/core/postgres";
+import { PostgresClient } from "@/src/be/sdks/postgres";
 import {
   ShopFile,
   ShopRefreshToken,
@@ -182,11 +182,11 @@ class VAJAuth {
         );
       }
 
-      const pgPool = postgres.getPool("default");
+      const postgresClient = PostgresClient.getClientByPoolKey("default");
 
       let user: ShopUser;
       const foundUser = (
-        await pgPool.query(
+        await postgresClient.query(
           `
           SELECT 
                         reference, 
@@ -216,7 +216,7 @@ class VAJAuth {
         });
         const { reference: userReference, sequentialId: userSequentialId } =
           (
-            await pgPool.query(
+            await postgresClient.query(
               `
               INSERT INTO shop.user 
                         (name, email, password, "systemAuthentication", "systemRole") 
@@ -237,7 +237,7 @@ class VAJAuth {
 
       let refreshToken;
       const foundRefreshToken = (
-        await pgPool.query(
+        await postgresClient.query(
           `
           SELECT 
                         reference,
@@ -271,7 +271,7 @@ class VAJAuth {
         } = 
           // eslint-disable-next-line  no-unsafe-optional-chaining
         (
-          await pgPool.query(
+          await postgresClient.query(
             `
             INSERT INTO shop."refreshToken" 
                         ("user", "tokenHash", "expiresAt")
@@ -292,7 +292,7 @@ class VAJAuth {
         refreshToken.sequentialId = refreshTokenSequentialId;
       }
 
-      await pgPool.query(
+      await postgresClient.query(
         `
         UPDATE shop."refreshToken"
                 SET "revokedAt" = CURRENT_TIMESTAMP, "replacedBy" = $2

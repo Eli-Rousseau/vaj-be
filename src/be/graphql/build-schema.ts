@@ -1,7 +1,7 @@
 import { createSchema } from "graphql-yoga";
 
 import * as constructors from "@/src/be/graphql/query-constructors";
-import { postgres } from "@/src/core/postgres";
+import { PostgresClient } from "@/src/be/sdks/postgres";
 import { getDataBaseInfo } from "@/src/be/database/database-info";
 import {
   DataBaseInfo,
@@ -367,7 +367,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) throw new ConfigError("CONFIG_MISSING_JWT_SECRET");
 
-  const pgPool = postgres.getPool("administrator");
+  const postgresClient = PostgresClient.getClientByPoolKey("administrator");
 
   const schemaInfos = dataBaseInfo.schemas;
 
@@ -420,7 +420,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             rolePermissions.filters,
             { ...RESOLVER_ARGS, user },
           );
-          const res = await pgPool.query(query);
+          const res = await postgresClient.query(query);
           return res.rows;
         };
         resolvers["Query"][`get${plural(schemaTableName)}`] = async (
@@ -446,7 +446,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             offset,
             { ...RESOLVER_ARGS, user },
           );
-          const res = await pgPool.query(query);
+          const res = await postgresClient.query(query);
           return res.rows;
         };
 
@@ -467,7 +467,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             table,
             { data, onConflict },
           );
-          const res = await pgPool.query(query);
+          const res = await postgresClient.query(query);
           return res.rows;
         };
         resolvers["Mutation"][`insert${plural(schemaTableName)}`] = async (
@@ -487,7 +487,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             table,
             { data, onConflict },
           );
-          const res = await pgPool.query(query);
+          const res = await postgresClient.query(query);
           return res.rows;
         };
         resolvers["Mutation"][`update${schemaTableName}`] = async (
@@ -507,7 +507,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             table,
             { data, set },
           );
-          const res = await pgPool.query(query);
+          const res = await postgresClient.query(query);
           return res.rows;
         };
         resolvers["Mutation"][`update${plural(schemaTableName)}`] = async (
@@ -527,7 +527,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             table,
             { data, set },
           );
-          const res = await pgPool.query(query);
+          const res = await postgresClient.query(query);
           return res.rows;
         };
         resolvers["Mutation"][`delete${schemaTableName}`] = async (
@@ -547,7 +547,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             table,
             { data },
           );
-          const res = await pgPool.query(query);
+          const res = await postgresClient.query(query);
           return res.rows;
         };
         resolvers["Mutation"][`delete${plural(schemaTableName)}`] = async (
@@ -567,7 +567,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             table,
             { data },
           );
-          const res = await pgPool.query(query);
+          const res = await postgresClient.query(query);
           return res.rows;
         };
 
@@ -596,7 +596,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
                 rolePermissions.filters,
                 { ...RESOLVER_ARGS, user },
               );
-              const res = await pgPool.query(query);
+              const res = await postgresClient.query(query);
               return res.rows;
             }),
         );
@@ -621,7 +621,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
                   rolePermissions.filters,
                   { ...RESOLVER_ARGS, user },
                 );
-                const res = await pgPool.query(query);
+                const res = await postgresClient.query(query);
                 return res.rows[0];
               }),
         );
@@ -654,7 +654,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
                 _computedField.returnTypeKind,
                 parent.reference,
               );
-              const res = await pgPool.query(query);
+              const res = await postgresClient.query(query);
 
               if (_computedField.returnCardinality === "ARRAY") {
                 return (
@@ -702,7 +702,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             columnsToExclude,
             filters,
           );
-          const res = await pgPool.query(query);
+          const res = await postgresClient.query(query);
           return res.rows;
         };
 
@@ -723,7 +723,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             table,
             { data },
           );
-          const res = await pgPool.query(query);
+          const res = await postgresClient.query(query);
           return res.rows;
         };
         resolvers["Mutation"][`delete${plural(schemaTableName)}`] = async (
@@ -744,7 +744,7 @@ function buildResolvers(dataBaseInfo: DataBaseInfo) {
             { data },
             columnInfos[0].name,
           );
-          const res = await pgPool.query(query);
+          const res = await postgresClient.query(query);
           return res.rows;
         };
       }

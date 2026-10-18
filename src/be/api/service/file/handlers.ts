@@ -23,7 +23,7 @@ export async function handleGet(
         "Content-Disposition",
         `inline; filename="${fileName}"`,
       );
-      res.setHeader("Cache-Control", 'public, max-age=86400');
+      res.setHeader("Cache-Control", "public, max-age=86400");
 
       res.send(content);
     },
