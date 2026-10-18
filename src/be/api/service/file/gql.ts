@@ -1,9 +1,10 @@
-import { graphql } from "@/src/core/graphql";
+import { GraphQLClient } from "@/src/be/sdks/graphql";
 import { ShopFile } from "@/src/be/database/classes/transformer-classes";
 
 export async function createFile(data: ShopFile) {
+  const graphqlClient = new GraphQLClient();
   const file = (
-    await graphql.executeAndTransform(ShopFile, {
+    await graphqlClient.executeAndTransform(ShopFile, {
       query: `
 mutation createRefreshToken($file: ShopFileMutationType!) {
   insertShopFile(
@@ -38,8 +39,9 @@ mutation createRefreshToken($file: ShopFileMutationType!) {
 }
 
 export async function getFileBySequentialId(sequentialId: number) {
+  const graphqlClient = new GraphQLClient();
   const file = (
-    await graphql.executeAndTransform(ShopFile, {
+    await graphqlClient.executeAndTransform(ShopFile, {
       query: `
 query getFileBySequentialId($sequentialId: JSON) {
   getShopFiles(
@@ -73,8 +75,9 @@ query getFileBySequentialId($sequentialId: JSON) {
 }
 
 export async function deleteFile(data: ShopFile) {
+  const graphqlClient = new GraphQLClient();
   const file = (
-    await graphql.executeAndTransform(ShopFile, {
+    await graphqlClient.executeAndTransform(ShopFile, {
       query: `
   mutation deleteFile($files: [ShopFileMutationType!]!) {
     deleteShopFiles(data: $files) {
