@@ -5,6 +5,41 @@ import { runWithContext } from "@/src/core/context";
 import { withHandler } from "@/src/be/api/wrapper";
 import { ShopUser } from "@/src/be/database/classes/transformer-classes";
 
+export async function handleCors(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  await withHandler(
+    req,
+    res,
+    next,
+    (req, res, next, context) => {
+      const origin = req.headers.origin || "";
+      const result = main.cors({ origin });
+
+      if (!result.allowed) {
+        res.status(403).json({
+          error: `Origin not allowed by CORS: "${origin}"`
+        });
+      }
+      // Origin is allowed.
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Vary", "Origin");
+
+      // Handle CORS preflight requests.
+      if (req.method === "OPTIONS") {
+        res.sendStatus(204);
+        return;
+      }
+      next();
+    },
+    {
+      setupContext: true,
+    }
+  );
+}
+
 export async function handleSetupRequestContext(
   req: Request,
   res: Response,

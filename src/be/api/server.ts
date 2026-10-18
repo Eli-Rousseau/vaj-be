@@ -28,6 +28,7 @@ async function startServer() {
 
   app = express();
 
+  app.use(middleware.handleCors);
   app.use(middleware.handleSetupRequestContext);
   app.use(middleware.handleValidateAccessToken);
   app.use(middleware.handleRateLimit);
