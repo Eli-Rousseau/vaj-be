@@ -11,16 +11,10 @@ import { HTTPError } from "@/src/core/errors";
 
 const LOGGER = logger.get();
 
-type VAJAuthOptions = {
+type VAJAuthConfig = {
   email: string;
   password: string;
 }
-
-type VAJClientOptions = {
-  email: string;
-  password: string;
-  auth?: VAJAuth;
-};
 
 type Tokens = {
   accessToken: string;
@@ -51,11 +45,10 @@ class VAJAuth {
   protected tokens: Tokens | null = null;
   protected readonly applicationUrl: string;
 
-  constructor(options: VAJAuthOptions) {
-    if (!options.email) throw Error(`Missing value for argument email.`);
-    if (!options.password) throw Error(`Missing value for argument password.`);
-    this.email = options.email;
-    this.password = options.password;
+  constructor(config: VAJAuthConfig) {
+    const { email, password } = config;
+    this.email = email;
+    this.password = password;
 
     const applicationUrl = process.env.VAJ_APPLICATION_URL;
     if (!applicationUrl) throw new Error("Missing required environment variable: VAJ_APPLICATION_URL");
@@ -330,14 +323,8 @@ export default class VAJClient {
   auth: VAJAuth;
   protected readonly applicationUrl: string;
 
-  constructor(options: VAJClientOptions) {
-    if (options.auth instanceof VAJAuth) this.auth = options.auth;
-    else {
-      this.auth = new VAJAuth({ 
-        email: options.email, 
-        password: options.password 
-      });
-    }
+  constructor(auth: VAJAuth) {
+    this.auth = auth;
 
     const applicationUrl = process.env.VAJ_APPLICATION_URL;
     if (!applicationUrl) throw new Error("Missing required environment variable: VAJ_APPLICATION_URL");
@@ -346,20 +333,8 @@ export default class VAJClient {
 
   static async withAPIUserAuth() {
     if (!apiUserVAJClient) {
-      const userEmail = process.env.VAJ_API_USER_1_EMAIL;
-      const userPassword = process.env.VAJ_API_USER_1_PASSWORD;
-      if (!userEmail || !userPassword) {
-        Error(
-          "Missing required environment variables: VAJ_API_USER_1_EMAIL or VAJ_API_USER_1_PASSWORD.",
-        );
-      }
-
       const auth = await VAJAuth.withAPIUser();
-      apiUserVAJClient = new VAJClient({
-        email: userEmail!,
-        password: userPassword!,
-        auth
-      });
+      apiUserVAJClient = new VAJClient(auth);
     }
     
     return apiUserVAJClient!;

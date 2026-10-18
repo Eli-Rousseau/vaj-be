@@ -3,7 +3,7 @@ import { rm, writeFile } from "fs/promises";
 
 import { loadStage } from "@/src/core/stage";
 import { runCommand } from "@/src/core/process";
-import { B2Client } from "@/src/core/sdk/b2";
+import { B2Client } from "@/src/be/sdks/b2";
 import { logger } from "@/src/core/logger";
 
 const LOGGER = logger.get();
@@ -24,7 +24,7 @@ async function dropDatabase(args: {
 }
 
 async function retrieveBackup() {
-  const b2Client = new B2Client();
+  const b2Client = B2Client.withBaseB2Auth();
   const bucket = b2Client.getBucket("private");
   let backups = await b2Client.listFiles(bucket, directory);
   if (backups.length === 0) {

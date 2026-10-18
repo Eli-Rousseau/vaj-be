@@ -74,7 +74,11 @@ export class File extends ShopFile {
   }
 }
 
-type B2AuthOptions = {};
+type B2AuthConfig = {
+    applicationUrl: string;
+    applicationKey: string;
+    applicationKeyId: string;
+};
 
 type B2Token = {
     applicationKeyExpirationTimestamp: number;
@@ -97,15 +101,12 @@ class B2Auth {
     private readonly applicationKeyId: string;
     private token: B2Token | null = null; 
 
-    constructor(options?: B2AuthOptions) {
-        const applicationUrl = process.env.B2_BASE_URL;
-        const applicationKey = process.env.B2_APPLICATION_KEY;
-        const applicationKeyId = process.env.B2_KEY_ID;
-        if (!applicationKey || !applicationKeyId || !applicationUrl) {
-            throw new Error(
-                "Missing required environmental variable: B2_BASE_URL, B2_APPLICATION_KEY, or B2_KEY_ID.",
-            );
-        }
+    constructor(config: B2AuthConfig) {
+        const {
+            applicationUrl,
+            applicationKey,
+            applicationKeyId
+        } = config;
         this.applicationUrl = applicationUrl;
         this.applicationKey = applicationKey;
         this.applicationKeyId = applicationKeyId;
@@ -160,13 +161,11 @@ export class B2Client {
     private buckets: Record<string, Bucket>;
     private bucketUploadUrls: Map<Bucket, B2ClientBucketUploadUrl>;
 
-    constructor(options?: B2ClientOptions) {
+    constructor(auth: B2Auth) {
         const stage = process.env.STAGE;
         if (!stage) throw new Error("Missing required environmental variable: STAGE.");
 
-        const auth = options?.auth;
-        if (auth && auth instanceof B2Auth) this.auth = auth;
-        else this.auth = new B2Auth();
+        this.auth = auth;
 
         const filePath = `${process.cwd()}/src/core/buckets-config.json`;
         const config = JSON.parse(readFileSync(filePath, { encoding: "utf-8" }))[stage];
@@ -376,12 +375,21 @@ export class B2Client {
     }
 
     static withBaseB2Auth() {
-        if (baseB2Client) return baseB2Client
+        if (baseB2Client) return baseB2Client;
 
-        const auth = new B2Auth();
+        const applicationUrl = process.env.B2_BASE_URL;
+        const applicationKey = process.env.B2_APPLICATION_KEY;
+        const applicationKeyId = process.env.B2_KEY_ID;
+        if (!applicationKey || !applicationKeyId || !applicationUrl) {
+            throw new Error(
+                "Missing required environmental variable: B2_BASE_URL, B2_APPLICATION_KEY, or B2_KEY_ID.",
+            );
+        }
+
+        const auth = new B2Auth({ applicationUrl, applicationKey, applicationKeyId });
         baseB2Auth = auth;
 
-        const client = new B2Client({auth});
+        const client = new B2Client(auth);
         baseB2Client = client;
 
         return baseB2Client!;

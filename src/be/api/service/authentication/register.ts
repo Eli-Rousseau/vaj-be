@@ -8,7 +8,7 @@ import {
   ShopUser,
   ShopRefreshToken,
 } from "@/src/be/database/classes/transformer-classes";
-import { isValidEmail } from "@/src/core/validators";
+import { isValidEmail } from "@/src/core/validate";
 import { generateGenericToken } from "@/src/core/jwt";
 import * as gql from "@/src/be/api/service/authentication/gql";
 import { generateJWTToken } from "@/src/core/jwt";
