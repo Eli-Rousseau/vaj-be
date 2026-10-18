@@ -4,7 +4,7 @@ import { readdir, readFile, writeFile } from "fs/promises";
 import { loadStage } from "@/src/core/stage";
 import { logger } from "@/src/core/logger";
 import { PostgresClient } from "@/src/be/sdks/postgres";
-import { setupShutdownHooks } from "@/src/core/shutdown";
+import { setupShutdownHooks } from "@/src/be/utils/shutdown";
 import { askQuestion } from "@/src/core/prompt";
 import { buildTransformerClasses } from "@/src/be/database/classes/build-classes";
 import VAJClient from "@/src/core/sdk/vaj";

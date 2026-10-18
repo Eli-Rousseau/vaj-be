@@ -6,7 +6,7 @@ const LOGGER = logger.get();
 
 const basePostgresPools = new Map<PoolKey, PostgresPool>();
 
-class PostgresPool {
+export class PostgresPool {
   public readonly client: Pool;
 
   constructor(config: PoolConfig) {
@@ -20,6 +20,11 @@ class PostgresPool {
     this.client.on("error", (err) => {
       LOGGER.error(`Postgres pool config error`, err);
     });
+  }
+
+  static async shutDown() {
+    LOGGER.info("Shutting down Postgres pools...");
+    await Promise.all([...basePostgresPools.values()].map((pool) => pool.client.end()));
   }
 }
 
@@ -52,10 +57,5 @@ export class PostgresClient {
 
     const pool = basePostgresPools.get(key);
     return new PostgresClient(pool!);
-  }
-
-  static async shutDown() {
-    LOGGER.info("Shutting down Postgres pools...");
-    await Promise.all([...basePostgresPools.values()].map((pool) => pool.client.end()));
   }
 }

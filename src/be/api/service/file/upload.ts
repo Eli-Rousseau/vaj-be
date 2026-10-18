@@ -3,7 +3,7 @@ import { File as B2File, B2Client } from "@/src/core/sdk/b2";
 import * as gql from "@/src/be/api/service/file/gql";
 import { ShopFile } from "@/src/be/database/classes/transformer-classes";
 import { findEnumsValue, S3ContentType } from "@/src/core/enums";
-import { RedisClient } from "@/src/core/sdk/redis";
+import { RedisClient } from "@/src/be/sdks/redis";
 
 //////////
 // VARS //

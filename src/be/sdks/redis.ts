@@ -3,22 +3,21 @@ import { logger } from "@/src/core/logger";
 
 const LOGGER = logger.get();
 
-export let baseRedisPool: RedisPool;
+let baseRedisPool: RedisPool;
 
-class RedisPool {
+type RedisPoolConfig = {
+    host: string;
+    port: string;
+    user: string;
+    password: string;
+}
+
+export class RedisPool {
     public readonly client: RedisClientPoolType;
 
-    constructor() {
-        const host = process.env.REDIS_HOST;
-        const port = process.env.REDIS_PORT;
-        const user = process.env.REDIS_USERNAME;
-        const password = process.env.REDIS_PASSWORD;
+    constructor(config: RedisPoolConfig) {
 
-        if (!host || !port || !user || !password) {
-            throw new Error(
-                "Missing required environment variables: REDIS_HOST, REDIS_PORT, REDIS_USERNAME, or REDIS_PASSWORD.",
-            );
-        }
+        const { host, port, user, password } = config;
 
         const url = `redis://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}`;
 
@@ -31,9 +30,9 @@ class RedisPool {
         });
     }
 
-    async shutDown() {
+    static async shutDown() {
         LOGGER.info("Shutting down Redis pool...");
-        await this.client.close();
+        await baseRedisPool.client.close();
     }
 }
 
@@ -95,7 +94,18 @@ export class RedisClient {
 
     static withDefaultPool() {
         if (!baseRedisPool) {
-            baseRedisPool = new RedisPool();
+            const host = process.env.REDIS_HOST;
+            const port = process.env.REDIS_PORT;
+            const user = process.env.REDIS_USERNAME;
+            const password = process.env.REDIS_PASSWORD;
+
+            if (!host || !port || !user || !password) {
+                throw new Error(
+                    "Missing required environment variables: REDIS_HOST, REDIS_PORT, REDIS_USERNAME, or REDIS_PASSWORD.",
+                );
+            }
+
+            baseRedisPool = new RedisPool({ host, port, user, password });
         }
 
         return new RedisClient(baseRedisPool);

@@ -1,7 +1,7 @@
 import { BadRequestError, ResourceNotFoundError } from "@/src/core/errors";
 import { File as B2File, B2Client } from "@/src/core/sdk/b2";
 import * as gql from "@/src/be/api/service/file/gql";
-import { RedisClient } from "@/src/core/sdk/redis";
+import { RedisClient } from "@/src/be/sdks/redis";
 
 ///////////
 // TYPES //
