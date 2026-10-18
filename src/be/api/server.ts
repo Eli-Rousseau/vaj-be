@@ -3,7 +3,7 @@ import express, { Express } from "express";
 import { loadStage } from "@/src/core/stage";
 import { logger } from "@/src/core/logger";
 import * as routers from "@/src/be/api/routes/index";
-import { setupShutdownHooks } from "@/src/core/shutdown";
+import { setupShutdownHooks } from "@/src/be/utils/shutdown";
 import * as middleware from "@/src/be/api/middleware/handlers";
 
 const LOGGER = logger.get();
@@ -37,6 +37,7 @@ async function startServer() {
   // Adding the routers
   app.use("/api/v1/graphql", await routers.getGraphQlRouter());
   app.use("/api/v1/authentication", routers.authentication.default);
+  app.use("/api/v1/file", routers.file.default);
 
   app.use(middleware.unhandeledRoutes);
 

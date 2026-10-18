@@ -2,10 +2,11 @@ import {
   ShopRefreshToken,
   ShopUser,
 } from "@/src/be/database/classes/transformer-classes";
-import { graphql } from "@/src/core/graphql";
+import { GraphQLClient } from "@/src/be/sdks/graphql";
 
 export async function findUsersByEmail(email: string) {
-  return await graphql.executeAndTransform(ShopUser, {
+  const graphqlClient = new GraphQLClient();
+  return await graphqlClient.executeAndTransform(ShopUser, {
     query: `
 query findUsersByEmail($email: JSON) {
   getShopUsers(
@@ -37,8 +38,9 @@ query findUsersByEmail($email: JSON) {
 }
 
 export async function createUser(data: ShopUser) {
+  const graphqlClient = new GraphQLClient();
   const user = (
-    await graphql.executeAndTransform(ShopUser, {
+    await graphqlClient.executeAndTransform(ShopUser, {
       query: `
 mutation createUser($user: ShopUserMutationType!){
   insertShopUser(
@@ -63,8 +65,9 @@ mutation createUser($user: ShopUserMutationType!){
 }
 
 export async function createRefreshToken(data: ShopRefreshToken) {
+  const graphqlClient = new GraphQLClient();
   const refreshToken = (
-    await graphql.executeAndTransform(ShopRefreshToken, {
+    await graphqlClient.executeAndTransform(ShopRefreshToken, {
       query: `
 mutation createRefreshToken($refreshToken: ShopRefreshTokenMutationType!) {
   insertShopRefreshToken(
@@ -88,7 +91,8 @@ mutation createRefreshToken($refreshToken: ShopRefreshTokenMutationType!) {
 }
 
 export async function revokeRefreshTokens(data: ShopRefreshToken[]) {
-  const refreshTokens = await graphql.executeAndTransform(ShopRefreshToken, {
+  const graphqlClient = new GraphQLClient();
+  const refreshTokens = await graphqlClient.executeAndTransform(ShopRefreshToken, {
     query: `
 mutation revokeRefreshToken($data: [ShopRefreshTokenMutationType!]!) {
   updateShopRefreshTokens(
@@ -108,8 +112,9 @@ mutation revokeRefreshToken($data: [ShopRefreshTokenMutationType!]!) {
 }
 
 export async function findRefreshTokenByReference(tokenReference: string) {
+  const graphqlClient = new GraphQLClient();
   const refreshToken = (
-    await graphql.executeAndTransform(ShopRefreshToken, {
+    await graphqlClient.executeAndTransform(ShopRefreshToken, {
       query: `
 query getRefreshTokenByReference($reference: ID!) {
   getShopRefreshTokenByReference(

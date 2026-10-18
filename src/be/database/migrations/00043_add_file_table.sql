@@ -8,6 +8,7 @@ CREATE TABLE shop.file (
     "isPublic" BOOLEAN DEFAULT false,
     "publicUrl" TEXT DEFAULT NULL,
     id TEXT CONSTRAINT "fileIdNotNull" NOT NULL CONSTRAINT "fileIdKey" UNIQUE,
+    CONSTRAINT "fileBucketKeyKey" UNIQUE(bucket, key),
     "createdAt" TIMESTAMP CONSTRAINT "fileCreatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP CONSTRAINT "fileUpdatedAtNotNull" NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

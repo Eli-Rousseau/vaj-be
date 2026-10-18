@@ -8,6 +8,7 @@ export enum S3ContentType {
   SVG = "image/svg+xml",
   TIFF = "image/tiff",
   ICO = "image/x-icon",
+  AVIF = "image/avif",
 
   // Video
   MP4 = "video/mp4",

@@ -152,6 +152,11 @@ const DEFAULT_ERROR_CONFIG: ErrorConfig[] = [
     classes: [errors.HTTPError],
     statusCode: 500,
     message: "Failed HTTP request"
+  },
+  {
+    classes: [errors.ResourceNotFoundError],
+    statusCode: 404,
+    message: "Not found"
   }
 ];
 

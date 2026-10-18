@@ -1,7 +1,8 @@
 import { logger } from "@/src/core/logger";
 import { decodeJWTToken, generateJWTToken } from "@/src/core/jwt";
-import { postgres } from "@/src/core/postgres";
+import { PostgresClient } from "@/src/be/sdks/postgres";
 import {
+  ShopFile,
   ShopRefreshToken,
   ShopUser,
 } from "@/src/be/database/classes/transformer-classes";
@@ -10,16 +11,10 @@ import { HTTPError } from "@/src/core/errors";
 
 const LOGGER = logger.get();
 
-type VAJAuthOptions = {
+type VAJAuthConfig = {
   email: string;
   password: string;
 }
-
-type VAJClientOptions = {
-  email: string;
-  password: string;
-  auth?: VAJAuth;
-};
 
 type Tokens = {
   accessToken: string;
@@ -31,6 +26,16 @@ type VAJCredentials = {
   password: string;
 }
 
+type UploadFileArgs = {
+  file: File | Blob | Buffer;
+  fileName?: string,
+  contentType?: string
+}
+
+type DeleteFileArgs = {
+  sequentialId: number
+}
+
 let apiUserVAJAuth: VAJAuth | null = null;
 let apiUserVAJClient: VAJClient | null = null;
 
@@ -40,11 +45,10 @@ class VAJAuth {
   protected tokens: Tokens | null = null;
   protected readonly applicationUrl: string;
 
-  constructor(options: VAJAuthOptions) {
-    if (!options.email) throw Error(`Missing value for argument email.`);
-    if (!options.password) throw Error(`Missing value for argument password.`);
-    this.email = options.email;
-    this.password = options.password;
+  constructor(config: VAJAuthConfig) {
+    const { email, password } = config;
+    this.email = email;
+    this.password = password;
 
     const applicationUrl = process.env.VAJ_APPLICATION_URL;
     if (!applicationUrl) throw new Error("Missing required environment variable: VAJ_APPLICATION_URL");
@@ -171,11 +175,11 @@ class VAJAuth {
         );
       }
 
-      const pgPool = postgres.getPool("default");
+      const postgresClient = PostgresClient.getClientByPoolKey("default");
 
       let user: ShopUser;
       const foundUser = (
-        await pgPool.query(
+        await postgresClient.query(
           `
           SELECT 
                         reference, 
@@ -205,7 +209,7 @@ class VAJAuth {
         });
         const { reference: userReference, sequentialId: userSequentialId } =
           (
-            await pgPool.query(
+            await postgresClient.query(
               `
               INSERT INTO shop.user 
                         (name, email, password, "systemAuthentication", "systemRole") 
@@ -226,7 +230,7 @@ class VAJAuth {
 
       let refreshToken;
       const foundRefreshToken = (
-        await pgPool.query(
+        await postgresClient.query(
           `
           SELECT 
                         reference,
@@ -260,7 +264,7 @@ class VAJAuth {
         } = 
           // eslint-disable-next-line  no-unsafe-optional-chaining
         (
-          await pgPool.query(
+          await postgresClient.query(
             `
             INSERT INTO shop."refreshToken" 
                         ("user", "tokenHash", "expiresAt")
@@ -281,7 +285,7 @@ class VAJAuth {
         refreshToken.sequentialId = refreshTokenSequentialId;
       }
 
-      await pgPool.query(
+      await postgresClient.query(
         `
         UPDATE shop."refreshToken"
                 SET "revokedAt" = CURRENT_TIMESTAMP, "replacedBy" = $2
@@ -319,14 +323,8 @@ export default class VAJClient {
   auth: VAJAuth;
   protected readonly applicationUrl: string;
 
-  constructor(options: VAJClientOptions) {
-    if (options.auth instanceof VAJAuth) this.auth = options.auth;
-    else {
-      this.auth = new VAJAuth({ 
-        email: options.email, 
-        password: options.password 
-      });
-    }
+  constructor(auth: VAJAuth) {
+    this.auth = auth;
 
     const applicationUrl = process.env.VAJ_APPLICATION_URL;
     if (!applicationUrl) throw new Error("Missing required environment variable: VAJ_APPLICATION_URL");
@@ -335,35 +333,23 @@ export default class VAJClient {
 
   static async withAPIUserAuth() {
     if (!apiUserVAJClient) {
-      const userEmail = process.env.VAJ_API_USER_1_EMAIL;
-      const userPassword = process.env.VAJ_API_USER_1_PASSWORD;
-      if (!userEmail || !userPassword) {
-        Error(
-          "Missing required environment variables: VAJ_API_USER_1_EMAIL or VAJ_API_USER_1_PASSWORD.",
-        );
-      }
-
       const auth = await VAJAuth.withAPIUser();
-      apiUserVAJClient = new VAJClient({
-        email: userEmail!,
-        password: userPassword!,
-        auth
-      });
+      apiUserVAJClient = new VAJClient(auth);
     }
     
     return apiUserVAJClient!;
   }
 
-  protected async post(
-    endpoint: string,
-    headers: any,
-    body: any,
-  ) {
-    const url = `${this.applicationUrl}${endpoint}`;
+  async updateSchema() {
+    const endpoint = "api/v1/graphql/update-schema";
+    const headers = {
+      "Authorization": (await this.auth.connect())!.accessToken
+    }
+    
+    const url = `${this.applicationUrl}/${endpoint}`;
     const request = {
       method: "POST",
-      headers,
-      body: JSON.stringify(body),
+      headers
     };
 
     LOGGER.request({url, request});
@@ -374,16 +360,80 @@ export default class VAJClient {
       throw new HTTPError(response.status, response.statusText);
     }
 
-    return (await response.json());
+    return;
   }
 
-  async updateSchema() {
-    const endpoint = "/api/v1/graphql/update-schema";
-    const headers = {
-      "Authorization": (await this.auth.connect())!.accessToken
+  async uploadFile(args: UploadFileArgs): Promise<ShopFile> {
+    const { file, fileName, contentType } = args;
+
+    const formData = new FormData();
+
+    if (Buffer.isBuffer(file)) {
+      // Backend / Node.js caller
+      const blob = new Blob([file as unknown as ArrayBuffer], {
+        type: contentType ?? "application/octet-stream",
+      });
+
+      formData.append(
+        "file",
+        blob,
+        fileName,
+      );
+    } else {
+      // Browser File/Blob
+      formData.append(
+        "file",
+        file,
+        file instanceof File ? file.name : fileName,
+      );
     }
-    const body = "";
-    await this.post(endpoint, headers, body);
-  }
-} 
 
+    const endpoint = "api/v1/file";
+    const headers = {
+      Authorization: (await this.auth.connect())!.accessToken,
+    };
+
+    const url = `${this.applicationUrl}/${endpoint}`;
+
+    const request = {
+      method: "POST",
+      headers,
+      body: formData,
+    };
+
+    LOGGER.request({ url, request });
+    const response = await fetch(url, request);
+    LOGGER.response({ response });
+
+    if (!response.ok) {
+      throw new HTTPError(response.status, response.statusText);
+    }
+
+    return await response.json() as ShopFile;
+  }
+
+  async deleteFile(args: DeleteFileArgs) {
+    const { sequentialId } = args;
+
+    const endpoint = `api/v1/file/${sequentialId}`;
+    const headers = {
+      Authorization: (await this.auth.connect())!.accessToken,
+    };
+
+    const url = `${this.applicationUrl}/${endpoint}`;
+    const request = {
+      method: "DELETE",
+      headers
+    };
+
+    LOGGER.request({url, request});
+    const response = await fetch(url, request);
+    LOGGER.response({response});
+
+    if (!response.ok) {
+      throw new HTTPError(response.status, response.statusText);
+    }
+
+    return;
+  }
+}

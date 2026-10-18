@@ -1,6 +1,6 @@
-import { docker } from "./docker";
-import { postgres } from "./postgres";
-import { redisClient } from "./cache";
+import { docker } from "@/src/core/docker";
+import { PostgresPool } from "@/src/be/sdks/postgres";
+import { RedisPool } from "@/src/be/sdks/redis";
 
 let shuttingDown = false;
 
@@ -13,8 +13,8 @@ export function setupShutdownHooks() {
 
     try {
       docker.stop();
-      await postgres.shutdown();
-      await redisClient.shutDown();
+      await PostgresPool.shutDown();
+      await RedisPool.shutDown();
       process.exit(0);
     } catch (err) {
       process.exit(1);

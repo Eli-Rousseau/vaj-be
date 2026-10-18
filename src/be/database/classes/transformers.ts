@@ -85,7 +85,7 @@ export class TransformerClass {
 
 const EPOCH_PATTERN = /^\d+$/;
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}$/;
+const DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3,6}$/;
 
 export const toDay = function (value: any) {
   if (value === undefined || value === null) return null;

@@ -1,0 +1,93 @@
+import { GraphQLClient } from "@/src/be/sdks/graphql";
+import { ShopFile } from "@/src/be/database/classes/transformer-classes";
+
+export async function createFile(data: ShopFile) {
+  const graphqlClient = new GraphQLClient();
+  const file = (
+    await graphqlClient.executeAndTransform(ShopFile, {
+      query: `
+mutation createRefreshToken($file: ShopFileMutationType!) {
+  insertShopFile(
+    data: $file
+    onConflict:  {
+       constraint: "fileBucketKeyKey"
+       columns: ["id", "contentType", "isPublic", "publicUrl",]
+    }
+  ) {
+    reference
+    sequentialId
+    key
+    name
+    bucket
+    contentType
+    isPublic
+    publicUrl
+    id
+    createdAt
+    updatedAt
+    
+  }
+}
+    `,
+      variables: {
+        file: data.toPlain({ onlyMutables: true }),
+      },
+    })
+  )[0];
+
+  return file;
+}
+
+export async function getFileBySequentialId(sequentialId: number) {
+  const graphqlClient = new GraphQLClient();
+  const file = (
+    await graphqlClient.executeAndTransform(ShopFile, {
+      query: `
+query getFileBySequentialId($sequentialId: JSON) {
+  getShopFiles(
+    where:  {
+       sequentialId:  {
+          eq: $sequentialId
+       }
+    }
+  ) {
+    reference
+    sequentialId
+    key
+    name
+    bucket
+    contentType
+    isPublic
+    publicUrl
+    id
+    createdAt
+    updatedAt
+  }
+}
+      `,
+      variables: {
+        sequentialId
+      }
+    })
+  )?.[0];
+
+  return file;
+}
+
+export async function deleteFile(data: ShopFile) {
+  const graphqlClient = new GraphQLClient();
+  const file = (
+    await graphqlClient.executeAndTransform(ShopFile, {
+      query: `
+  mutation deleteFile($files: [ShopFileMutationType!]!) {
+    deleteShopFiles(data: $files) {
+      reference
+    }
+  }    
+      `,
+      variables: {
+        files: [data.toPlain({ onlyMutables: true })]
+      }
+    })
+  )[0];
+}

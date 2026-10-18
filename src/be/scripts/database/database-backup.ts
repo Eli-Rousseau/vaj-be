@@ -4,7 +4,7 @@ import { readFile, rm } from "fs/promises";
 import { loadStage } from "@/src/core/stage";
 import { logger } from "@/src/core/logger";
 import { runCommand } from "@/src/core/process";
-import { File, B2Client, S3ContentType } from "@/src/core/sdk/b2";
+import { File, B2Client, S3ContentType } from "@/src/be/sdks/b2";
 
 const LOGGER = logger.get();
 
@@ -32,7 +32,7 @@ async function storeBackup() {
     process.exit(1);
   }
 
-  const b2Client = new B2Client();
+  const b2Client = B2Client.withBaseB2Auth();
   const bucket = b2Client.getBucket("private");
   const key = `${directory}${Date.now().toString()}.tar`;
   const file = File.fromPlain({

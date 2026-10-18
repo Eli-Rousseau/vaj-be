@@ -1,7 +1,6 @@
 import { logger } from "@/src/core/logger";
 import { TransformerClass } from "@/src/be/database/classes/transformers";
 import { HTTPError } from "@/src/core/errors";
-import VAJClient from "@/src/core/sdk/vaj";
 
 const LOGGER = logger.get();
 
@@ -10,11 +9,13 @@ type GraphQLParams = {
   variables?: any;
 };
 
-class GraphQLClient {
-  private async findAuthorization(): Promise<string> {
-    const vajClient = await VAJClient.withAPIUserAuth();
-    return (await vajClient.auth.connect())?.accessToken || "";
-  }
+export abstract class AbstractGraphQLClient {
+  // private async findAuthorization(): Promise<string> {
+  //   const vajClient = await VAJClient.withAPIUserAuth();
+  //   return (await vajClient.auth.connect())?.accessToken || "";
+  // }
+
+  protected abstract findAuthorization(): Promise<string>;
 
   async execute(params: GraphQLParams) {
     const baseUrl = process.env.VAJ_APPLICATION_URL;
@@ -78,5 +79,3 @@ class GraphQLClient {
     return result.map((item: unknown) => transformer.fromPlain(item));
   }
 }
-
-export const graphql = new GraphQLClient();
