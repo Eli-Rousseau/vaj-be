@@ -1,6 +1,6 @@
 import { Pool, PoolConfig } from "pg";
 
-import { logger } from "@/src/core/logger";
+import { logger } from "@/core/logger";
 
 const LOGGER = logger.get();
 

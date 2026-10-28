@@ -4,14 +4,16 @@
   "description": "vintage archive jungle - backend project",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon",
-    "file": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register",
-    "postgres": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/be/scripts/database/postgres.js",
-    "database-setup": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/be/scripts/database/database-setup.js",
-    "database-backup": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/be/scripts/database/database-backup.js",
-    "database-restore": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/be/scripts/database/database-restore.js",
-    "database-migrate": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/be/scripts/database/database-migrate.js",
-    "redis": "tsc -p tsconfig.json && node -r tsconfig-paths/register -r ts-node/register ./dist/be/scripts/redis/redis.js",
+    "build": "tsc -p tsconfig.json && tsc-alias",
+    "dev": "npm run build && nodemon ./dist/be/api/server.js dev",
+    "prod": "node ./dist/be/api/server.js prod",
+    "file": "npm run build && node -r tsconfig-paths/register -r ts-node/register",
+    "postgres": "npm run build && node ./dist/be/scripts/database/postgres.js",
+    "database-setup": "npm run build && node ./dist/be/scripts/database/database-setup.js",
+    "database-backup": "npm run build && node ./dist/be/scripts/database/database-backup.js",
+    "database-restore": "npm run build && node ./dist/be/scripts/database/database-restore.js",
+    "database-migrate": "npm run build && node ./dist/be/scripts/database/database-migrate.js",
+    "redis": "npm run build && node ./dist/be/scripts/redis/redis.js",
     "test": "vitest",
     "format": "prettier . --write",
     "lint": "eslint . --fix"
@@ -27,7 +29,6 @@
     "pg": "^8.16.3",
     "redis": "^5.11.0",
     "reflect-metadata": "^0.2.2",
-    "tsconfig-paths": "^4.2.0",
     "winston": "^3.18.3"
   },
   "devDependencies": {
@@ -41,8 +42,9 @@
     "globals": "^17.9.0",
     "nodemon": "^3.1.14",
     "prettier": "^3.9.6",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
+    "tsc-alias": "^1.9.9",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.66.0",
     "vitest": "^4.0.16"
   }

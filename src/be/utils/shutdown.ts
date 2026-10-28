@@ -1,6 +1,6 @@
-import { docker } from "@/src/core/docker";
-import { PostgresPool } from "@/src/be/sdks/postgres";
-import { RedisPool } from "@/src/be/sdks/redis";
+import { docker } from "@/core/docker";
+import { PostgresPool } from "@/be/sdks/postgres";
+import { RedisPool } from "@/be/sdks/redis";
 
 let shuttingDown = false;
 

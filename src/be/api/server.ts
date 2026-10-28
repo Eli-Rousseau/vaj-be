@@ -1,10 +1,10 @@
 import express, { Express } from "express";
 
-import { loadStage } from "@/src/core/stage";
-import { logger } from "@/src/core/logger";
-import * as routers from "@/src/be/api/routes/index";
-import { setupShutdownHooks } from "@/src/be/utils/shutdown";
-import * as middleware from "@/src/be/api/middleware/handlers";
+import { loadStage } from "@/core/stage";
+import { logger } from "@/core/logger";
+import * as routers from "@/be/api/routes/index";
+import { setupShutdownHooks } from "@/be/utils/shutdown";
+import * as middleware from "@/be/api/middleware/handlers";
 
 const LOGGER = logger.get();
 

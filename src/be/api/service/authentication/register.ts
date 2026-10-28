@@ -3,15 +3,15 @@ import {
   BadRequestError,
   ConfigError,
   DatabaseError,
-} from "@/src/core/errors";
+} from "@/core/errors";
 import {
   ShopUser,
   ShopRefreshToken,
-} from "@/src/be/database/classes/transformer-classes";
-import { isValidEmail } from "@/src/core/validate";
-import { generateGenericToken } from "@/src/core/jwt";
-import * as gql from "@/src/be/api/service/authentication/gql";
-import { generateJWTToken } from "@/src/core/jwt";
+} from "@/be/database/classes/transformer-classes";
+import { isValidEmail } from "@/core/validate";
+import { generateGenericToken } from "@/core/jwt";
+import * as gql from "@/be/api/service/authentication/gql";
+import { generateJWTToken } from "@/core/jwt";
 
 ///////////
 // TYPES //

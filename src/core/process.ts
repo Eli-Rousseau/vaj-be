@@ -1,6 +1,6 @@
 import { exec } from "child_process";
 import { promisify } from "util";
-import { logger } from "@/src/core/logger";
+import { logger } from "@/core/logger";
 
 const LOGGER = logger.get();
 

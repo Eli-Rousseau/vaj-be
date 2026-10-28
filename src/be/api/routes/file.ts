@@ -1,7 +1,7 @@
 import { Router } from "express";
 
-import * as handlers from "@/src/be/api/service/file/handlers";
-import * as middleware from "@/src/be/api/middleware/handlers";
+import * as handlers from "@/be/api/service/file/handlers";
+import * as middleware from "@/be/api/middleware/handlers";
 
 const router = Router();
 

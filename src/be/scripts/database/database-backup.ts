@@ -1,10 +1,10 @@
 import { cwd } from "process";
 import { readFile, rm } from "fs/promises";
 
-import { loadStage } from "@/src/core/stage";
-import { logger } from "@/src/core/logger";
-import { runCommand } from "@/src/core/process";
-import { File, B2Client, S3ContentType } from "@/src/be/sdks/b2";
+import { loadStage } from "@/core/stage";
+import { logger } from "@/core/logger";
+import { runCommand } from "@/core/process";
+import { File, B2Client, S3ContentType } from "@/be/sdks/b2";
 
 const LOGGER = logger.get();
 

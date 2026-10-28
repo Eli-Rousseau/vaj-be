@@ -2,7 +2,7 @@ import os from "os";
 import { cwd } from "process";
 import { execSync } from "child_process";
 
-import { logger } from "@/src/core/logger";
+import { logger } from "@/core/logger";
 
 const LOGGER = logger.get();
 

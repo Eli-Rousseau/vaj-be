@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
-import { withHandler } from "@/src/be/api/wrapper";
-import * as main from "@/src/be/api/service/file"
+import { withHandler } from "@/be/api/wrapper";
+import * as main from "@/be/api/service/file"
 
 export async function handleGet(
   req: Request,

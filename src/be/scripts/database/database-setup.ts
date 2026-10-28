@@ -1,8 +1,8 @@
 import { cwd } from "process";
 
-import { runCommand } from "@/src/core/process";
-import { loadStage } from "@/src/core/stage";
-import { logger } from "@/src/core/logger";
+import { runCommand } from "@/core/process";
+import { loadStage } from "@/core/stage";
+import { logger } from "@/core/logger";
 
 const LOGGER = logger.get();
 

@@ -1,7 +1,7 @@
-import { loadStage } from "@/src/core/stage";
-import { docker } from "@/src/core/docker";
-import { setupShutdownHooks } from "@/src/be/utils/shutdown";
-import { logger } from "@/src/core/logger";
+import { loadStage } from "@/core/stage";
+import { docker } from "@/core/docker";
+import { setupShutdownHooks } from "@/be/utils/shutdown";
+import { logger } from "@/core/logger";
 
 const LOGGER = logger.get();
 

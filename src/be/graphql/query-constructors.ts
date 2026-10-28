@@ -1,6 +1,6 @@
-import { logger } from "@/src/core/logger";
-import { getDataBaseInfo } from "@/src/be/database/database-info";
-import { ComputedFieldReturnType, TableInfo } from "@/src/be/database/types";
+import { logger } from "@/core/logger";
+import { getDataBaseInfo } from "@/be/database/database-info";
+import { ComputedFieldReturnType, TableInfo } from "@/be/database/types";
 
 const LOGGER = logger.get();
 

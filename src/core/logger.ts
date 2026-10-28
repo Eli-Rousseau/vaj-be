@@ -1,5 +1,5 @@
 import winston from "winston";
-import { getCurrentContext } from "@/src/core/context";
+import { getCurrentContext } from "@/core/context";
 
 type LogFormat = "JSON" | "SIMPLE" | "CLI";
 

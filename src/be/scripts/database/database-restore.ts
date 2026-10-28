@@ -1,10 +1,10 @@
 import { cwd } from "process";
 import { rm, writeFile } from "fs/promises";
 
-import { loadStage } from "@/src/core/stage";
-import { runCommand } from "@/src/core/process";
-import { B2Client } from "@/src/be/sdks/b2";
-import { logger } from "@/src/core/logger";
+import { loadStage } from "@/core/stage";
+import { runCommand } from "@/core/process";
+import { B2Client } from "@/be/sdks/b2";
+import { logger } from "@/core/logger";
 
 const LOGGER = logger.get();
 

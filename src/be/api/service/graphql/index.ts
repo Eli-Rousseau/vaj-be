@@ -1,1 +1,1 @@
-export { updateSchema } from "@/src/be/api/service/graphql/update-schema";
+export { updateSchema } from "@/be/api/service/graphql/update-schema";

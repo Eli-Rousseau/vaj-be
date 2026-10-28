@@ -1,0 +1,22 @@
+FROM node:24.4.1-bullseye
+
+WORKDIR vaj-be
+
+ARG STAGE
+ARG DOCKER_PORT
+
+ENV ENVIRONMENT=$STAGE
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+RUN npm prune --omit=dev
+
+EXPOSE ${DOCKER_PORT}
+
+ENTRYPOINT ["src/be/docker-entrypoint.vaj-be.sh"]

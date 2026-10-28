@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
-import * as main from "@/src/be/api/service/authentication/index";
-import { withHandler } from "@/src/be/api/wrapper";
+import * as main from "@/be/api/service/authentication/index";
+import { withHandler } from "@/be/api/wrapper";
 
 export async function handleRegister(
   req: Request,

@@ -1,8 +1,8 @@
 import {
   ShopRefreshToken,
   ShopUser,
-} from "@/src/be/database/classes/transformer-classes";
-import { GraphQLClient } from "@/src/be/sdks/graphql";
+} from "@/be/database/classes/transformer-classes";
+import { GraphQLClient } from "@/be/sdks/graphql";
 
 export async function findUsersByEmail(email: string) {
   const graphqlClient = new GraphQLClient();

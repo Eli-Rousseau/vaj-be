@@ -1,13 +1,13 @@
-import { logger } from "@/src/core/logger";
-import { decodeJWTToken, generateJWTToken } from "@/src/core/jwt";
-import { PostgresClient } from "@/src/be/sdks/postgres";
+import { logger } from "@/core/logger";
+import { decodeJWTToken, generateJWTToken } from "@/core/jwt";
+import { PostgresClient } from "@/be/sdks/postgres";
 import {
   ShopFile,
   ShopRefreshToken,
   ShopUser,
-} from "@/src/be/database/classes/transformer-classes";
-import { generateGenericToken } from "@/src/core/jwt";
-import { HTTPError } from "@/src/core/errors";
+} from "@/be/database/classes/transformer-classes";
+import { generateGenericToken } from "@/core/jwt";
+import { HTTPError } from "@/core/errors";
 
 const LOGGER = logger.get();
 

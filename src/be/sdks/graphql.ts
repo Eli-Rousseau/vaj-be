@@ -1,6 +1,6 @@
-import { AbstractGraphQLClient } from "@/src/core/sdk/graphql";
+import { AbstractGraphQLClient } from "@/core/sdk/graphql";
 
-import VAJClient from "@/src/core/sdk/vaj";
+import VAJClient from "@/core/sdk/vaj";
 
 export class GraphQLClient extends AbstractGraphQLClient {
     protected async findAuthorization(): Promise<string> {

@@ -1,16 +1,16 @@
 import { createSchema } from "graphql-yoga";
 
-import * as constructors from "@/src/be/graphql/query-constructors";
-import { PostgresClient } from "@/src/be/sdks/postgres";
-import { getDataBaseInfo } from "@/src/be/database/database-info";
+import * as constructors from "@/be/graphql/query-constructors";
+import { PostgresClient } from "@/be/sdks/postgres";
+import { getDataBaseInfo } from "@/be/database/database-info";
 import {
   DataBaseInfo,
   ComputedFieldInfo,
   RolePermissions
-} from "@/src/be/database/types";
-import { decodeJWTToken } from "@/src/core/jwt";
-import { ConfigError } from "@/src/core/errors";
-import { ShopUser } from "@/src/be/database/classes/transformer-classes";
+} from "@/be/database/types";
+import { decodeJWTToken } from "@/core/jwt";
+import { ConfigError } from "@/core/errors";
+import { ShopUser } from "@/be/database/classes/transformer-classes";
 
 export type PostgresType =
   | "bigint"

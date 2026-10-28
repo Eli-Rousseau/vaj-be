@@ -1,9 +1,9 @@
 import { createYoga } from "graphql-yoga";
 import type { GraphQLSchema } from "graphql";
 
-import { logger } from "@/src/core/logger";
-import { buildGraphQLSchema } from "@/src/be/graphql/build-schema";
-import VAJClient from "@/src/core/sdk/vaj";
+import { logger } from "@/core/logger";
+import { buildGraphQLSchema } from "@/be/graphql/build-schema";
+import VAJClient from "@/core/sdk/vaj";
 
 const LOGGER = logger.get();
 

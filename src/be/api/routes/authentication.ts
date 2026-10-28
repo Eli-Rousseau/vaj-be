@@ -1,5 +1,5 @@
 import { Router } from "express";
-import * as handlers from "@/src/be/api/service/authentication/handlers";
+import * as handlers from "@/be/api/service/authentication/handlers";
 
 const router = Router();
 
