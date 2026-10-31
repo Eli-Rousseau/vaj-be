@@ -1,0 +1,15 @@
+services:
+
+  postgres:
+    image: postgres:14.19-trixie
+  
+  redis:
+    image: redis/redis-stack:7.4.0-v8
+
+  vaj-be:
+    build: src/be/Dockerfile.vaj-be
+    ports:
+      - "${HOST_PORT}:${CONTAINER_PORT}"
+    env_file: "src/be/.env.vaj-be.${STAGE}"
+    depends_on:
+      postgres: 
