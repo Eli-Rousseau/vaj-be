@@ -1,6 +1,5 @@
 import express, { Express } from "express";
 
-import { loadStage } from "@/core/stage";
 import { logger } from "@/core/logger";
 import * as routers from "@/be/api/routes/index";
 import { setupShutdownHooks } from "@/be/utils/shutdown";
@@ -11,9 +10,7 @@ const LOGGER = logger.get();
 let app: Express | null = null;
 
 // Setting up the server process
-async function startServer() {
-  await loadStage();
-
+export async function startServer() {
   setupShutdownHooks();
 
   const host = process.env.VAJ_APPLICATION_HOST;
@@ -46,8 +43,3 @@ async function startServer() {
     LOGGER.info(`Server listening at http://${host}:${port}`);
   });
 }
-
-startServer().catch((err) => {
-  LOGGER.error(err);
-  process.exit(1);
-});

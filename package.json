@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json && tsc-alias",
-    "dev": "npm run build && nodemon ./dist/be/api/server.js dev",
-    "prod": "node ./dist/be/api/server.js prod",
+    "vaj-be": "npm run build && nodemon ./dist/be/scripts/server/vaj-be.js",
     "file": "npm run build && node -r tsconfig-paths/register -r ts-node/register",
     "postgres": "npm run build && node ./dist/be/scripts/database/postgres.js",
     "database-setup": "npm run build && node ./dist/be/scripts/database/database-setup.js",
