@@ -186,8 +186,6 @@ async function main() {
 
   await loadStage();
 
-  const detachedRun = process.argv.includes("detach");
-
   const appliedMigrations = await getCurrentMigrations();
   const migrationScripts = await getMigrationScripts();
 
@@ -197,7 +195,7 @@ async function main() {
     LOGGER.info(
       `${diffs.length} new migration(s) found:\n\t${diffs.join("\n\t")}`,
     );
-    const proceed = detachedRun ? "yes" : await askQuestion(
+    const proceed = await askQuestion(
       "Do you want to proceed with the new migrations",
       "no",
     );

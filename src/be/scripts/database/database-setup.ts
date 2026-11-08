@@ -3,8 +3,23 @@ import { cwd } from "process";
 import { runCommand } from "@/core/process";
 import { loadStage } from "@/core/stage";
 import { logger } from "@/core/logger";
+import { askQuestion } from "@/core/prompt";
 
 const LOGGER = logger.get();
+
+async function isAlreadySetup(args: {
+  database: string;
+  defaultUserName: string;
+  defaultUserPassword: string;
+  host: string;
+  port: string;
+}) {
+  const script = `${cwd()}/src/be/database/setup/is_already_setup.sql`;
+  const { database, defaultUserName, defaultUserPassword, host, port } = args;
+  const command = `export PGPASSWORD='${defaultUserPassword}'; psql -h ${host} -p ${port} -U ${defaultUserName} -d ${database} -f "${script}"; unset PGPASSWORD`;
+  const result = await runCommand(command, "Setup already completed check");
+  return result && result.split('\n')[2].trim() === 't' ? true : false;
+}
 
 async function dropDatabase(args: {
   database: string;
@@ -14,8 +29,8 @@ async function dropDatabase(args: {
   port: string;
 }) {
   const { database, defaultUserName, defaultUserPassword, host, port } = args;
-  const dropCommand = `export PGPASSWORD='${defaultUserPassword}'; dropdb -h ${host} -p ${port} -U ${defaultUserName} -f ${database}; unset PGPASSWORD`;
-  await runCommand(dropCommand, "Database drop");
+  const command = `export PGPASSWORD='${defaultUserPassword}'; dropdb -h ${host} -p ${port} -U ${defaultUserName} -f ${database}; unset PGPASSWORD`;
+  await runCommand(command, "Database drop");
 }
 
 async function createDatabase(args: {
@@ -27,9 +42,9 @@ async function createDatabase(args: {
 }) {
   const { defaultDatabase, defaultUserName, defaultUserPassword, host, port } =
     args;
-  const dbScript = `${cwd()}/src/be/database/setup/add_database.sql`;
-  const dbCommand = `export PGPASSWORD='${defaultUserPassword}'; psql -h ${host} -p ${port} -U ${defaultUserName} -d ${defaultDatabase} -f "${dbScript}"; unset PGPASSWORD`;
-  await runCommand(dbCommand, "Database creation");
+  const script = `${cwd()}/src/be/database/setup/add_database.sql`;
+  const command = `export PGPASSWORD='${defaultUserPassword}'; psql -h ${host} -p ${port} -U ${defaultUserName} -d ${defaultDatabase} -f "${script}"; unset PGPASSWORD`;
+  await runCommand(command, "Database creation");
 }
 
 async function createSchema(args: {
@@ -40,9 +55,9 @@ async function createSchema(args: {
   port: string;
 }) {
   const { database, defaultUserName, defaultUserPassword, host, port } = args;
-  const schemaScript = `${cwd()}/src/be/database/setup/add_schema.sql`;
-  const schemaCommand = `export PGPASSWORD='${defaultUserPassword}'; psql -h ${host} -p ${port} -U ${defaultUserName} -d ${database} -f "${schemaScript}"; unset PGPASSWORD`;
-  await runCommand(schemaCommand, "Schema creation");
+  const script = `${cwd()}/src/be/database/setup/add_schema.sql`;
+  const command = `export PGPASSWORD='${defaultUserPassword}'; psql -h ${host} -p ${port} -U ${defaultUserName} -d ${database} -f "${script}"; unset PGPASSWORD`;
+  await runCommand(command, "Schema creation");
 }
 
 async function createMigrationTable(args: {
@@ -53,9 +68,9 @@ async function createMigrationTable(args: {
   port: string;
 }) {
   const { database, defaultUserName, defaultUserPassword, host, port } = args;
-  const tableScript = `${cwd()}/src/be/database/setup/add_migration_table.sql`;
-  const tableCommand = `export PGPASSWORD='${defaultUserPassword}'; psql -h ${host} -p ${port} -U ${defaultUserName} -d ${database} -f "${tableScript}"; unset PGPASSWORD`;
-  await runCommand(tableCommand, "Migration table creation");
+  const script = `${cwd()}/src/be/database/setup/add_migration_table.sql`;
+  const command = `export PGPASSWORD='${defaultUserPassword}'; psql -h ${host} -p ${port} -U ${defaultUserName} -d ${database} -f "${script}"; unset PGPASSWORD`;
+  await runCommand(command, "Migration table creation");
 }
 
 async function createUser(args: {
@@ -76,9 +91,9 @@ async function createUser(args: {
     newUserName,
     newUserPassword,
   } = args;
-  const userScript = `${cwd()}/src/be/database/setup/add_user.sql`;
-  const tableCommand = `export PGPASSWORD='${defaultUserPassword}'; psql -h ${host} -p ${port} -U ${defaultUserName} -d ${database} -v username="${newUserName}" -v password="'${newUserPassword}'" -f "${userScript}"; unset PGPASSWORD`;
-  await runCommand(tableCommand, "New user creation");
+  const script = `${cwd()}/src/be/database/setup/add_user.sql`;
+  const command = `export PGPASSWORD='${defaultUserPassword}'; psql -h ${host} -p ${port} -U ${defaultUserName} -d ${database} -v username="${newUserName}" -v password="'${newUserPassword}'" -f "${script}"; unset PGPASSWORD`;
+  await runCommand(command, "New user creation");
 }
 
 async function main() {
@@ -110,6 +125,22 @@ async function main() {
       "Missing required environment variables: DATABASE_DEFAULT_USER_PASSWORD, DATABASE_DEFAULT_USER_NAME, DATABASE_DEFAULT, DATABASE_HOST, DATBASE_PORT, DATABASE_VAJ, DATABASE_ADMINISTRATOR_USER_NAME, or DATABASE_ADMINISTRATOR_USER_PASSWORD.",
     );
     process.exit(1);
+  }
+
+  const exists = await isAlreadySetup({
+    database,
+    defaultUserName,
+    defaultUserPassword,
+    host,
+    port
+  });
+
+  if (exists) {
+    const answer = await askQuestion(
+      `The database appears to already have been setup properly. Do yo really want to proceed with this setup? Any existing data will be erased.`,
+      "no"
+    );
+    if (answer.trim().toLowerCase().startsWith("n")) process.exit(0);
   }
 
   await dropDatabase({
