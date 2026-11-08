@@ -5,6 +5,7 @@ import { logger } from "@/core/logger";
 
 const LOGGER = logger.get();
 
+const NETWORK_NAME = "vaj";
 const CONTAINER_NAME = "vaj-postgres";
 
 const runDatabaseContainer = function () {
@@ -21,12 +22,14 @@ const runDatabaseContainer = function () {
 
   try {
     docker.activate();
+    docker.network(NETWORK_NAME);
     docker.pullImage("postgres:14.19-trixie");
     docker.runContainer({
       "--name": CONTAINER_NAME,
       args: [
         { "-e": `POSTGRES_PASSWORD=${password}` },
         { "-p": `${port}:${port}` },
+        { "--network": NETWORK_NAME },
         "postgres",
       ],
     });

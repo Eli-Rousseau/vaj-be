@@ -200,6 +200,27 @@ class Docker {
       throw error;
     }
   }
+
+  network(network: string) {
+    let exists;
+    try {
+      exists = JSON.parse(
+        Buffer.from(
+          execSync(`docker network inspect ${network}`)
+        ).toString()
+      )[0]["Name"] === network;
+    } catch {
+      // Continue
+    }
+
+    if (exists) {
+      LOGGER.info(`Network with name "${network}" already exists.`);
+      return;
+    }
+
+    execSync(`docker network create --driver bridge ${network}`);
+    LOGGER.info(`Created new network "${network}".`);
+  }
 }
 
 export const docker = new Docker();

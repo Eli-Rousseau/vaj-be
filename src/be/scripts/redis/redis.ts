@@ -7,6 +7,7 @@ const LOGGER = logger.get();
 
 const IMAGE_NAME = "redis/redis-stack";
 const CONTAINER_NAME = "vaj-redis";
+const NETWORK_NAME = "vaj";
 
 function runRedisContainer() {
   const redisPort = process.env.REDIS_PORT;
@@ -23,6 +24,7 @@ function runRedisContainer() {
 
   try {
     docker.activate();
+    docker.network(NETWORK_NAME);
     docker.pullImage("redis/redis-stack:7.4.0-v8");
     docker.runContainer({
       "--name": CONTAINER_NAME,
@@ -31,6 +33,7 @@ function runRedisContainer() {
         { "-p": `${redisHost}:${redisPort}:6379` },
         { "-p": `${redisHost}:${redisInsightsPort}:8001` },
         `-e REDIS_ARGS="--requirepass ${redisPassword} --appendonly yes"`,
+        { "--network": NETWORK_NAME },
         IMAGE_NAME,
       ],
     });
