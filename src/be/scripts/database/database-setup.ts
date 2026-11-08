@@ -137,7 +137,7 @@ async function main() {
 
   if (exists) {
     const answer = await askQuestion(
-      `The database appears to already have been setup properly. Do yo really want to proceed with this setup? Any existing data will be erased.`,
+      `The database appears to already have been setup properly. Do you really want to proceed with this setup? Any existing data will be erased.`,
       "no"
     );
     if (answer.trim().toLowerCase().startsWith("n")) process.exit(0);

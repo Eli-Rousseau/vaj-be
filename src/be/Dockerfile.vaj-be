@@ -14,13 +14,11 @@ RUN apt-get update \
     && curl -fsSL \
         https://www.postgresql.org/media/keys/ACCC4CF8.asc \
         -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
-    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
         > /etc/apt/sources.list.d/pgdg.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends postgresql-client-14 \
+    && apt-get install -y --no-install-recommends postgresql-client-18 \
     && rm -rf /var/lib/apt/lists/*
-
-ENV ENVIRONMENT=$STAGE
 
 COPY package*.json ./
 
@@ -32,6 +30,8 @@ RUN npm run build
 
 RUN npm prune --omit=dev
 
+ENV STAGE=$STAGE
+
 EXPOSE ${CONTAINER_PORT}
 
-ENTRYPOINT ["src/be/docker-entrypoint.vaj-be.sh"]
+CMD ["node", "dist/be/scripts/server/vaj-be.js"]
