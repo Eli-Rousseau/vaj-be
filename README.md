@@ -1,221 +1,355 @@
-# Vintage Archive Jungle
-
-## Table of Contents
-
-1. [Introduction](#introduction)
-2. [Development](#development)
-   - [Dependencies](#dependencies)
-     - [Cloning the Repository](#a-cloning-the-repository)
-     - [Node.js](#b-nodejs)
-     - [Environmental Variables](#c-environmental-variables)
-     - [Database](#d-database)
-       - [Setting Up a PostgreSQL Server and Creating the User](#setting-up-a-postgresql-server-and-creating-the-user)
-       - [Setting Up the Database](#setting-up-the-database)
-       - [Restoring the Database](#restoring-the-database)
-       - [Backup of the Database](#backup-of-the-database)
-     - [Cloud Storage](#e-cloud-storage)
-   - [Server](#server)
-     - [Authentication](#a-authentication)
-     - [Rate Limiting](#b-rate-limiting)
-     - [Routing](#c-routing)
-3. [Container](#container)
-4. [Web Application](#web-application)
-   - [Domain](#domain)
-   - [Email Provider](#email-provider)
-   - [Hosting](#hosting)
+# Vintage Archive Jungle (VAJ)
 
 ## 1. Introduction
 
-This repository is one of two development projects for **Vintage Archive Jungle**, a personal initiative I work on outside my regular office hours. This part focuses on the backend, with an emphasis on the database and data processing workflows. Its sister project (coming soon) will cover the frontend. Together, they form a complete webshop application for Vintage Archive Jungle.
+Welcome to **Vintage Archive Jungle (VAJ)**, and thank you for your interest in the project!
 
-In this README, you’ll find instructions for setting up the project for development, guidance on running it in a Docker container, and a brief look at how the project came to life. The code is version-controlled with Git and will be publicly available on my personal GitHub page.
+Vintage Archive Jungle is a personal web application designed to serve as a customized webshop supporting the business of @urlocal_girl.
 
-This is my first independently developed, production-ready project, so I’m open to feedback and suggestions. Feel free to reach out if you’d like to know more.
+This README provides an overview of the project's architecture and technology stack, explains how to set up a local development environment, describes how to run the application using Docker, and outlines the guidelines for contributing to the project.
 
-## 2. Development
+Whether you are here to explore the codebase, develop new features, or contribute to the project, this document should help you get started.
 
-### Dependencies
+## 2. Technology Stack
 
-This section provides a step-by-step guide for setting up the Vintage Archive Jungle development environment so you can reproduce the exact conditions I’ve been working with.
+### 2.1 Architecture
 
-> **Note:** These instructions assume you are using a Bash shell.
+The project follows a monorepository architecture, organized into three main components:
 
-#### a. Cloning the Repository
+- Backend (BE): Handles application logic, data processing, and API endpoints.
 
-First, make sure you have **Git** installed. You can download it for free from the [official Git website](https://git-scm.com/). Download and run the installer for your operating system, then open a terminal. Navigate to the directory where you want to install the project, and run the following command to clone the repository:
+- Frontend (FE): Provides the user interface and client-side functionality.
 
-```shell
-gh repo clone Eli-Rousseau/vaj-be
+- Core: Contains shared dependencies, utilities, and resources used across multiple components.
+
+Each component is designed to operate independently. However, to simplify local development, dependencies are currently shared across the monorepository. In production, components are packaged and deployed independently.
+
+### 2.2 Technologies & Services
+
+The project relies on a collection of technologies and third-party services, grouped by their respective domains and responsibilities.
+
+| Category            | Technology / Provider | Version |
+| ------------------- | --------------------- | ------- |
+| **Runtime**         | Node.js               | 24.4    |
+| **Package Manager** | npm                   | —       |
+| **Database**        | PostgreSQL            | 18.1    |
+| **Caching**         | Redis                 | 7.4     |
+| **Cloud Storage**   | Backblaze B2          | —       |
+| **HTTP Server**     | Express               | 5.2.1   |
+| **API**             | GraphQL Yoga          | 5.17.1  |
+
+## 3. Development Environment
+
+This section describes how to configure and run the project locally.
+
+### 3.1 Prerequisites
+
+Before getting started, make sure the following dependencies are installed on your operating system:
+
+| Dependency | Minimum version | Required               |
+| ---------- | --------------- | ---------------------- |
+| Git        | 2.56            | Yes                    |
+| Node.js    | 24.4            | Yes                    |
+| Docker     | 29.9            | Yes                    |
+| Git-Crypt  | 0.8             | Yes                    |
+| PostgreSQL | 18.1            | Optional (recommended) |
+
+Once the prerequisites are installed, open a terminal and navigate to the directory where you want to store the project.
+
+### 3.2 Clone the Repository
+
+Clone the repository using Git:
+
+```
+git clone <repository-url>
 ```
 
-If you’d like to contribute, you can fork the repository on GitHub and submit a pull request with your proposed changes.
+Navigate into the project directory:
 
-#### b. Node.js
-
-Most of the development in this project is made in Node.js. To get started with development in this project you will have to visit the [official Node.js website](https://nodejs.org/en), download and excute the installer for your operating system. You can control wether Node.js was correctly installed by starting a terminal and run the command:
-
-```shell
-node --version
+```
+cd vintage-archive-jungle
 ```
 
-Node.js comes with the node version manager (nvm), which can be used to install and switch to Node.js v22.15.0 using the following command:
+### 3.3 Install Dependencies
 
-```shell
-nvm install 22.15.0
-nvm use 22.15.0
+Install the project's Node.js dependencies from the repository root:
+
 ```
-
-It is not a madatory requirement, but you can as well use the same version (v.10.9.2) of the node package manager (npm) by running the command in your terminal:
-
-```shell
-npm install -g npm@10.9.2
-```
-
-Finally to install all the third-paty Node.js modules you will have to run the command:
-
-```shell
 npm install
 ```
 
-#### c. Environmental Variables
+This will install the third-party packages defined in `package.json`.
 
-To leverage all the functionalities of this developmental project you will have to also include one or more environmental files with the developmental variables requires in this project. All the environmental file names should comply with these two citerias: (1) start with the prefix `.env`, and (2) have either `dev` or `prod` anywhere else in the name. To see the list of required variables to provide in the `.env` files, a `.dev-example` file has been added to root of the project with some mock values for each of the variables used in this project.
+### 3.4 Decrypt Environment Variables
 
-#### d. Database
+Environment-specific configuration files are encrypted using Git-Crypt to protect sensitive information.
 
-##### Setting Up a PostgreSQL Server and Create a Client Connection With pgAdmin
+To access these files, you must request the Git-Crypt key from the project administrator.
 
-Follow these simple instructions for setting up a PostgreSQL server and connecting to it with pgAdmin:
+Once you have received the key, store it in a secure location outside the repository.
 
-1. Install the database engine (`postgres`), the command-line client (`psql`), and background services from the official [website](https://www.postgresql.org/).
+Unlock the encrypted files by running:
 
-2. Initialize a database cluster to generate a structured directory containing your databases and configuration files. Use the command:
-
-   ```shell
-   initdb -D /usr/local/pgsql/data
-   ```
-
-3. Create a `postgres` role to act as entry point into the database system for administrative tasks.
-
-   ```shell
-   createuser -s postgres
-   ```
-
-4. Start a PostgreSQL server process to accept database connections and handle client queries in the background:
-
-   ```shell
-   sudo service postgresql start
-   ```
-
-   By default, the server will accept connections and requests from the `localhost` on port `5432`.
-
-5. Create a client connection between the running PostgreSQL server and pgAdmin. Install the latter from the official [website](https://www.pgadmin.org/). To connect with pgAdmin, open the app and select **Add New Server**. In the **General** tab, enter a name for the connection. In the **Connection** tab, provide the _Host_ (e.g., `localhost`), _Port_ (`5432` by default), _Username_ (e.g., `postgres`), and your _Password_. Once saved, pgAdmin will connect and display a graphical interface to manage databases and users.
-
-6. Once terminating the client connection with pgAdmin, the server PostgreSQL server process can be terminated:
-
-   ```shell
-   sudo service postgresql stop
-   ```
-
-[Here](https://tableplus.com/blog/2018/10/how-to-start-stop-restart-postgresql-server.html) is some usefull link for starting up a PostgreSQL server.
-
-##### Setting Up the Database
-
-Whenever seting up this project for the first time on your machine it is recommended to run the database setup script. It is an `npm` script that you can run using the following command:
-
-```shell
-npm run database-setup dev
+```
+git-crypt unlock /path/to/git-crypt-key
 ```
 
-This script helps setting up the `vintage_archive_jungle` database, the `shop` schema, and create a new user on the database named `administrator` with certain privileges.
+After successfully unlocking the repository, the encrypted environment files will become accessible.
 
-> _All npm scripts in this project requires to provide `dev` or `prod` as latest argument, to enable reading the variables from your corresponding `.env` files._
+**Important:** Never commit or share the Git-Crypt key, decrypted secrets, or other sensitive configuration files.
 
-##### Restoring the Database
+### 3.5 Start the Backend
 
-The project includes two backups of the database: (1) _a full archive_ of the database with all its data, and (2) _a schema-only archive_ of the database. These files can be used to load a copy of the database for this project. To load such a backup you can use the database restore script. It is another `npm` script that relies on the `pg_restore` utility and which you can execute using the command:
+Before starting the backend application, make sure the required infrastructure services are running.
 
-```shell
-npm run database-restore dev
+#### 3.5.1 Redis
+
+Start the Redis server using the following npm script:
+
+```
+npm run redis
 ```
 
-The script will prompt you to choose which type of backup you would like to run, either the entire database or only the schema.
+#### 3.5.2 PostgreSQL
 
-##### Backup of the Database
+There are two ways to initialize the development database, depending on your needs.
 
-The project also provides an npm script that enables to create a backup of the database with the `pg_dump` utility and can be executed using the command:
+**Option 1: Create a fresh database**
 
-```shell
-npm run database-backup dev
+Use this option if you want to start with an empty database and apply the available migrations.
+
+```
+npm run database-setup
+npm run database-migrate
 ```
 
-Again, it asks whether the backup should be for the entire database including the data or just the schema.
+**Option 2: Restore a development database**
 
-#### e. Cloud Storage
+Use this option if you prefer working with a pre-populated database containing existing development data.
 
-Backblaze B2 has been selected as the cloud storage provider for this project. B2 offers an S3-compatible bucket storage system. For this project, two buckets have been configured: one with public access and another with private access. Both are managed through a single application key configured with full privileges for both buckets.
-
-Ensure that the required B2 environment variables are added to your `.env` files. We have also developed a set of utilities built on the native B2 API that provide basic functionality for uploading and retrieving objects from the cloud.
-
-### Server
-
-An API has been set up for this project to serve as the connection between the backend and the frontend. In development, the server listens for requests on `localhost` port `1111`. You can start it by running:
-
-```bash
-npm run server dev
+```
+npm run database-restore
 ```
 
-Without going into full detail about the API specifications, requests, and responses, the following key points are worth noting:
+**Database backup**
 
-#### a. Authentication
+After completing your development work, you can create a backup of the current database state:
 
-Every HTTP request must include at least one API token in the request headers as `x-api-key`. You can generate a token by running:
-
-```bash
-npm run generate-api-key dev
+```
+npm run database-backup
 ```
 
-This will create a key you can copy into your `.env` file. Any request to the server must include one of the keys defined under the `VAJ_API_KEY_X` variables in `.env`.
+This allows you to preserve your development data for future use.
 
-#### b. Rate Limiting
+#### 3.5.3 Backend Application
 
-The API enforces global rate limiting using a fixed-window counter strategy to prevent excessive usage.
+Once Redis and PostgreSQL are running and properly configured, start the backend development server:
 
-#### c. Routing
-
-The API currently acts as a gateway for two main route groups:
-
-1. **`/database` routes** – Allow direct interaction with database tables via `GET`, `POST`, `PUT`, and `DELETE` requests.
-
-2. **`/service` routes** – Trigger project-specific processes, typically initiated from frontend functionality. Documentation for core services will expand as the project evolves.
-
-## 3. Container
-
-Not everyone may want to set up the full development environment locally, so this project includes a Dockerfile that allows anyone with Docker installed to run the server inside a container. To do so, first clone the project from GitHub as described in the development section, then install Docker from the [official Docker website](https://www.docker.com/). Open a shell, navigate to the root of the project, and run the following command to build the image and start the container, respectively:
-
-```shell
-docker build -t vaj-be:1.0.0 .
-docker run -it -p 1111:1111 vaj-be:1.0.0
+```
+npm run vaj-be dev
 ```
 
-The container’s entrypoint script will prompt you for interactive input (such as environment selection) before launching the server.
+The backend should now be running and ready to accept requests.
 
-You can stop the server at any time by pressing `CTRL + C`, which will drop you into the container’s shell without shutting it down completely.
+#### 3.5.4 Development Interfaces
 
-## 4. Web Application
+The development environment also provides access to the following web-based interfaces:
 
-In this section, I will briefly explain how the project and its full web application were brought online, along with the key steps involved in making it live.
+| Interface        | URL                                    | Description                                                                              |
+| ---------------- | -------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **GraphiQL**     | http://localhost:1230/api/v1/graphql   | Interactive GraphQL IDE for exploring the API, executing queries, and testing mutations. |
+| **RedisInsight** | [Redis Insight](http://localhost:1232) | Web-based interface for inspecting and managing the Redis instance.                      |
 
-### Domain
+Both interfaces are intended for development and debugging purposes.
 
-The domain name `vintagearchivejungle.com` was purchased through the registrar [domain.com](https://www.domain.com/).
+## 4. Running the Project with Docker
 
-### Email Provider
+This section describes how to run the project using Docker containers instead of installing and managing the infrastructure services directly on your host machine.
 
-For email services, we chose [Zoho Mail](https://www.zoho.com/mail/) as the primary provider. DNS records were configured within Zoho to properly link the domain to Zoho’s mail servers, ensuring reliable delivery and domain authentication. A number of user accounts were set up on Zoho under the free plan, and all application-generated emails are sent through this service.
+### 4.1 Prerequisites
 
-### Hosting
+Make sure Docker v29.9 or higher is installed and running on your operating system.
 
-[Fly.io](https://fly.io/docs/js/the-basics/)
+### 4.2 Clone the Repository
 
-More documentation on this soon ...
+If you have not already cloned the repository, run:
+
+```
+git clone <repository-url>
+cd vintage-archive-jungle
+```
+
+### 4.3 Decrypt Environment Variables
+
+As described in [Section 3.4](#34-decrypt-environment-variables), request the Git-Crypt key from the project administrator.
+
+Unlock the encrypted files:
+
+```
+git-crypt unlock /path/to/git-crypt-key
+```
+
+Ensure that the Docker environment configuration files are accessible before proceeding.
+
+### 4.4 Create the Docker Network
+
+Create a dedicated bridge network to allow the application containers to communicate with each other:
+
+```
+docker network create --driver bridge vaj
+```
+
+### 4.5 Start PostgreSQL
+
+Pull the PostgreSQL image:
+
+```
+docker pull postgres:18.1
+```
+
+Create and start the PostgreSQL container:
+
+```
+docker run -d --name vaj-postgres --network vaj -e POSTGRES_PASSWORD=postgresql -p 5432:5432 -v vaj-postgres-data:/var/lib/postgresql postgres:18.1
+```
+
+The named Docker volume ensures that database data persists when the container is stopped or recreated.
+
+### 4.6 Start Redis
+
+Pull the Redis Stack image:
+
+```
+docker pull redis/redis-stack:7.4.0-v8
+```
+
+Create and start the Redis container:
+
+```
+docker run -d --name vaj-redis --network vaj -p 127.0.0.1:1231:6379 -p 127.0.0.1:1232:8001 -e REDIS_ARGS="--requirepass redis-password --appendonly yes" redis/redis-stack:7.4.0-v8
+```
+
+The Redis service will be accessible through the mapped host ports:
+
+- `1231`: Redis server.
+
+- `1232`: RedisInsight web interface.
+
+### 4.7 Build the Backend Image
+
+Build the backend Docker image from the repository root:
+
+```
+docker build -f src/be/Dockerfile.vaj-be -t vaj-be --build-arg STAGE=dev --build-arg CONTAINER_PORT=1230 .
+```
+
+### 4.8 Run the Backend Container
+
+#### 4.8.1 Interactive mode
+
+Start an interactive Bash session inside the container:
+
+```
+docker run -it --rm -p 1230:1230 --network vaj --name vaj-be --env-file src/be/.env.vaj-be.dev --env DATABASE_HOST=vaj-postgres --env REDIS_HOST=vaj-redis --env REDIS_PORT=6379 --entrypoint /bin/bash vaj-be
+```
+
+Inside the session you will be able to run a number of essential production scripts.
+
+**Create a fresh database:**
+
+```
+node dist/be/scripts/database-setup.js
+node dist/be/scripts/database-migrate.js
+```
+
+**Restore a development database:**
+
+```
+node dist/be/scripts/database-restore.js
+```
+
+#### 4.8.2 Detached mode
+
+Finally, start the backend container in the background:
+
+```
+docker run -d -p 1230:1230 --network vaj --name vaj-be --env-file src/be/.env.vaj-be.dev --env DATABASE_HOST=vaj-postgres --env REDIS_HOST=vaj-redis --env REDIS_PORT=6379 vaj-be
+```
+
+### 4.9 Stop and Restart Containers
+
+To stop all project containers:
+
+```
+docker stop vaj-be vaj-postgres vaj-redis
+```
+
+To restart them:
+
+```
+docker start vaj-postgres vaj-redis vaj-be
+```
+
+The infrastructure services are started before the backend to ensure that the required dependencies are available.
+
+## 5. Community Contributions
+
+Contributions are welcome!
+
+To keep the development process organized and maintain a clean Git history, the project follows a feature branch workflow.
+
+If you are unfamiliar with this approach, the following video provides a useful introduction:
+
+[Git Feature Branch Workflow – Tutorial](https://www.youtube.com/watch?v=ZBexzpgj1GE)
+
+### 5.1 Contribution Workflow
+
+The general workflow consists of the following steps:
+
+**1. Synchronize your local repository**
+
+Start by updating your local copy of the main development branch:
+
+```
+git checkout main
+git pull origin main
+```
+
+**2. Create a feature branch**
+
+Create a dedicated branch for your contribution:
+
+```
+git checkout -b feature/your-feature-name
+```
+
+**3. Implement your changes**
+
+Work on your feature or bug fix within the newly created branch.
+
+Try to keep commits focused and descriptive.
+
+```
+git add .
+git commit -m "feat: add product catalog"
+```
+
+**4. Push your branch**
+
+Publish your branch to the remote repository:
+
+```
+git push -u origin feature/your-feature-name
+```
+
+**5. Open a Pull Request**
+
+Once your changes are ready, open a Pull Request targeting the `main` branch.
+
+Provide a short description of your changes and any relevant information needed for review.
+
+**6. Review and merge**
+
+The project administrator will review the proposed changes, request modifications if necessary, and merge the contribution once it is approved.
+
+Please avoid pushing directly to the `main` branch.
