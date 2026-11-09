@@ -1,4 +1,3 @@
-import { loadStage } from "@/core/stage";
 import { docker } from "@/core/docker";
 import { setupShutdownHooks } from "@/be/utils/shutdown";
 import { logger } from "@/core/logger";
@@ -43,9 +42,7 @@ const runDatabaseContainer = function () {
   }
 };
 
-const main = async function () {
-  await loadStage();
-
+export default async function main() {
   setupShutdownHooks();
 
   runDatabaseContainer();
@@ -54,4 +51,6 @@ const main = async function () {
   process.stdin.resume();
 };
 
-main();
+if (require.main === module) {
+  main()
+}

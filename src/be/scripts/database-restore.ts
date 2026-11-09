@@ -1,7 +1,6 @@
 import { cwd } from "process";
 import { rm, writeFile } from "fs/promises";
 
-import { loadStage } from "@/core/stage";
 import { runCommand } from "@/core/process";
 import { B2Client } from "@/be/sdks/b2";
 import { logger } from "@/core/logger";
@@ -69,9 +68,7 @@ async function restoreDatabase(args: {
   }
 }
 
-async function main() {
-  await loadStage();
-
+export default async function main() {
   const host = process.env.DATABASE_HOST;
   const port = process.env.DATABASE_PORT;
 
@@ -112,4 +109,6 @@ async function main() {
   });
 }
 
-main();
+if (require.main === module) {
+  main()
+}

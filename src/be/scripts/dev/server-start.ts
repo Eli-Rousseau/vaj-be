@@ -1,6 +1,6 @@
 import { startServer } from "@/be/api/server";
 import { logger } from "@/core/logger";
-import { loadStage } from "@/core/stage";
+import { loadStage } from "@/be/scripts/dev/stage";
 
 const LOGGER = logger.get();
 
@@ -12,4 +12,6 @@ async function main() {
     });
 }
 
-main()
+if (require.main === module) {
+    main()
+}

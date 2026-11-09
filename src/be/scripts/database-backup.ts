@@ -1,7 +1,6 @@
 import { cwd } from "process";
 import { readFile, rm } from "fs/promises";
 
-import { loadStage } from "@/core/stage";
 import { logger } from "@/core/logger";
 import { runCommand } from "@/core/process";
 import { File, B2Client, S3ContentType } from "@/be/sdks/b2";
@@ -51,9 +50,7 @@ async function storeBackup() {
   }
 }
 
-async function main() {
-  await loadStage();
-
+export default async function main() {
   const host = process.env.DATABASE_HOST;
   const port = process.env.DATABASE_PORT;
 
@@ -80,4 +77,6 @@ async function main() {
   LOGGER.info("Finished the database backup.");
 }
 
-main();
+if (require.main === module) {
+  main()
+}

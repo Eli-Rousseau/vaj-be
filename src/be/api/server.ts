@@ -2,7 +2,7 @@ import express, { Express } from "express";
 
 import { logger } from "@/core/logger";
 import * as routers from "@/be/api/routes/index";
-import { setupShutdownHooks } from "@/be/utils/shutdown";
+// import { setupShutdownHooks } from "@/be/utils/shutdown";
 import * as middleware from "@/be/api/middleware/handlers";
 
 const LOGGER = logger.get();
@@ -11,7 +11,7 @@ let app: Express | null = null;
 
 // Setting up the server process
 export async function startServer() {
-  setupShutdownHooks();
+  // setupShutdownHooks();
 
   const host = process.env.VAJ_APPLICATION_HOST;
   const port = process.env.VAJ_APPLICATION_PORT;
@@ -42,4 +42,10 @@ export async function startServer() {
   app.listen(port, () => {
     LOGGER.info(`Server listening at http://${host}:${port}`);
   });
+}
+
+if (require.main === module) {
+  (async () => {
+    await startServer();
+  })();
 }

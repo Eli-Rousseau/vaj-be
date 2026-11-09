@@ -1,7 +1,6 @@
 import { cwd } from "process";
 
 import { runCommand } from "@/core/process";
-import { loadStage } from "@/core/stage";
 import { logger } from "@/core/logger";
 import { askQuestion } from "@/core/prompt";
 
@@ -96,9 +95,7 @@ async function createUser(args: {
   await runCommand(command, "New user creation");
 }
 
-async function main() {
-  await loadStage();
-
+export default async function main() {
   const host = process.env.DATABASE_HOST;
   const port = process.env.DATABASE_PORT;
 
@@ -184,4 +181,6 @@ async function main() {
   LOGGER.info("Finished database setup.");
 }
 
-main();
+if (require.main === module) {
+  main()
+}

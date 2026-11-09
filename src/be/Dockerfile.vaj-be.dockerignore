@@ -3,3 +3,4 @@ node_modules/
 tests/
 src/scratch/
 src/fe/
+src/be/scripts/dev/

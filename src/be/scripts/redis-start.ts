@@ -1,6 +1,5 @@
 import { docker } from "@/core/docker";
 import { logger } from "@/core/logger";
-import { loadStage } from "@/core/stage";
 import { setupShutdownHooks } from "@/be/utils/shutdown";
 
 const LOGGER = logger.get();
@@ -50,9 +49,7 @@ function runRedisContainer() {
   }
 }
 
-const main = async function () {
-  await loadStage();
-
+export default async function main() {
   setupShutdownHooks();
 
   runRedisContainer();
@@ -61,4 +58,6 @@ const main = async function () {
   process.stdin.resume();
 };
 
-main();
+if (require.main === module) {
+  main()
+}

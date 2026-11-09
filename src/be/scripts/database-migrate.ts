@@ -1,7 +1,6 @@
 import { cwd } from "process";
 import { readdir, readFile, writeFile } from "fs/promises";
 
-import { loadStage } from "@/core/stage";
 import { logger } from "@/core/logger";
 import { PostgresClient } from "@/be/sdks/postgres";
 import { setupShutdownHooks } from "@/be/utils/shutdown";
@@ -181,10 +180,8 @@ async function updateTranformerClasses() {
   }
 }
 
-async function main() {
+export default async function main() {
   setupShutdownHooks();
-
-  await loadStage();
 
   const appliedMigrations = await getCurrentMigrations();
   const migrationScripts = await getMigrationScripts();
@@ -214,4 +211,6 @@ async function main() {
   process.exit(0);
 }
 
-main();
+if (require.main === module) {
+  main()
+}

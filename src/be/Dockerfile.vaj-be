@@ -34,4 +34,4 @@ ENV STAGE=$STAGE
 
 EXPOSE ${CONTAINER_PORT}
 
-CMD ["node", "dist/be/scripts/server/vaj-be.js"]
+CMD ["node", "dist/be/api/server.js"]
