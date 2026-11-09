@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
-import { ShopUser } from "@/src/be/database/classes/transformer-classes";
-import { AuthorizationError } from "@/src/core/errors";
+import { ShopUser } from "@/be/database/classes/transformer-classes";
+import { AuthorizationError } from "@/core/errors";
 
 export function generateGenericToken(): string {
   return crypto.randomBytes(64).toString("hex");

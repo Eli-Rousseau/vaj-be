@@ -1,4 +1,4 @@
-import { AuthorizationError, ConfigError } from "@/src/core/errors";
+import { AuthorizationError, ConfigError } from "@/core/errors";
 
 ///////////
 // TYPES //

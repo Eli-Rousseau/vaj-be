@@ -1,6 +1,6 @@
-import { logger } from "@/src/core/logger";
-import { TransformerClass } from "@/src/be/database/classes/transformers";
-import { HTTPError } from "@/src/core/errors";
+import { logger } from "@/core/logger";
+import { TransformerClass } from "@/be/database/classes/transformers";
+import { HTTPError } from "@/core/errors";
 
 const LOGGER = logger.get();
 

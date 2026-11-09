@@ -1,4 +1,4 @@
-import { ConfigError } from "@/src/core/errors";
+import { ConfigError } from "@/core/errors";
 
 ///////////////
 // VARIABLES //

@@ -1,8 +1,8 @@
 import * as dotenv from "dotenv";
 import { existsSync } from "fs";
 
-import { dropDown } from "@/src/core/prompt";
-import { logger } from "@/src/core/logger";
+import { dropDown } from "@/core/prompt";
+import { logger } from "@/core/logger";
 
 let LOGGER = logger.get();
 
@@ -12,8 +12,8 @@ enum Stages {
 }
 
 const stageConfigs: Record<keyof typeof Stages, string> = {
-  dev: ".env.dev",
-  prod: ".env.prod",
+  dev: "src/be/.env.vaj-be.dev",
+  prod: "src/be/.env.vaj-be.prod",
 };
 
 /**

@@ -2,7 +2,7 @@ import os from "os";
 import { cwd } from "process";
 import { execSync } from "child_process";
 
-import { logger } from "@/src/core/logger";
+import { logger } from "@/core/logger";
 
 const LOGGER = logger.get();
 
@@ -199,6 +199,27 @@ class Docker {
       LOGGER.error("Failed to stop docker containers.");
       throw error;
     }
+  }
+
+  network(network: string) {
+    let exists;
+    try {
+      exists = JSON.parse(
+        Buffer.from(
+          execSync(`docker network inspect ${network}`)
+        ).toString()
+      )[0]["Name"] === network;
+    } catch {
+      // Continue
+    }
+
+    if (exists) {
+      LOGGER.info(`Network with name "${network}" already exists.`);
+      return;
+    }
+
+    execSync(`docker network create --driver bridge ${network}`);
+    LOGGER.info(`Created new network "${network}".`);
   }
 }
 

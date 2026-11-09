@@ -1,5 +1,5 @@
-import { GraphQLClient } from "@/src/be/sdks/graphql";
-import { ShopFile } from "@/src/be/database/classes/transformer-classes";
+import { GraphQLClient } from "@/be/sdks/graphql";
+import { ShopFile } from "@/be/database/classes/transformer-classes";
 
 export async function createFile(data: ShopFile) {
   const graphqlClient = new GraphQLClient();

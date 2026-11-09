@@ -1,10 +1,10 @@
 import crypto from "crypto";
 import { Request, Response, NextFunction } from "express";
 
-import { logger } from "@/src/core/logger";
-import { ShopUser } from "@/src/be/database/classes/transformer-classes";
-import { Context, getCurrentContext } from "@/src/core/context";
-import * as errors from "@/src/core/errors";
+import { logger } from "@/core/logger";
+import { ShopUser } from "@/be/database/classes/transformer-classes";
+import { Context, getCurrentContext } from "@/core/context";
+import * as errors from "@/core/errors";
 
 type WrapperOptions = {
   setupContext?: boolean;

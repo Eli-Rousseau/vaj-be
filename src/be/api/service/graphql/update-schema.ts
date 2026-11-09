@@ -1,4 +1,4 @@
-import { rebuildSchema } from "@/src/be/graphql/yoga";
+import { rebuildSchema } from "@/be/graphql/yoga";
 
 //////////
 // MAIN //

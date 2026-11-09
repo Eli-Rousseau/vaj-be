@@ -1,6 +1,6 @@
-import { ShopUser } from "@/src/be/database/classes/transformer-classes";
-import { decodeJWTToken } from "@/src/core/jwt";
-import { AuthorizationError, ConfigError } from "@/src/core/errors";
+import { ShopUser } from "@/be/database/classes/transformer-classes";
+import { decodeJWTToken } from "@/core/jwt";
+import { AuthorizationError, ConfigError } from "@/core/errors";
 
 ///////////
 // TYPES //

@@ -1,8 +1,8 @@
 import { readFile } from "fs/promises";
 import { cwd } from "process";
 
-import { logger } from "@/src/core/logger";
-import { PostgresClient } from "@/src/be/sdks/postgres";
+import { logger } from "@/core/logger";
+import { PostgresClient } from "@/be/sdks/postgres";
 import {
   DataBaseInfo,
   ColumnInfo,
@@ -12,7 +12,7 @@ import {
   CompositeTypeInfo,
   SchemaInfo,
   RolePermissions,
-} from "@/src/be/database/types";
+} from "@/be/database/types";
 
 const LOGGER = logger.get();
 

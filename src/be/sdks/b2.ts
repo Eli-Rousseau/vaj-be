@@ -3,10 +3,10 @@ import { Readable } from "stream";
 import { readFileSync } from "fs";
 import { Exclude, Expose, Transform } from "class-transformer";
 
-import { logger } from "@/src/core/logger";
-import { findEnumsValue, S3ContentType } from "@/src/core/enums";
-import { ShopFile } from "@/src/be/database/classes/transformer-classes";
-import { HTTPError } from "@/src/core/errors";
+import { logger } from "@/core/logger";
+import { findEnumsValue, S3ContentType } from "@/core/enums";
+import { ShopFile } from "@/be/database/classes/transformer-classes";
+import { HTTPError } from "@/core/errors";
 
 const LOGGER = logger.get();
 

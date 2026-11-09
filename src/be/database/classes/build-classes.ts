@@ -1,5 +1,5 @@
-import { logger } from "@/src/core/logger";
-import { PostgresType } from "@/src/be/graphql/build-schema";
+import { logger } from "@/core/logger";
+import { PostgresType } from "@/be/graphql/build-schema";
 import {
   SchemaInfo,
   TableInfo,

@@ -1,9 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 
-import * as main from "@/src/be/api/middleware/index";
-import { runWithContext } from "@/src/core/context";
-import { withHandler } from "@/src/be/api/wrapper";
-import { ShopUser } from "@/src/be/database/classes/transformer-classes";
+import * as main from "@/be/api/middleware/index";
+import { runWithContext } from "@/core/context";
+import { withHandler } from "@/be/api/wrapper";
+import { ShopUser } from "@/be/database/classes/transformer-classes";
 
 export async function handleCors(
   req: Request,

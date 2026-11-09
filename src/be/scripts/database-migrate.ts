@@ -1,13 +1,12 @@
 import { cwd } from "process";
 import { readdir, readFile, writeFile } from "fs/promises";
 
-import { loadStage } from "@/src/core/stage";
-import { logger } from "@/src/core/logger";
-import { PostgresClient } from "@/src/be/sdks/postgres";
-import { setupShutdownHooks } from "@/src/be/utils/shutdown";
-import { askQuestion } from "@/src/core/prompt";
-import { buildTransformerClasses } from "@/src/be/database/classes/build-classes";
-import VAJClient from "@/src/core/sdk/vaj";
+import { logger } from "@/core/logger";
+import { PostgresClient } from "@/be/sdks/postgres";
+import { setupShutdownHooks } from "@/be/utils/shutdown";
+import { askQuestion } from "@/core/prompt";
+import { buildTransformerClasses } from "@/be/database/classes/build-classes";
+import VAJClient from "@/core/sdk/vaj";
 
 const LOGGER = logger.get();
 
@@ -181,10 +180,8 @@ async function updateTranformerClasses() {
   }
 }
 
-async function main() {
+export default async function main() {
   setupShutdownHooks();
-
-  await loadStage();
 
   const appliedMigrations = await getCurrentMigrations();
   const migrationScripts = await getMigrationScripts();
@@ -214,4 +211,6 @@ async function main() {
   process.exit(0);
 }
 
-main();
+if (require.main === module) {
+  main()
+}

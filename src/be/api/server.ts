@@ -1,20 +1,17 @@
 import express, { Express } from "express";
 
-import { loadStage } from "@/src/core/stage";
-import { logger } from "@/src/core/logger";
-import * as routers from "@/src/be/api/routes/index";
-import { setupShutdownHooks } from "@/src/be/utils/shutdown";
-import * as middleware from "@/src/be/api/middleware/handlers";
+import { logger } from "@/core/logger";
+import * as routers from "@/be/api/routes/index";
+// import { setupShutdownHooks } from "@/be/utils/shutdown";
+import * as middleware from "@/be/api/middleware/handlers";
 
 const LOGGER = logger.get();
 
 let app: Express | null = null;
 
 // Setting up the server process
-async function startServer() {
-  await loadStage();
-
-  setupShutdownHooks();
+export async function startServer() {
+  // setupShutdownHooks();
 
   const host = process.env.VAJ_APPLICATION_HOST;
   const port = process.env.VAJ_APPLICATION_PORT;
@@ -47,7 +44,8 @@ async function startServer() {
   });
 }
 
-startServer().catch((err) => {
-  LOGGER.error(err);
-  process.exit(1);
-});
+if (require.main === module) {
+  (async () => {
+    await startServer();
+  })();
+}

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { mergeFilterToWhereClause } from "../../src/graphql/query-constructors";
+import { mergeFilterToWhereClause } from "../../be/graphql/query-constructors"
+
 
 describe("test mergeFilterToWhereClause utility function", () => {
   it("without filters", () => {

@@ -1,10 +1,10 @@
-import { loadStage } from "@/src/core/stage";
-import { docker } from "@/src/core/docker";
-import { setupShutdownHooks } from "@/src/be/utils/shutdown";
-import { logger } from "@/src/core/logger";
+import { docker } from "@/core/docker";
+import { setupShutdownHooks } from "@/be/utils/shutdown";
+import { logger } from "@/core/logger";
 
 const LOGGER = logger.get();
 
+const NETWORK_NAME = "vaj";
 const CONTAINER_NAME = "vaj-postgres";
 
 const runDatabaseContainer = function () {
@@ -21,12 +21,14 @@ const runDatabaseContainer = function () {
 
   try {
     docker.activate();
+    docker.network(NETWORK_NAME);
     docker.pullImage("postgres:14.19-trixie");
     docker.runContainer({
       "--name": CONTAINER_NAME,
       args: [
         { "-e": `POSTGRES_PASSWORD=${password}` },
         { "-p": `${port}:${port}` },
+        { "--network": NETWORK_NAME },
         "postgres",
       ],
     });
@@ -40,9 +42,7 @@ const runDatabaseContainer = function () {
   }
 };
 
-const main = async function () {
-  await loadStage();
-
+export default async function main() {
   setupShutdownHooks();
 
   runDatabaseContainer();
@@ -51,4 +51,6 @@ const main = async function () {
   process.stdin.resume();
 };
 
-main();
+if (require.main === module) {
+  main()
+}
