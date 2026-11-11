@@ -4,18 +4,20 @@
   "description": "vintage archive jungle - backend project",
   "main": "index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json && tsc-alias",
-    "vaj-be": "npm run build && nodemon ./dist/be/scripts/dev/server-start.js",
-    "file": "npm run build && node",
-    "postgres": "npm run build && node ./dist/be/scripts/dev/postgres-start.js",
-    "database-setup": "npm run build && node ./dist/be/scripts/dev/database-setup.js",
-    "database-backup": "npm run build && node ./dist/be/scripts/dev/database-backup.js",
-    "database-restore": "npm run build && node ./dist/be/scripts/dev/database-restore.js",
-    "database-migrate": "npm run build && node ./dist/be/scripts/dev/database-migrate.js",
+    "build vaj-be": "tsc -p tsconfig.json && tsc-alias",
+    "vaj-be": "npm run build vaj-be && nodemon ./dist/be/scripts/dev/server-start.js",
+    "file": "npm run build vaj-be && node",
+    "postgres": "npm run build vaj-be && node ./dist/be/scripts/dev/postgres-start.js",
+    "database-setup": "npm run build vaj-be && node ./dist/be/scripts/dev/database-setup.js",
+    "database-backup": "npm run build vaj-be && node ./dist/be/scripts/dev/database-backup.js",
+    "database-restore": "npm run build vaj-be && node ./dist/be/scripts/dev/database-restore.js",
+    "database-migrate": "npm run build vaj-be && node ./dist/be/scripts/dev/database-migrate.js",
     "redis": "npm run build && node ./dist/be/scripts/dev/redis-start.js",
     "test": "vitest",
     "format": "prettier . --write",
-    "lint": "eslint . --fix"
+    "lint": "eslint . --fix",
+    "vaj-fe": "vite",
+    "build vaj-fe": "vite build"
   },
   "author": "",
   "license": "ISC",
@@ -25,6 +27,8 @@
     "graphql-yoga": "^5.17.1",
     "nodemailer": "^9.0.0",
     "pg": "^8.16.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "redis": "^5.11.0",
     "reflect-metadata": "^0.2.2",
     "winston": "^3.18.3"
@@ -35,6 +39,7 @@
     "@types/node": "^24.0.15",
     "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.15.4",
+    "@vitejs/plugin-react": "^6.3.0",
     "dotenv": "^17.2.3",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
@@ -45,6 +50,7 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.66.0",
+    "vite": "^8.3.8",
     "vitest": "^4.0.16"
   }
 }
